@@ -1,0 +1,118 @@
+ATOM-AI EXPORT MANIFEST
+generated_pt=2026-09-17 10:17:36 UTC
+source=/workspace/repos/toroidal-fractal-intelligence
+dest=/workspace/exports/atom-ai
+git_commit=d9d3ffa76979becda2d2b769d22eae208b83b957
+pytest=14_passed
+
+=== TREE ===
+.gitignore
+.pytest_cache/.gitignore
+.pytest_cache/CACHEDIR.TAG
+.pytest_cache/README.md
+.pytest_cache/v/cache/nodeids
+ATOM_NATIVE_TOKENIZATION.md
+ATOM_RULES.md
+CHANGELOG.md
+DECAY_FIX.md
+EXPORT_MANIFEST.txt
+GEN_DEBUG.md
+README.md
+REPAIR_AND_TRAIN.md
+checkpoints/BEST_CHAT.txt
+checkpoints/README.md
+checkpoints/atom_native_chat_persist/atom_native.pt
+checkpoints/atom_native_chat_persist/atomization_stats.json
+checkpoints/atom_native_chat_persist/loss_trajectory.json
+checkpoints/atom_native_chat_persist/run_metrics.json
+data/CORPUS_DIALOGUE_INFO.txt
+data/CORPUS_INFO.txt
+data/README.md
+data/samples/corpus_train_dialogue_slice.txt
+data/samples/dialogue_tiny.txt
+docs/ANTISLOP.md
+docs/ARCHITECTURE.md
+docs/ATOM_NATIVE_TOKENIZATION.md
+docs/ATOM_RULES.md
+docs/CHAT.md
+docs/DECAY_FIX.md
+docs/GEN_DEBUG.md
+docs/MANIPULATIONS.md
+docs/REPAIR_AND_TRAIN.md
+docs/TRAINING.md
+pyproject.toml
+src/__init__.py
+src/__pycache__/__init__.cpython-313.pyc
+src/__pycache__/atom_native.cpython-313.pyc
+src/atom_native.py
+src/evaluation/__init__.py
+src/evaluation/__pycache__/__init__.cpython-313.pyc
+src/evaluation/__pycache__/metrics.cpython-313.pyc
+src/evaluation/metrics.py
+src/io/__init__.py
+src/io/__pycache__/__init__.cpython-313.pyc
+src/io/__pycache__/atomizer.cpython-313.pyc
+src/io/__pycache__/data.cpython-313.pyc
+src/io/atomizer.py
+src/io/data.py
+src/main.py
+src/toroidal/__init__.py
+src/toroidal/__pycache__/__init__.cpython-313.pyc
+src/toroidal/__pycache__/abstraction.cpython-313.pyc
+src/toroidal/__pycache__/aggregation.cpython-313.pyc
+src/toroidal/__pycache__/atom.cpython-313.pyc
+src/toroidal/__pycache__/consolidation.cpython-313.pyc
+src/toroidal/__pycache__/dynamics.cpython-313.pyc
+src/toroidal/__pycache__/encoder.cpython-313.pyc
+src/toroidal/__pycache__/interaction.cpython-313.pyc
+src/toroidal/__pycache__/model.cpython-313.pyc
+src/toroidal/__pycache__/production.cpython-313.pyc
+src/toroidal/__pycache__/state.cpython-313.pyc
+src/toroidal/abstraction.py
+src/toroidal/aggregation.py
+src/toroidal/atom.py
+src/toroidal/consolidation.py
+src/toroidal/dynamics.py
+src/toroidal/encoder.py
+src/toroidal/interaction.py
+src/toroidal/model.py
+src/toroidal/production.py
+src/toroidal/state.py
+src/training/__init__.py
+src/training/__pycache__/__init__.cpython-313.pyc
+src/training/__pycache__/trainer.cpython-313.pyc
+src/training/trainer.py
+test/__pycache__/test_atom_native.cpython-313-pytest-9.1.1.pyc
+test/__pycache__/test_exact_resume.cpython-313-pytest-9.1.1.pyc
+test/__pycache__/test_generation_smoke.cpython-313-pytest-9.1.1.pyc
+test/core_invariants.py
+test/test_atom_native.py
+test/test_exact_resume.py
+test/test_generation_smoke.py
+tools/__init__.py
+tools/chat_atom_native.py
+tools/run_atom_native.py
+tools/smoke_gen_check.py
+
+=== SIZES ===
+16M	.
+
+=== INCLUDED (spine) ===
+- src/atom_native.py, src/io/atomizer.py+data.py, src/toroidal/*, src/training, src/evaluation, src/main.py
+- tools/run_atom_native.py, chat_atom_native.py, smoke_gen_check.py
+- test/* (atom-native, gen smoke, invariants, resume)
+- docs bilingual + root ATOM_RULES, ATOM_NATIVE_TOKENIZATION, GEN_DEBUG, DECAY_FIX, REPAIR_AND_TRAIN
+- checkpoints/atom_native_chat_persist (~8MB best chat) + README
+- data/samples tiny dialogue slice
+- pyproject atom-ai: torch+numpy only
+
+=== EXCLUDED ===
+- _quarantine_transformer_slop/, _quarantine_docs_slop/
+- GPT-2 tokenizer, legacy_gpt2_data, legacy_token_id_trainer
+- agents/, __pycache__, .venv, egg-info
+- huge corpora (corpus_mixed, train.txt, raw_gutenberg, …)
+- logs/, results/, extra checkpoints (smoke/v2/non-persist)
+- nn.Transformer / MultiheadAttention (never present in spine)
+
+=== DO NOT PUSH FROM THIS AGENT ===
+Parent will push to GitHub repo atom-ai.
