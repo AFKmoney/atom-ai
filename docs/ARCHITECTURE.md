@@ -1,11 +1,5 @@
 # Architecture — ATOM / atom-ai
 
-**EN** + **FR**
-
----
-
-## English
-
 ### Pipeline (canonical)
 
 ```text
@@ -60,26 +54,3 @@ See `ATOM_RULES.md` (repo root and `docs/`).
 Post gen-fix (2026-09-17): `LayerNorm` before surface linears; legacy bias damp
 on load; printable soft bias; structural boundary inference for generated
 payloads (`GEN_DEBUG.md`).
-
----
-
-## Français
-
-### Pipeline canonique
-
-```text
-texte UTF-8
-  → Atomizer.encode()
-  → AtomPacket
-  → AtomCompiler → ToroidalAtom
-  → tick toroïdal (champ, RK4, interaction, agrégation, abstraction, consolidation)
-  → AtomSurfaceHead → octets du prochain paquet
-```
-
-Un paquet ≈ un tick. Le champ persiste par défaut entre fenêtres d'épisode
-(`--no-episode-reset`).
-
-### Hors graphe
-
-Pas de Transformer, pas d'attention multi-têtes, pas de tokenizer GPT-2 sur le
-chemin par défaut. Règles : `ATOM_RULES.md`.

@@ -1,92 +1,92 @@
-# ATOM-native atomisation — refonte `signal → atome`
+# ATOM-native atomization — `signal → atom` redesign
 
-Date de l'expérience : 2026-09-13.
+Experiment date: 2026-09-13.
 
-## Intention
+## Intent
 
-Le chemin GPT-2 existant était encore un chemin de tokenisation classique :
+The existing GPT-2 path was still classic tokenization:
 
 ```text
-texte → ID GPT-2 → embedding statique → mapping → atome
+text → GPT-2 ID → static embedding → mapping → atom
 ```
 
-Ce chemin conserve un vocabulaire de 50 257 classes et traite l'ID comme
-l'unité fondamentale. Il ne correspond pas à l'intention du document ATOM :
+That path keeps a 50,257-class vocabulary and treats the ID as the fundamental
+unit. It does not match the ATOM document intent:
 
 ```text
 T(x, c, S) → A
 ```
 
-La refonte introduit donc un **atomizer**, et non un vocabulaire subword plus
-petit :
+This redesign therefore introduces an **atomizer**, not a smaller subword
+vocabulary:
 
 ```text
-flux UTF-8 brut
-  → observations de bytes et buffer local
-  → paquet atomique réversible et contextuel
-  → huit propriétés de ToroidalAtom
-  → champ persistant / RK4 / interactions / agrégation / abstraction /
+raw UTF-8 stream
+  → byte observations and local buffer
+  → reversible, contextual atomic packet
+  → eight ToroidalAtom properties
+  → persistent field / RK4 / interactions / aggregation / abstraction /
     consolidation
 ```
 
-Le byte est une observation d'entrée, pas une entrée de table sémantique. Le
-paquet atomique est l'unité qui entre dans le cœur toroidal.
+The byte is an input observation, not a semantic table entry. The atomic packet
+is the unit that enters the toroidal core.
 
-## Implémentation
+## Implementation
 
 ### `src/io/atomizer.py`
 
-`Atomizer` segmente le flux en ligne, sans BPE, sans SentencePiece et sans
-Hugging Face. Chaque `AtomPacket` contient :
+`Atomizer` segments the stream online, without BPE, SentencePiece, or Hugging
+Face. Each `AtomPacket` contains:
 
-- le `payload` UTF-8 brut, conservé en bytes pour garantir la réversibilité;
-- les offsets `start` et `end`;
-- la frontière qui a déclenché l'émission;
-- un niveau structurel;
-- phase et durée du fragment;
-- un vecteur de 320 observations déterministes.
+- raw UTF-8 `payload`, kept as bytes for reversibility;
+- `start` and `end` offsets;
+- the boundary that triggered emission;
+- a structural level;
+- fragment phase and duration;
+- a 320-D deterministic observation vector.
 
-Les 320 observations sont :
+The 320 observations are:
 
 ```text
-256 histogrammes de bytes
-+ 16 groupes du premier nibble
-+ 16 groupes du dernier nibble
-+ 16 statistiques locales
-+ 16 valeurs de contexte glissant
+256 byte histograms
++ 16 first-nibble groups
++ 16 last-nibble groups
++ 16 local statistics
++ 16 sliding-context values
 ```
 
-Les statistiques comprennent la longueur, la proportion de blancs, chiffres,
-lettres, ponctuation et contrôle, l'entropie, les transitions de classes, la
-phase, la longueur précédente et la similarité au contexte précédent.
+Statistics include length, whitespace/digit/letter/punctuation/control ratios,
+entropy, class transitions, phase, previous length, and similarity to previous
+context.
 
-Le même fragment de surface peut donc produire des observations différentes
-selon le flux qui le précède. Le contexte est sérialisable avec l'atomizer.
+The same surface fragment can therefore yield different observations depending
+on the preceding stream. Context is serializable with the atomizer.
 
-Les frontières actuelles sont structurelles et déterministes :
+Current boundaries are structural and deterministic:
 
-- espaces et retours de ligne;
-- ponctuation;
-- transition lettre/chiffre;
-- limite de durée `max_span_bytes`;
-- fin de flux.
+- whitespace and newlines;
+- punctuation;
+- letter/digit transitions;
+- duration limit `max_span_bytes`;
+- end of stream.
 
-La limite de durée ne coupe pas un point de code UTF-8. La concaténation des
-payloads reproduit exactement les bytes d'origine.
+The duration limit does not split a UTF-8 code point. Concatenating payloads
+reproduces the original bytes exactly.
 
 ### `src/atom_native.py`
 
-`AtomCompiler` reçoit les 320 observations et produit directement les huit
-propriétés :
+`AtomCompiler` takes the 320 observations and produces the eight properties
+directly:
 
 ```text
 (r, phi, omega, E, kappa, M, tau, rho)
 ```
 
-Il n'y a pas de `Embedding(vocab_size=50257)` utilisé par ce chemin.
+There is no `Embedding(vocab_size=50257)` on this path.
 
-`AtomNativeModel` réutilise les modules toroidaux existants sans modifier
-`src/toroidal/` dans cette refonte :
+`AtomNativeModel` reuses existing toroidal modules without modifying
+`src/toroidal/` in this redesign:
 
 - `FractalSuperpositionState`;
 - `RK4DynamicsEngine`;
@@ -95,79 +95,74 @@ Il n'y a pas de `Embedding(vocab_size=50257)` utilisé par ce chemin.
 - `AbstractionEngine`;
 - `ConsolidationEngine`.
 
-L'ancien encodeur et l'ancienne tête GPT-compatible sont conservés dans le
-checkpoint du cœur pour compatibilité, mais gelés et non utilisés par
-l'expérience atom-native.
+The older encoder and GPT-compatible head remain in the core checkpoint for
+compatibility, but are frozen and unused by the atom-native experiment.
 
-### Sortie atomique
+### Atomic output
 
-Pour pouvoir reconstruire la surface sans 50 257 logits, la tête atom-native
-prévoit le prochain paquet avec :
+To reconstruct surface text without 50,257 logits, the atom-native head predicts
+the next packet as:
 
 ```text
 1..max_payload_bytes
-+ 256 classes byte par position
++ 256 byte classes per position
 ```
 
-La loss d'une transition est :
+Transition loss is:
 
 ```text
-loss = cross_entropy(longueur du prochain paquet)
-     + cross_entropy(bytes du prochain paquet)
+loss = cross_entropy(next packet length)
+     + cross_entropy(next packet bytes)
 ```
 
-Dans l'expérience, `max_payload_bytes=16`. Une transition correspond donc à
-un paquet atomique, et non à un token GPT-2.
+In the experiment, `max_payload_bytes=16`. One transition is therefore one
+atomic packet, not one GPT-2 token.
 
-## Préservation du cœur ATOM
+## Preserving the ATOM core
 
-Aucun Transformer, mécanisme d'attention, Q/K/V, séquence aplatie ou reset à
-chaque tick n'a été ajouté. Le chemin d'un paquet est :
+No Transformer, attention mechanism, Q/K/V, flattened sequence, or per-tick
+reset was added. The packet path is:
 
 ```text
 AtomPacket
   → AtomCompiler
   → ToroidalAtom
-  → champ persistant
+  → persistent field
   → RK4
-  → interaction toroidale
-  → agrégation / abstraction / consolidation
+  → toroidal interaction
+  → aggregation / abstraction / consolidation
   → AtomSurfaceHead
 ```
 
-Le reset utilisé dans le benchmark se produit seulement entre des épisodes
-explicites de 64 paquets afin de borner la collection structurelle pendant la
-mesure CPU. Ce n'est pas une réinitialisation entre les transitions d'un même
-épisode.
+The reset used in the early benchmark occurs only between explicit 64-packet
+episodes to bound the structural collection during CPU measurement. It is not
+a reset between transitions inside the same episode.
 
-## Tests ajoutés
+## Tests added
 
-`test/test_atom_native.py` couvre :
+`test/test_atom_native.py` covers:
 
-1. reconstruction UTF-8 exacte;
-2. dimension et nature non-ID des observations;
-3. dépendance du même fragment à son contexte précédent;
-4. restauration exacte de l'état de l'atomizer;
-5. forward, loss, backward et finitude du modèle;
-6. sauvegarde/rechargement du checkpoint atom-native.
+1. exact UTF-8 reconstruction;
+2. observation dimension and non-ID nature;
+3. dependence of the same fragment on prior context;
+4. exact atomizer state restore;
+5. model forward, loss, backward, and finiteness;
+6. atom-native checkpoint save/reload.
 
-Le cœur existant est aussi vérifié par `test/core_invariants.py`.
+The existing core is also checked by `test/core_invariants.py`.
 
-## Limites connues
+## Known limits
 
-Cette première refonte est un chemin de recherche atom-native, pas encore une
-preuve de qualité linguistique générale :
+This first redesign is an atom-native research path, not yet a proof of general
+linguistic quality:
 
-- les frontières sont déterministes, elles ne sont pas encore apprises par le
-  champ;
-- les données locales sont un extrait WikiText-2 raw de 3 070 caractères;
-- la dimension de smoke test reste `d_model=8`, `n_modes=8`;
-- le modèle de surface est entraîné sur des paquets de bytes bornés;
-- la génération produite après 500 transitions reste expérimentale et
-  partiellement incohérente;
-- la collection explicite d'atomes doit encore être étudiée sur des flux
-  beaucoup plus longs.
+- boundaries are deterministic; they are not yet learned by the field;
+- local data was a 3,070-character WikiText-2 raw excerpt;
+- smoke dimensions remain `d_model=8`, `n_modes=8`;
+- the surface model trains on bounded byte packets;
+- generation after 500 transitions remains experimental and partly incoherent;
+- the explicit atom collection still needs study on much longer streams.
 
-Les résultats complets du run sont dans
-[`ATOM_NATIVE_RUN.md`](ATOM_NATIVE_RUN.md) et dans
-`checkpoints/atom_native_500/`.
+Full run results lived in `ATOM_NATIVE_RUN.md` and
+`checkpoints/atom_native_500/` in the source tree (not necessarily shipped in
+this export).

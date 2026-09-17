@@ -1,11 +1,5 @@
 # Training — ATOM / atom-ai
 
-**EN** + **FR**
-
----
-
-## English
-
 ### Minimal train
 
 ```bash
@@ -69,18 +63,3 @@ and `docs/REPAIR_AND_TRAIN.md` for how the repair-session corpora were assembled
 Byte / packet perplexity and train loss are **not** “chat quality”. Report
 prompt diversity, printable UTF-8 rate, and qualitative samples. Do not claim
 assistant fluency from CE alone.
-
----
-
-## Français
-
-### Entraîner / reprendre
-
-Utilisez `tools/run_atom_native.py` avec `--resume` pour accumuler les pas sans
-limite. Gardez `--episode-length 512`, `--no-episode-reset`, et le clamp
-`energy_decay ∈ [0.3, 0.95]`.
-
-### Données
-
-Les gros corpus ne sont pas livrés. Reconstruisez localement; les fichiers
-`data/samples/*` servent au smoke / démo.

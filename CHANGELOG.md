@@ -5,7 +5,7 @@ All dates in **America/Vancouver (PT)**.
 ## 2026-09-17 — atom-ai clean export `0.2.0`
 
 - New git-ready tree branded **atom-ai** (package `atom-ai`, imports still `src.*`).
-- Spine only: Atomizer, AtomNative, toroidal field, tools, tests, bilingual docs.
+- Spine only: Atomizer, AtomNative, toroidal field, tools, tests, English-only docs.
 - Quarantine GPT-2 / docs-slop **excluded**.
 - Shipped sample: `checkpoints/atom_native_chat_persist/` (~8 MB, ~1.05M steps).
 - Tiny dialogue samples under `data/samples/`.

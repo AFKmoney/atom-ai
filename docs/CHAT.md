@@ -1,11 +1,5 @@
 # Chat — ATOM / atom-ai
 
-**EN** + **FR**
-
----
-
-## English
-
 ### One-shot
 
 ```bash
@@ -48,14 +42,3 @@ PYTHONPATH=. python tools/smoke_gen_check.py \
 
 Success today: atom-native path runs end-to-end without GPT-2. Fluency is a
 **training + data** problem, not a reason to reintroduce Transformers.
-
----
-
-## Français
-
-### Limites connues
-
-Le modèle n'est **pas** un assistant fluide. Il prédit des paquets d'octets.
-Le checkpoint démo (~1,05M pas CPU) produit des fragments parfois
-« dialogue-like » (`Je`, espaces, `?`) mais pas des réponses cohérentes.
-Voir `docs/GEN_DEBUG.md` pour l'historique des bugs de génération.

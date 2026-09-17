@@ -53,3 +53,34 @@ PYTHONPATH=. .venv/bin/python tools/run_atom_native.py \
 ```
 
 Log: `logs/train_decay_clamp_*.log`
+
+
+## Retrain results (250k → 1.30M total)
+
+| Metric | Persist 1.05M | Decay-clamp v2 1.30M |
+|--------|---------------|----------------------|
+| `energy_decay` | **0.001** | **0.300** (floor; stayed in band all run) |
+| `field_max_rms` | 4.0 | 3.0 |
+| field limited fraction | ~2.1% | **~98.9%** (almost always at cap) |
+| val byte_ppl | ~28.4 | ~51.9 (worse) |
+| train final loss | ~5.46 | ~4.53 |
+| throughput | ~85 tr/s | ~73 tr/s |
+
+Checkpoint: `checkpoints/atom_native_chat_persist_v2/atom_native.pt`  
+Log: `logs/train_decay_clamp_250k.log`  
+Chat samples: `logs/chat_retest_decay_clamp.txt`
+
+### Honest chat verdict
+
+French prompts still produce **embryonic / noisy** UTF-8 (apostrophe/`?` spam under
+deterministic decode; slightly more letter soup under T=0.7). **Not** assistant-quality.
+Clamp + surface LR fixed the dynamics bug but did **not** unlock coherent dialogue
+in this 250k slice. High saturate fraction at RMS=3.0 + decay pinned to 0.3 may be
+over-damping / over-clipping relative to the 1.05M operating point.
+
+### Suggested next knob (not done here)
+
+- Raise floor toward **0.5–0.7** (or init repair target mid-band) so decay is not
+  always at the wipe-adjacent floor.
+- Retry `field_max_rms=4.0` once decay is healthy, or raise saturate only when
+  `field_limited_fraction` stays low.

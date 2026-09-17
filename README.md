@@ -1,7 +1,5 @@
 # ATOM / atom-ai
 
-**English** | **Français** below.
-
 A research architecture for **atom-native continuous structured learning** on a
 **persistent toroidal field** — not a Transformer, not GPT-2 embeddings, not
 token-ID cross-entropy over a BPE vocabulary.
@@ -100,6 +98,8 @@ atom-ai/
 | [`docs/REPAIR_AND_TRAIN.md`](docs/REPAIR_AND_TRAIN.md) | Quarantine + corpus + train notes |
 | [`CHANGELOG.md`](CHANGELOG.md) | Dated entries |
 
+All documentation is **English-only**.
+
 ---
 
 ## Status (honest)
@@ -114,28 +114,3 @@ decodes without Transformer/GPT-2 crutches.
 ## License
 
 Proprietary — research and evaluation.
-
----
-
-# ATOM / atom-ai (Français)
-
-Architecture de recherche pour un apprentissage structuré **continu**,
-**atom-natif**, sur un **champ toroïdal persistant** — pas un Transformer, pas
-d'embeddings GPT-2, pas de CE sur un vocabulaire BPE.
-
-## Pourquoi pas un Transformer ?
-
-Le Transformer aplatit une fenêtre et applique de l'attention token–token.
-ATOM convertit chaque tick en **matière computationnelle** (paquet d'octets
-réversible → atome → dynamique RK4 → interactions locales → consolidation).
-
-## Démarrage rapide
-
-Voir les commandes ci-dessus (`pip install -e ".[dev]"`, `pytest`,
-`tools/run_atom_native.py`, `tools/chat_atom_native.py`).
-
-## Honnêteté
-
-Le checkpoint démo (~8 Mo, ~1,05M pas) n'est **pas** un assistant fluide.
-Lisez `docs/CHAT.md` et `docs/MANIPULATIONS.md` pour l'historique réel des bugs
-(biais de surface, reset d'épisode, `energy_decay`, etc.).

@@ -1,10 +1,4 @@
-# Antislop — what was rejected and why / Ce qui a été rejeté
-
-**EN** + **FR**
-
----
-
-## English
+# Antislop — what was rejected and why
 
 ### Rejected code paths
 
@@ -43,19 +37,3 @@
 - Huge `data/corpus_*.txt`, `data/raw_gutenberg/`, `data/train.txt`
 - `logs/**`, `results/**` noise
 - Extra checkpoints beyond the one BEST persist sample
-
----
-
-## Français
-
-### Rejeté
-
-Tokenizer GPT-2 / HF par défaut, chargeurs BPE, trainer token-ID comme chemin
-principal, tout bloc Transformer/attention, aplatissement de séquence, deps
-`transformers` obligatoires, dumps de poids énormes, docs RESULT/WORK_LOG
-bruyantes, marketing « on bat le Transformer », prétention de chat fluide.
-
-### Conservé
-
-Cœur toroïdal, Atomizer, outils atom-native, tests smoke, un checkpoint démo
-~8 Mo, documentation bilingue honnête.
