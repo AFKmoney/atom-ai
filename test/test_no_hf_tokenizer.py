@@ -19,7 +19,6 @@ LIVE_PATHS = (
     ROOT / "tools" / "run_atom_native.py",
     ROOT / "tools" / "chat_atom_native.py",
     ROOT / "src" / "io" / "atomizer.py",
-    ROOT / "src" / "io" / "data.py",
     ROOT / "src" / "io" / "stream_corpus.py",
 )
 FORBIDDEN_MODULES = {"transformers", "tokenizers"}

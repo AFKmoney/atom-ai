@@ -5,7 +5,7 @@ import random
 import numpy as np
 import torch
 
-from src.io.data import InfiniteDataLoader
+from legacy.data import InfiniteDataLoader
 from src.toroidal.model import ToroidalFractalIntelligence
 from src.training.trainer import ToroidalTrainer
 

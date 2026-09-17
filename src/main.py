@@ -11,7 +11,7 @@ try:
 except Exception:  # pragma: no cover
     ToroidalTokenizer = None  # type: ignore
 try:
-    from .io.data import load_wikitext
+    from legacy.data import load_wikitext
 except Exception:  # pragma: no cover
     load_wikitext = None  # type: ignore
 

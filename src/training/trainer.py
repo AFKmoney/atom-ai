@@ -13,7 +13,7 @@ import torch.nn as nn
 
 from ..toroidal.model import ToroidalFractalIntelligence
 from ..evaluation.metrics import ToroidalMetrics
-from ..io.data import InfiniteDataLoader
+from legacy.data import InfiniteDataLoader
 
 
 class ToroidalTrainer:
