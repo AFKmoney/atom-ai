@@ -111,10 +111,10 @@ class AggregationEngine(nn.Module):
         r, phi, omega, E, kappa, M, tau, rho,
         *,
         max_merges: int = 8,
-    ) -> tuple[list[dict], list[int], int]:
+    ) -> tuple[list[dict], list[int], int, dict]:
         """MERGE phase-coherent, energetic atoms into heavier structure.
 
-        Returns (merged_atom_dicts, remove_indices, merge_count).
+        Returns (merged_atom_dicts, remove_indices, merge_count, diag).
         """
         tensors = [x.unsqueeze(0) if x.dim() == 1 else x for x in (r, phi, omega, E, kappa, M, tau, rho)]
         if tensors[0].dim() == 3 and tensors[0].shape[-2] == 1:
@@ -122,7 +122,7 @@ class AggregationEngine(nn.Module):
         r, phi, omega, E, kappa, M, tau, rho = tensors
         n = int(r.shape[0])
         if n < 2:
-            return [], [], 0
+            return [], [], 0, {"max_phase_coherence": 0.0, "n_pairs_above_energy_floor": 0}
 
         coherence = self.compute_coherence(phi, E)
         available = torch.ones(n, dtype=torch.bool, device=r.device)
@@ -132,6 +132,15 @@ class AggregationEngine(nn.Module):
         merge_count = 0
 
         tri = torch.triu(coherence, diagonal=1)
+        # Read-only merge diagnostics (thresholds unchanged): max coherence among
+        # candidate pairs BEFORE the phase_coherence_threshold filter.
+        max_phase_coherence = float(tri.max().item()) if tri.numel() else 0.0
+        geo = torch.sqrt((mean_E[:, None] * mean_E[None, :]).clamp_min(0.0))
+        both_low = (mean_E[:, None] < self.merge_energy_floor) & (mean_E[None, :] < self.merge_energy_floor)
+        geo_ok = geo >= (self.merge_energy_floor * 0.5)
+        energy_ok = (~both_low) & geo_ok
+        energy_ok = torch.triu(energy_ok, diagonal=1)
+        n_pairs_above_energy_floor = int(energy_ok.sum().item())
         flat = tri.reshape(-1)
         k = min(max(n * 2, 8), flat.numel())
         top_vals, top_idx = torch.topk(flat, k=k)
@@ -154,7 +163,11 @@ class AggregationEngine(nn.Module):
             available[i] = False
             available[j] = False
             merge_count += 1
-        return merged, sorted(set(remove)), merge_count
+        diag = {
+            "max_phase_coherence": max_phase_coherence,
+            "n_pairs_above_energy_floor": n_pairs_above_energy_floor,
+        }
+        return merged, sorted(set(remove)), merge_count, diag
 
     def hierarchical_aggregate(self, r, phi, omega, E, kappa, M, tau, rho, depth: int = 3):
         depth = min(depth, self.max_depth)

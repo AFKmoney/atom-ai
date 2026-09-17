@@ -188,6 +188,18 @@ def main() -> None:
         help="max allowed cosine(true_α_logits, null/shuffled_α_logits) before hinge",
     )
     parser.add_argument(
+        "--field-ignorance-weight",
+        type=float,
+        default=0.08,
+        help="weight for field-ignorance hinge L_ign=ReLU(cos(l(a),l(sg[a_bar]))-m); 0 disables",
+    )
+    parser.add_argument(
+        "--field-ignorance-margin",
+        type=float,
+        default=0.85,
+        help="margin m for field-ignorance cosine hinge (default 0.85)",
+    )
+    parser.add_argument(
         "--slow-every",
         type=int,
         default=1,
@@ -283,6 +295,8 @@ def main() -> None:
         field_loss_weight=float(args.field_loss_weight),
         field_contrast_weight=float(args.field_contrast_weight),
         field_contrast_margin=float(args.field_contrast_margin),
+        field_ignorance_weight=float(args.field_ignorance_weight),
+        field_ignorance_margin=float(args.field_ignorance_margin),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     training_state = None
@@ -380,6 +394,7 @@ def main() -> None:
                 "enable_merge": bool(args.enable_merge),
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
+                "field_ignorance_weight": float(args.field_ignorance_weight),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -420,6 +435,7 @@ def main() -> None:
                 "enable_merge": bool(args.enable_merge),
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
+                "field_ignorance_weight": float(args.field_ignorance_weight),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -518,6 +534,9 @@ def main() -> None:
                 "slow_tick": info.get("slow_tick", True),
                 "field_contrast_loss": info.get("field_contrast_loss", 0.0),
                 "field_persist_loss": info.get("field_persist_loss", 0.0),
+                "field_ignorance_loss": info.get("field_ignorance_loss", 0.0),
+                "max_phase_coherence": info.get("max_phase_coherence", 0.0),
+                "n_pairs_above_energy_floor": info.get("n_pairs_above_energy_floor", 0),
                 "energy_decay": dynamics_state["energy_decay"],
                 "coupling_scale": dynamics_state["coupling_scale"],
                 "phase_sync": dynamics_state["phase_sync"],
@@ -541,7 +560,9 @@ def main() -> None:
                 f"atoms={record['n_atoms']} merges={record['merge_count_total']} "
                 f"field={record['field_norm']:.4f} "
                 f"rms={record['field_rms_after']:.4f} scale={record['field_scale']:.4f} "
-                f"fcos={info.get('field_logit_cos_zero', float('nan')):.3f}"
+                f"fcos={info.get('field_logit_cos_zero', float('nan')):.3f} "
+                f"ign={info.get('field_ignorance_loss', 0.0):.4f} "
+                f"mph={info.get('max_phase_coherence', 0.0):.3f}"
                 f"{extra}"
             )
         if not finite_model(model):
@@ -611,6 +632,8 @@ def main() -> None:
         field_loss_weight=float(args.field_loss_weight),
         field_contrast_weight=float(args.field_contrast_weight),
         field_contrast_margin=float(args.field_contrast_margin),
+        field_ignorance_weight=float(args.field_ignorance_weight),
+        field_ignorance_margin=float(args.field_ignorance_margin),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     reloaded.load(checkpoint_path)

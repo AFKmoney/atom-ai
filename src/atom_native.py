@@ -366,6 +366,8 @@ class AtomNativeModel(nn.Module):
         field_loss_weight: float = 0.0,
         field_contrast_weight: float = 0.0,
         field_contrast_margin: float = 0.55,
+        field_ignorance_weight: float = 0.0,
+        field_ignorance_margin: float = 0.85,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -392,6 +394,8 @@ class AtomNativeModel(nn.Module):
         self.field_loss_weight = float(field_loss_weight)
         self.field_contrast_weight = float(field_contrast_weight)
         self.field_contrast_margin = float(field_contrast_margin)
+        self.field_ignorance_weight = float(field_ignorance_weight)
+        self.field_ignorance_margin = float(field_ignorance_margin)
         self.slow_rms_rel_tol = float(slow_rms_rel_tol)
         self.field_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
         self.merge_count_total = 0
@@ -505,12 +509,13 @@ class AtomNativeModel(nn.Module):
             legacy_state=legacy,
         )
 
-    def _maybe_merge_atoms(self) -> int:
+    def _maybe_merge_atoms(self) -> tuple[int, dict]:
         """MERGE coherent structural atoms into heavier ones (detached memory)."""
+        empty_diag = {"max_phase_coherence": 0.0, "n_pairs_above_energy_floor": 0}
         if not self.enable_merge or len(self.core.atoms) < 2:
-            return 0
+            return 0, empty_diag
         atoms = self.core.atoms
-        merged, remove_idx, merge_count = self.core.aggregation.merge_coherent(
+        merged, remove_idx, merge_count, diag = self.core.aggregation.merge_coherent(
             atoms.r,
             atoms.phi,
             atoms.omega,
@@ -521,7 +526,7 @@ class AtomNativeModel(nn.Module):
             atoms.rho,
         )
         if merge_count <= 0 or not remove_idx:
-            return 0
+            return 0, diag
         atoms.remove(remove_idx)
         new_atoms = [
             ToroidalAtom(
@@ -538,7 +543,7 @@ class AtomNativeModel(nn.Module):
         ]
         atoms.extend(new_atoms)
         self.merge_count_total += merge_count
-        return merge_count
+        return merge_count, diag
 
     def _field_rms_stable(self, rms: float) -> bool:
         prev = self._prev_field_rms
@@ -570,7 +575,7 @@ class AtomNativeModel(nn.Module):
             rho=atom.rho.detach().clone(),
         )
         self.core.atoms.add(memory_atom)
-        merge_count = self._maybe_merge_atoms()
+        merge_count, merge_diag = self._maybe_merge_atoms()
 
         alpha = self.core.state.get_field().detach().clone()
         alpha_new = self.core.dynamics.evolve(alpha, input_token=atom.r)
@@ -659,6 +664,8 @@ class AtomNativeModel(nn.Module):
             "n_atoms": len(self.core.atoms),
             "merge_count": merge_count,
             "merge_count_total": self.merge_count_total,
+            "max_phase_coherence": float(merge_diag.get("max_phase_coherence", 0.0)),
+            "n_pairs_above_energy_floor": int(merge_diag.get("n_pairs_above_energy_floor", 0)),
             "slow_tick": do_slow,
             "atom_r": atom.r,
             **amplitude,
@@ -677,19 +684,24 @@ class AtomNativeModel(nn.Module):
         """Keep surface conditioned on α; probe persistence from field features.
 
         Contrastive hinge: logits from true α must differ from zeroed / shuffled α
-        (cosine below margin). Persistence probe: reconstruct current packet
-        features from spectral field feats. Weighted small vs CE so bytes still learn.
+        (cosine below margin). Field-ignorance hinge: logits from true α must differ
+        from logits under stopgrad mean/bank of *other* prompts' α (not zero).
+        Persistence probe: reconstruct current packet features from spectral field
+        feats. Weighted small vs CE so bytes still learn.
         """
         device = output["field"].device
         zero = torch.zeros((), device=device)
         info: dict[str, float] = {
             "field_contrast_loss": 0.0,
             "field_persist_loss": 0.0,
+            "field_ignorance_loss": 0.0,
             "field_logit_cos_zero": float("nan"),
             "field_logit_cos_shuf": float("nan"),
+            "field_logit_cos_ignorance": float("nan"),
         }
         contrast = zero
         persist = zero
+        ignorance = zero
         alpha = output["field"]
         atom_r = output.get("atom_r")
         persist_state = output.get("persistent_state")
@@ -754,8 +766,36 @@ class AtomNativeModel(nn.Module):
             persist = 1.0 - cos
             info["field_persist_loss"] = float(persist.detach().item())
 
+        # Field-ignorance: surface must not map any non-zero α to one shared
+        # logit template. Compare ℓ(α) vs ℓ(sg[α_bar]) where α_bar is the
+        # sliding mean (or bank) of *other* prompts — not zero, not same-prompt.
+        if self.field_ignorance_weight > 0:
+            # Bank already includes current snap (appended in transition_loss);
+            # use other entries only.
+            others = [
+                a for a in self._alpha_bank[:-1]
+                if a.shape == alpha.shape and not torch.allclose(a, alpha.detach(), atol=1e-5)
+            ]
+            if others:
+                alpha_bar = torch.stack(
+                    [a.to(device=alpha.device, dtype=alpha.dtype) for a in others]
+                ).mean(dim=0)
+                alpha_bar = alpha_bar.detach()  # sg[α_bar]
+                surf_bar = self.surface(
+                    None, alpha=alpha_bar, persistent_state=persist_state, atom_r=atom_r
+                )
+                cos_ign = F.cosine_similarity(
+                    true_flat.unsqueeze(0),
+                    surf_bar["byte_logits"].reshape(-1).unsqueeze(0),
+                ).squeeze()
+                ignorance = F.relu(cos_ign - self.field_ignorance_margin)
+                info["field_logit_cos_ignorance"] = float(cos_ign.detach().item())
+                info["field_ignorance_loss"] = float(ignorance.detach().item())
+
         total_aux = (
-            self.field_contrast_weight * contrast + self.field_loss_weight * persist
+            self.field_contrast_weight * contrast
+            + self.field_loss_weight * persist
+            + self.field_ignorance_weight * ignorance
         )
         return total_aux, info
 
@@ -793,6 +833,8 @@ class AtomNativeModel(nn.Module):
             "field_scale": output["field_scale"],
             "merge_count": int(output.get("merge_count", 0)),
             "merge_count_total": int(output.get("merge_count_total", self.merge_count_total)),
+            "max_phase_coherence": float(output.get("max_phase_coherence", 0.0)),
+            "n_pairs_above_energy_floor": int(output.get("n_pairs_above_energy_floor", 0)),
             "slow_tick": bool(output.get("slow_tick", True)),
             **aux_info,
         }
@@ -901,6 +943,8 @@ class AtomNativeModel(nn.Module):
                 "field_loss_weight": self.field_loss_weight,
                 "field_contrast_weight": self.field_contrast_weight,
                 "field_contrast_margin": self.field_contrast_margin,
+                "field_ignorance_weight": self.field_ignorance_weight,
+                "field_ignorance_margin": self.field_ignorance_margin,
                 "merge_count_total": self.merge_count_total,
             },
             "field_probe": self.field_probe.state_dict(),
@@ -973,6 +1017,10 @@ class AtomNativeModel(nn.Module):
             self.field_contrast_weight = float(cfg["field_contrast_weight"])
         if "field_contrast_margin" in cfg:
             self.field_contrast_margin = float(cfg["field_contrast_margin"])
+        if "field_ignorance_weight" in cfg:
+            self.field_ignorance_weight = float(cfg["field_ignorance_weight"])
+        if "field_ignorance_margin" in cfg:
+            self.field_ignorance_margin = float(cfg["field_ignorance_margin"])
         self.merge_count_total = int(cfg.get("merge_count_total", 0) or 0)
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
