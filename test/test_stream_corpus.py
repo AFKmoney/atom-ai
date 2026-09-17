@@ -10,6 +10,7 @@ from src.io.atomizer import Atomizer
 from src.io.stream_corpus import (
     StreamingPacketSource,
     iter_byte_chunks,
+    one_ahead_prefetch,
     resolve_shard_paths,
 )
 
@@ -134,6 +135,47 @@ class StreamCorpusTests(unittest.TestCase):
             for _ in range(40):
                 stream.next_transition()
             self.assertLessEqual(len(stream.validation_packets()), 8)
+
+
+
+    def test_prefetch_same_chunk_order_as_without(self) -> None:
+        """Prefetch must preserve deterministic chunk concatenation order."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shards = self._write_shards(root)
+            baseline = list(iter_byte_chunks(shards, chunk_bytes=3))
+            prefetched = list(one_ahead_prefetch(iter_byte_chunks(shards, chunk_bytes=3)))
+            self.assertEqual(prefetched, baseline)
+            self.assertEqual(
+                b"".join(c for _i, c, _e in prefetched),
+                b"".join(p.read_bytes() for p in shards),
+            )
+
+    def test_streaming_prefetch_same_payload_order(self) -> None:
+        """StreamingPacketSource with prefetch=ON matches prefetch=OFF payloads."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shards = self._write_shards(root)
+            source_bytes = b"".join(p.read_bytes() for p in shards)
+
+            def _payloads(prefetch: bool) -> bytes:
+                stream = StreamingPacketSource(
+                    Atomizer(max_span_bytes=8),
+                    shards,
+                    chunk_bytes=4,
+                    loop=False,
+                    buffer_size=64,
+                    prefetch=prefetch,
+                )
+                pairs = list(stream)
+                out = [pairs[0][0].payload]
+                for _cur, tgt in pairs:
+                    out.append(tgt.payload)
+                return b"".join(out)
+
+            self.assertEqual(_payloads(False), source_bytes)
+            self.assertEqual(_payloads(True), source_bytes)
+            self.assertEqual(_payloads(True), _payloads(False))
 
 
 if __name__ == "__main__":

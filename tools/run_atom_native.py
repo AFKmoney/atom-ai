@@ -24,7 +24,10 @@ In ``--stream`` mode the continuum is preferred: shards are read online and
 from __future__ import annotations
 
 import argparse
+import atexit
+import fcntl
 import json
+import os
 import random
 import time
 from pathlib import Path
@@ -35,6 +38,74 @@ import torch
 from src.atom_native import DEFAULT_ENERGY_DECAY_BOUNDS, AtomNativeModel
 from src.io.atomizer import Atomizer
 from src.io.stream_corpus import StreamingPacketSource, resolve_shard_paths
+
+# Advisory flock so two run_atom_native.py processes do not hammer one box by accident.
+# Default path (cwd-relative): checkpoints/atom-ai-train.lock
+# Fallback if checkpoints/ cannot be created: /tmp/atom-ai-train.lock
+DEFAULT_TRAIN_LOCK_PATH = Path("checkpoints") / "atom-ai-train.lock"
+FALLBACK_TRAIN_LOCK_PATH = Path("/tmp/atom-ai-train.lock")
+
+
+def acquire_train_lock(lock_path: Path | None = None):
+    """Non-blocking exclusive flock; fail-fast if another train holds it.
+
+    Returns an open file object that must stay open for the lock lifetime.
+    Writes this process PID into the lock file for diagnostics.
+    """
+    candidates: list[Path] = []
+    if lock_path is not None:
+        candidates.append(Path(lock_path))
+    else:
+        candidates.append(DEFAULT_TRAIN_LOCK_PATH)
+        candidates.append(FALLBACK_TRAIN_LOCK_PATH)
+
+    last_error: Exception | None = None
+    for path in candidates:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fh = open(path, "a+", encoding="utf-8")
+        except OSError as exc:
+            last_error = exc
+            continue
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            fh.seek(0)
+            holder = fh.read().strip() or "unknown"
+            fh.close()
+            raise SystemExit(
+                f"error: another train holds the advisory lock\n"
+                f"  lock path: {path.resolve()}\n"
+                f"  holder:    {holder}\n"
+                f"  this PID:  {os.getpid()}\n"
+                f"Pass --allow-parallel-train to opt out (not recommended on one box)."
+            ) from None
+        except OSError as exc:
+            fh.close()
+            last_error = exc
+            continue
+        fh.seek(0)
+        fh.truncate()
+        fh.write(f"pid={os.getpid()}\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+
+        def _release(handle=fh, lock=path) -> None:
+            try:
+                if not handle.closed:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                    handle.close()
+            except (OSError, ValueError):
+                pass
+
+        atexit.register(_release)
+        print(f"train lock acquired: {path.resolve()} (pid={os.getpid()})")
+        return fh
+
+    raise SystemExit(
+        f"error: could not create/acquire train lock "
+        f"(tried {[str(p) for p in candidates]}): {last_error}"
+    )
 
 
 PROMPTS = ["The future of AI is", "Bonjour, je m'appelle", "Valkyria Chronicles III is"]
@@ -100,6 +171,26 @@ def main() -> None:
         type=int,
         default=2048,
         help="ring-buffer size of recent packets for stream-mode validation (default 2048)",
+    )
+    parser.add_argument(
+        "--stream-prefetch",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="in --stream mode, prefetch next byte chunk on a background thread "
+             "(default: on; use --no-stream-prefetch to disable)",
+    )
+    parser.add_argument(
+        "--allow-parallel-train",
+        action="store_true",
+        default=False,
+        help="opt out of the default advisory train lock "
+             f"(default lock: {DEFAULT_TRAIN_LOCK_PATH})",
+    )
+    parser.add_argument(
+        "--train-lock-path",
+        default=None,
+        help="override advisory lock path "
+             f"(default: {DEFAULT_TRAIN_LOCK_PATH}; fallback {FALLBACK_TRAIN_LOCK_PATH})",
     )
     parser.add_argument("--output-dir", default="checkpoints/atom_native_chat")
     parser.add_argument("--checkpoint-name", default="atom_native.pt")
@@ -212,6 +303,12 @@ def main() -> None:
         help="relative RMS change threshold for dual-clock slow path",
     )
     args = parser.parse_args()
+    if not args.allow_parallel_train:
+        acquire_train_lock(
+            Path(args.train_lock_path) if args.train_lock_path else None
+        )
+    else:
+        print("train lock skipped (--allow-parallel-train)")
     if not args.data and not args.data_glob:
         raise SystemExit("error: provide --data and/or --data-glob")
     if args.data_glob and not args.stream:
@@ -245,6 +342,7 @@ def main() -> None:
             loop=args.loop_shards,
             buffer_size=args.stream_buffer,
             reset_atomizer=True,
+            prefetch=bool(args.stream_prefetch),
         )
         # Peek one transition to fail fast on tiny/empty shards.
         try:
@@ -259,6 +357,7 @@ def main() -> None:
             loop=args.loop_shards,
             buffer_size=args.stream_buffer,
             reset_atomizer=True,
+            prefetch=bool(args.stream_prefetch),
         )
         del first_pair
         data_bytes = sum(p.stat().st_size for p in shard_paths)
@@ -339,7 +438,8 @@ def main() -> None:
     if stream_mode:
         print(
             f"stream mode: {len(shard_paths)} shard(s), chunk_bytes={args.chunk_bytes}, "
-            f"loop_shards={args.loop_shards}, stream_buffer={args.stream_buffer}"
+            f"loop_shards={args.loop_shards}, stream_buffer={args.stream_buffer}, "
+            f"stream_prefetch={bool(args.stream_prefetch)}"
         )
     if training_state and "optimizer" in training_state:
         if training_state.get("legacy_surface_migrated"):
@@ -391,6 +491,7 @@ def main() -> None:
                 "chunk_bytes": args.chunk_bytes,
                 "loop_shards": bool(args.loop_shards),
                 "stream_buffer": args.stream_buffer,
+                "stream_prefetch": bool(args.stream_prefetch),
                 "enable_merge": bool(args.enable_merge),
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
