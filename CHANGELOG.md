@@ -2,6 +2,12 @@
 
 All dates in **America/Vancouver (PT)**.
 
+## 2026-09-17 — streaming full-dataset ingest
+
+- `src/io/stream_corpus.py` + `--stream` / `--data-glob` training path.
+- Docs: `docs/SCALE.md` — target GPT-3 *capability*, not 175B params / GPU farms.
+- Tiny `data/shards/` smoke files; `test/test_stream_corpus.py`.
+
 ## 2026-09-17 — atom-ai clean export `0.2.0`
 
 - New git-ready tree branded **atom-ai** (package `atom-ai`, imports still `src.*`).

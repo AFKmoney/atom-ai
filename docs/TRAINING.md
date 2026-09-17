@@ -63,3 +63,44 @@ and `docs/REPAIR_AND_TRAIN.md` for how the repair-session corpora were assembled
 Byte / packet perplexity and train loss are **not** “chat quality”. Report
 prompt diversity, printable UTF-8 rate, and qualitative samples. Do not claim
 assistant fluency from CE alone.
+
+### Streaming full dataset (complete corpora, low RAM)
+
+Do **not** load the whole corpus into one packet list. Use `--stream` with a
+shard glob (or a single `--data` file):
+
+```bash
+PYTHONPATH=. python tools/run_atom_native.py \
+  --stream \
+  --data-glob 'data/shards/*.txt' \
+  --chunk-bytes 1048576 \
+  --loop-shards \
+  --stream-buffer 2048 \
+  --output-dir checkpoints/local_stream \
+  --steps 50000 \
+  --d-model 64 --n-modes 64 --n-atoms-max 512 \
+  --max-span-bytes 16 \
+  --episode-length 512 \
+  --no-episode-reset \
+  --atom-flush-every 256 \
+  --field-max-rms 3.0 \
+  --learning-rate 2e-4 \
+  --surface-learning-rate 6e-4 \
+  --energy-decay-min 0.45 --energy-decay-max 0.95 \
+  --log-every 100
+```
+
+| Flag | Default | Meaning |
+|------|---------|---------|
+| `--stream` | off | Online ingest; required for `--data-glob` |
+| `--data-glob` | none | Ordered shards, e.g. `data/shards/*.txt` |
+| `--chunk-bytes` | `1048576` | UTF-8-safe read size |
+| `--loop-shards` | on | Infinite continuum over shards |
+| `--stream-buffer` | `2048` | Ring for validation samples |
+
+Metadata records `stream`, globs, and `bytes_seen`. Prefer continuous stream
+with `--no-episode-reset`; `--episode-reset` still wipes every episode window.
+
+Capacity thesis: see [`SCALE.md`](SCALE.md) — GPT-3 *capability* without
+GPT-3 *parameter/GPU-farm* scale via persistent structured matter.
+

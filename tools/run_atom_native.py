@@ -5,12 +5,20 @@ Usage:
       --data /tmp/wiki.train.raw --steps 500 \
       --output-dir checkpoints/atom_native_500
 
+Streaming full-dataset ingest (no giant packet list in RAM):
+    PYTHONPATH=. .venv/bin/python tools/run_atom_native.py \
+      --stream --data-glob 'data/shards/*.txt' --steps 50000 \
+      --output-dir checkpoints/atom_native_stream
+
 The script intentionally uses the raw local corpus and never calls Hugging
 Face or the legacy GPT-2 tokenizer.  It trains one transition per atom packet.
-Episodes still pick random corpus starts, but by default the toroidal field is
-NOT wiped every short window (see ``--episode-length`` / ``--no-episode-reset``)
-so dialogue-scale persistence can accumulate.  Use ``--episode-reset`` to restore
-the old hard reset-every-episode behaviour.
+Episodes still pick random corpus starts in non-stream mode, but by default the
+toroidal field is NOT wiped every short window (see ``--episode-length`` /
+``--no-episode-reset``) so dialogue-scale persistence can accumulate.  Use
+``--episode-reset`` to restore the old hard reset-every-episode behaviour.
+
+In ``--stream`` mode the continuum is preferred: shards are read online and
+``--no-episode-reset`` keeps the field alive across the infinite shard loop.
 """
 
 from __future__ import annotations
@@ -26,6 +34,7 @@ import torch
 
 from src.atom_native import DEFAULT_ENERGY_DECAY_BOUNDS, AtomNativeModel
 from src.io.atomizer import Atomizer
+from src.io.stream_corpus import StreamingPacketSource, resolve_shard_paths
 
 
 PROMPTS = ["The future of AI is", "Bonjour, je m'appelle", "Valkyria Chronicles III is"]
@@ -58,7 +67,40 @@ def transition_metrics(model: AtomNativeModel, current, target, train: bool) -> 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", required=True)
+    parser.add_argument(
+        "--data",
+        default=None,
+        help="single corpus file (optional if --data-glob is set)",
+    )
+    parser.add_argument(
+        "--data-glob",
+        default=None,
+        help="glob of shard files, e.g. 'data/shards/*.txt' (ordered lexicographically)",
+    )
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="stream shards online (required for large corpora / globs); "
+             "do not encode the whole file into one packet list",
+    )
+    parser.add_argument(
+        "--chunk-bytes",
+        type=int,
+        default=1 << 20,
+        help="UTF-8-safe read chunk size in stream mode (default 1048576)",
+    )
+    parser.add_argument(
+        "--loop-shards",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="in stream mode, loop shards forever for an infinite continuum (default: loop)",
+    )
+    parser.add_argument(
+        "--stream-buffer",
+        type=int,
+        default=2048,
+        help="ring-buffer size of recent packets for stream-mode validation (default 2048)",
+    )
     parser.add_argument("--output-dir", default="checkpoints/atom_native_chat")
     parser.add_argument("--checkpoint-name", default="atom_native.pt")
     parser.add_argument("--resume", default=None, help="optional checkpoint to resume")
@@ -122,6 +164,10 @@ def main() -> None:
         help="print/record trajectory every N steps",
     )
     args = parser.parse_args()
+    if not args.data and not args.data_glob:
+        raise SystemExit("error: provide --data and/or --data-glob")
+    if args.data_glob and not args.stream:
+        raise SystemExit("error: --data-glob requires --stream (refuse full in-RAM encode of a shard glob)")
     if (args.energy_decay_min is None) != (args.energy_decay_max is None):
         raise ValueError("provide both --energy-decay-min and --energy-decay-max")
     energy_decay_bounds = (
@@ -132,19 +178,60 @@ def main() -> None:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    raw = Path(args.data).read_bytes()
-    text = raw.decode("utf-8")
-    atomizer = Atomizer(max_span_bytes=args.max_span_bytes)
-    packets = atomizer.encode_bytes(raw)
-    if len(packets) < 4:
-        raise ValueError("the corpus must yield at least four atom packets")
-    if b"".join(packet.payload for packet in packets) != raw:
-        raise AssertionError("atomization is not lossless")
 
-    train_packets = packets[:-64] if len(packets) > 96 else packets[:-4]
-    validation_packets = packets[len(train_packets) :]
-    if len(train_packets) < 3 or len(validation_packets) < 2:
-        raise ValueError("not enough packets for train/validation split")
+    stream_mode = bool(args.stream)
+    shard_paths = resolve_shard_paths(args.data, args.data_glob)
+    train_packets = None
+    validation_packets = None
+    packets = None
+    raw = b""
+    text = ""
+    stream_source: StreamingPacketSource | None = None
+    atomizer = Atomizer(max_span_bytes=args.max_span_bytes)
+
+    if stream_mode:
+        stream_source = StreamingPacketSource(
+            atomizer,
+            shard_paths,
+            chunk_bytes=args.chunk_bytes,
+            loop=args.loop_shards,
+            buffer_size=args.stream_buffer,
+            reset_atomizer=True,
+        )
+        # Peek one transition to fail fast on tiny/empty shards.
+        try:
+            first_pair = stream_source.next_transition()
+        except StopIteration as exc:
+            raise ValueError("stream source produced no packet transitions") from exc
+        # Re-create source so training sees a clean continuum from the start.
+        stream_source = StreamingPacketSource(
+            Atomizer(max_span_bytes=args.max_span_bytes),
+            shard_paths,
+            chunk_bytes=args.chunk_bytes,
+            loop=args.loop_shards,
+            buffer_size=args.stream_buffer,
+            reset_atomizer=True,
+        )
+        del first_pair
+        data_bytes = sum(p.stat().st_size for p in shard_paths)
+        metadata_lengths_placeholder = True
+    else:
+        if len(shard_paths) != 1 or args.data_glob:
+            raise SystemExit("non-stream mode supports a single --data file only; use --stream for globs")
+        data_path = shard_paths[0]
+        raw = data_path.read_bytes()
+        text = raw.decode("utf-8")
+        packets = atomizer.encode_bytes(raw)
+        if len(packets) < 4:
+            raise ValueError("the corpus must yield at least four atom packets")
+        if b"".join(packet.payload for packet in packets) != raw:
+            raise AssertionError("atomization is not lossless")
+        train_packets = packets[:-64] if len(packets) > 96 else packets[:-4]
+        validation_packets = packets[len(train_packets) :]
+        if len(train_packets) < 3 or len(validation_packets) < 2:
+            raise ValueError("not enough packets for train/validation split")
+        data_bytes = len(raw)
+        metadata_lengths_placeholder = False
 
     seed_all(args.seed)
     model = AtomNativeModel(
@@ -193,6 +280,11 @@ def main() -> None:
         f"({len(surface_params)} tensors); "
         f"energy_decay_bounds={energy_decay_bounds}; field_max_rms={args.field_max_rms}"
     )
+    if stream_mode:
+        print(
+            f"stream mode: {len(shard_paths)} shard(s), chunk_bytes={args.chunk_bytes}, "
+            f"loop_shards={args.loop_shards}, stream_buffer={args.stream_buffer}"
+        )
     if training_state and "optimizer" in training_state:
         if training_state.get("legacy_surface_migrated"):
             print("optimizer restore skipped: surface LayerNorm migration changed bias scale")
@@ -206,37 +298,81 @@ def main() -> None:
                 print(f"optimizer restore skipped: {exc}")
     model.train()
 
-    lengths = [len(packet.payload) for packet in packets]
-    metadata = {
-        "data_path": str(args.data),
-        "data_bytes": len(raw),
-        "data_characters": len(text),
-        "atomizer_version": atomizer.VERSION,
-        "feature_dim": atomizer.feature_dim,
-        "packet_count": len(packets),
-        "train_packet_count": len(train_packets),
-        "validation_packet_count": len(validation_packets),
-        "mean_packet_bytes": sum(lengths) / len(lengths),
-        "max_packet_bytes": max(lengths),
-        "min_packet_bytes": min(lengths),
-        "config": {
-            "d_model": args.d_model,
-            "n_modes": args.n_modes,
-            "n_atoms_max": args.n_atoms_max,
-            "max_span_bytes": args.max_span_bytes,
-            "episode_length": args.episode_length,
-            "episode_reset": bool(args.episode_reset),
-            "atom_flush_every": args.atom_flush_every,
-            "learning_rate": args.learning_rate,
-            "surface_learning_rate": surface_lr,
-            "steps": args.steps,
-            "start_step": start_step,
-            "seed": args.seed,
-            "surface_alphabet": 256,
-            "field_max_rms": args.field_max_rms,
-            "energy_decay_bounds": energy_decay_bounds,
-        },
-    }
+    if metadata_lengths_placeholder:
+        metadata = {
+            "stream": True,
+            "data_path": str(args.data) if args.data else None,
+            "data_glob": args.data_glob,
+            "shard_paths": [str(p) for p in shard_paths],
+            "data_bytes": data_bytes,
+            "data_characters": None,
+            "atomizer_version": atomizer.VERSION,
+            "feature_dim": atomizer.feature_dim,
+            "packet_count": None,
+            "train_packet_count": None,
+            "validation_packet_count": None,
+            "mean_packet_bytes": None,
+            "max_packet_bytes": None,
+            "min_packet_bytes": None,
+            "bytes_seen": 0,
+            "config": {
+                "d_model": args.d_model,
+                "n_modes": args.n_modes,
+                "n_atoms_max": args.n_atoms_max,
+                "max_span_bytes": args.max_span_bytes,
+                "episode_length": args.episode_length,
+                "episode_reset": bool(args.episode_reset),
+                "atom_flush_every": args.atom_flush_every,
+                "learning_rate": args.learning_rate,
+                "surface_learning_rate": surface_lr,
+                "steps": args.steps,
+                "start_step": start_step,
+                "seed": args.seed,
+                "surface_alphabet": 256,
+                "field_max_rms": args.field_max_rms,
+                "energy_decay_bounds": energy_decay_bounds,
+                "stream": True,
+                "chunk_bytes": args.chunk_bytes,
+                "loop_shards": bool(args.loop_shards),
+                "stream_buffer": args.stream_buffer,
+            },
+        }
+    else:
+        lengths = [len(packet.payload) for packet in packets]
+        metadata = {
+            "stream": False,
+            "data_path": str(args.data),
+            "data_glob": None,
+            "shard_paths": [str(p) for p in shard_paths],
+            "data_bytes": data_bytes,
+            "data_characters": len(text),
+            "atomizer_version": atomizer.VERSION,
+            "feature_dim": atomizer.feature_dim,
+            "packet_count": len(packets),
+            "train_packet_count": len(train_packets),
+            "validation_packet_count": len(validation_packets),
+            "mean_packet_bytes": sum(lengths) / len(lengths),
+            "max_packet_bytes": max(lengths),
+            "min_packet_bytes": min(lengths),
+            "config": {
+                "d_model": args.d_model,
+                "n_modes": args.n_modes,
+                "n_atoms_max": args.n_atoms_max,
+                "max_span_bytes": args.max_span_bytes,
+                "episode_length": args.episode_length,
+                "episode_reset": bool(args.episode_reset),
+                "atom_flush_every": args.atom_flush_every,
+                "learning_rate": args.learning_rate,
+                "surface_learning_rate": surface_lr,
+                "steps": args.steps,
+                "start_step": start_step,
+                "seed": args.seed,
+                "surface_alphabet": 256,
+                "field_max_rms": args.field_max_rms,
+                "energy_decay_bounds": energy_decay_bounds,
+                "stream": False,
+            },
+        }
     (output_dir / "atomization_stats.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     trajectory: list[dict] = []
@@ -253,27 +389,51 @@ def main() -> None:
     atom_soft_cap = max(16, int(args.n_atoms_max * 0.9))
     for step in range(1, args.steps + 1):
         current_episode = (step - 1) // args.episode_length
-        if current_episode != episode:
-            episode = current_episode
-            if args.episode_reset or step == 1:
+        if stream_mode:
+            # Prefer continuous stream. Episode windows only force a field wipe
+            # when --episode-reset is set; otherwise the field persists.
+            if args.episode_reset and current_episode != episode:
+                episode = current_episode
                 model.reset_state(reset_atomizer=True)
+                model.train()
+            elif step == 1:
+                episode = current_episode
+                model.reset_state(reset_atomizer=True)
+                model.train()
             else:
-                # Continuity-preserving compromise: at each window boundary, clear
-                # the structural atom list (keeps step cost bounded) but KEEP the
-                # toroidal field alpha + consolidation/abstraction persistence so
-                # dialogue-scale memory is not wiped every 64/512 ticks.
-                model.core.atoms = type(model.core.atoms)()
-                model.core.energy_history = []
-                if len(model.core.atoms) >= atom_soft_cap:
-                    pass  # already cleared
-            model.train()
-            max_start = max(0, len(train_packets) - args.episode_length - 2)
-            episode_start = random.randint(0, max_start) if max_start > 0 else 0
-        index = episode_start + ((step - 1) % args.episode_length)
-        if index >= len(train_packets) - 1:
-            index = index % (len(train_packets) - 1)
+                episode = current_episode
+            try:
+                current_packet, target_packet = stream_source.next_transition()
+            except StopIteration as exc:
+                raise RuntimeError(
+                    f"stream exhausted at step {step}/{args.steps}; "
+                    "enable --loop-shards for infinite continuum"
+                ) from exc
+        else:
+            if current_episode != episode:
+                episode = current_episode
+                if args.episode_reset or step == 1:
+                    model.reset_state(reset_atomizer=True)
+                else:
+                    # Continuity-preserving compromise: at each window boundary, clear
+                    # the structural atom list (keeps step cost bounded) but KEEP the
+                    # toroidal field alpha + consolidation/abstraction persistence so
+                    # dialogue-scale memory is not wiped every 64/512 ticks.
+                    model.core.atoms = type(model.core.atoms)()
+                    model.core.energy_history = []
+                    if len(model.core.atoms) >= atom_soft_cap:
+                        pass  # already cleared
+                model.train()
+                max_start = max(0, len(train_packets) - args.episode_length - 2)
+                episode_start = random.randint(0, max_start) if max_start > 0 else 0
+            index = episode_start + ((step - 1) % args.episode_length)
+            if index >= len(train_packets) - 1:
+                index = index % (len(train_packets) - 1)
+            current_packet = train_packets[index]
+            target_packet = train_packets[index + 1]
+
         optimizer.zero_grad(set_to_none=True)
-        loss, info = transition_metrics(model, train_packets[index], train_packets[index + 1], train=True)
+        loss, info = transition_metrics(model, current_packet, target_packet, train=True)
         optimizer.step()
         if args.atom_flush_every and step % args.atom_flush_every == 0:
             model.core.atoms = type(model.core.atoms)()
@@ -306,17 +466,39 @@ def main() -> None:
                 "coupling_scale": dynamics_state["coupling_scale"],
                 "phase_sync": dynamics_state["phase_sync"],
             }
+            if stream_mode and stream_source is not None:
+                record["bytes_seen"] = stream_source.bytes_seen
+                record["packets_seen"] = stream_source.packets_seen
+                record["shard_index"] = stream_source.shard_index
+                record["stream_epoch"] = stream_source.epoch
             trajectory.append(record)
+            extra = ""
+            if stream_mode and stream_source is not None:
+                extra = (
+                    f" bytes={stream_source.bytes_seen} "
+                    f"pkts={stream_source.packets_seen} "
+                    f"shard={stream_source.shard_index}"
+                )
             print(
                 f"step={global_step:07d} (run {step}/{args.steps}) "
                 f"loss={loss:.5f} byte_ppl={record['byte_perplexity']:.3f} "
                 f"atoms={record['n_atoms']} field={record['field_norm']:.4f} "
                 f"rms={record['field_rms_after']:.4f} scale={record['field_scale']:.4f}"
+                f"{extra}"
             )
         if not finite_model(model):
             raise FloatingPointError(f"non-finite parameter at step {step}")
 
     elapsed = time.perf_counter() - start_time
+    if stream_mode and stream_source is not None:
+        metadata["bytes_seen"] = stream_source.bytes_seen
+        metadata["packets_seen"] = stream_source.packets_seen
+        metadata["stream_epoch"] = stream_source.epoch
+        metadata["validation_packet_count"] = len(stream_source.validation_packets())
+        (output_dir / "atomization_stats.json").write_text(
+            json.dumps(metadata, indent=2), encoding="utf-8"
+        )
+
     checkpoint_path = output_dir / args.checkpoint_name
     model.save(
         checkpoint_path,
@@ -329,19 +511,32 @@ def main() -> None:
             "episode_length": args.episode_length,
             "episode_reset": bool(args.episode_reset),
             "atom_flush_every": args.atom_flush_every,
+            "stream": stream_mode,
+            "bytes_seen": (stream_source.bytes_seen if stream_source else data_bytes),
         },
     )
 
-    # Validation is a fresh bounded episode and is never used to update weights.
+    # Validation: non-stream uses held-out tail; stream uses ring-buffer samples.
     model.reset_state(reset_atomizer=True)
     model.eval()
     validation_records = []
+    if stream_mode and stream_source is not None:
+        val_pairs = stream_source.validation_transitions()
+        # Cap validation work on huge rings.
+        if len(val_pairs) > 256:
+            val_pairs = val_pairs[-256:]
+    else:
+        val_pairs = list(zip(validation_packets[:-1], validation_packets[1:]))
     with torch.no_grad():
-        for current, target in zip(validation_packets[:-1], validation_packets[1:]):
+        for current, target in val_pairs:
             loss, info = transition_metrics(model, current, target, train=False)
             validation_records.append({"loss": loss, **info})
-    validation_loss = float(np.mean([item["loss"] for item in validation_records]))
-    validation_byte_loss = float(np.mean([item["byte_loss"] for item in validation_records]))
+    if validation_records:
+        validation_loss = float(np.mean([item["loss"] for item in validation_records]))
+        validation_byte_loss = float(np.mean([item["byte_loss"] for item in validation_records]))
+    else:
+        validation_loss = float("nan")
+        validation_byte_loss = float("nan")
 
     # Reload the final checkpoint before generation, then compare deterministic
     # samples so a restart cannot silently change the atom-native state path.
@@ -416,13 +611,16 @@ def main() -> None:
             "field_limited_fraction": sum(scale < 0.999999 for scale in field_scales) / len(field_scales),
             "final_dynamics": dynamics_state,
             "final_atoms_before_validation": len(reloaded.core.atoms),
+            "stream": stream_mode,
+            "bytes_seen": (stream_source.bytes_seen if stream_source else data_bytes),
         },
         "validation": {
             "transitions": len(validation_records),
             "loss": validation_loss,
-            "total_perplexity": float(np.exp(min(validation_loss, 30.0))),
+            "total_perplexity": float(np.exp(min(validation_loss, 30.0))) if np.isfinite(validation_loss) else None,
             "byte_loss": validation_byte_loss,
-            "byte_perplexity": float(np.exp(min(validation_byte_loss, 30.0))),
+            "byte_perplexity": float(np.exp(min(validation_byte_loss, 30.0))) if np.isfinite(validation_byte_loss) else None,
+            "source": "stream_ring" if stream_mode else "held_out_tail",
         },
         "checkpoint": str(checkpoint_path),
         "reload": reload_state,

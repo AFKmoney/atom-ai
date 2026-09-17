@@ -48,6 +48,13 @@ PYTHONPATH=. python tools/run_atom_native.py \
   --episode-length 512 --no-episode-reset \
   --field-max-rms 3.0 --log-every 50
 
+# Streaming shards (full-dataset path; low RAM)
+PYTHONPATH=. python tools/run_atom_native.py \
+  --stream --data-glob 'data/shards/*.txt' \
+  --output-dir checkpoints/local_stream_smoke \
+  --steps 50 --d-model 8 --n-modes 8 --n-atoms-max 64 \
+  --episode-length 32 --no-episode-reset --log-every 10
+
 # Chat with the shipped ~8 MB sample (not fluent — demo only)
 PYTHONPATH=. python tools/chat_atom_native.py \
   --checkpoint checkpoints/atom_native_chat_persist/atom_native.pt \
@@ -69,6 +76,7 @@ atom-ai/
 ├── src/
 │   ├── atom_native.py      # AtomCompiler + AtomNativeModel + surface head
 │   ├── io/atomizer.py      # UTF-8 → AtomPacket (no HF)
+│   ├── io/stream_corpus.py # Streaming shard ingest
 │   ├── toroidal/           # field, RK4, interaction, aggregation, …
 │   ├── training/           # legacy sequential trainer (toroidal core tests)
 │   └── main.py             # CLI → train / chat / interactive
@@ -90,6 +98,7 @@ atom-ai/
 |-----|---------|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Atomizer → AtomNative → toroidal pipeline |
 | [`docs/TRAINING.md`](docs/TRAINING.md) | Flags, decay bounds, resume forever |
+| [`docs/SCALE.md`](docs/SCALE.md) | GPT-3 capability without 175B / GPU-farm scale |
 | [`docs/CHAT.md`](docs/CHAT.md) | How to chat + honest limitations |
 | [`docs/MANIPULATIONS.md`](docs/MANIPULATIONS.md) | Chronological Grok/repair session log |
 | [`docs/ANTISLOP.md`](docs/ANTISLOP.md) | What was rejected and why |

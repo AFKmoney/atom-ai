@@ -124,6 +124,20 @@ This tree (`/workspace/exports/atom-ai/`):
 
 ---
 
+
+---
+
+## 10. Streaming full-dataset ingest (2026-09-17 PT)
+
+- `src/io/stream_corpus.py`: resolve shards, UTF-8-safe chunks,
+  `StreamingPacketSource` (flush at shard ends, ring buffer, `--loop-shards`).
+- `tools/run_atom_native.py`: `--stream` / `--data-glob` / `--chunk-bytes` /
+  `--loop-shards` / `--stream-buffer` — never materializes a full packet list.
+- Docs: `docs/SCALE.md` (capability ≠ 175B params); stream examples in
+  `TRAINING.md`; tiny `data/shards/` smoke files; tests in
+  `test/test_stream_corpus.py`.
+- Running train processes were left untouched.
+
 ## Timeline cheat-sheet
 
 | When (PT) | What |
@@ -134,3 +148,4 @@ This tree (`/workspace/exports/atom-ai/`):
 | 2026-09-17 | Persist → **1.05M**; BEST_CHAT → persist ckpt |
 | 2026-09-17 | Decay clamp `[0.3, 0.95]`; field_max_rms 3.0 notes |
 | 2026-09-17 | Build clean `/workspace/exports/atom-ai/` for GitHub |
+| 2026-09-17 | Streaming ingest + SCALE.md (capability ≠ 175B) |
