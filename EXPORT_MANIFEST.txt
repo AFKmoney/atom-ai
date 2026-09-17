@@ -1,21 +1,16 @@
 ATOM-AI EXPORT MANIFEST
-generated_pt=2026-09-17 10:17:36 UTC
+generated_pt=2026-09-17 03:17:49 PDT
 source=/workspace/repos/toroidal-fractal-intelligence
 dest=/workspace/exports/atom-ai
-git_commit=d9d3ffa76979becda2d2b769d22eae208b83b957
-pytest=14_passed
+git_commit_pre_manifest=2b05c532c41e5b338f81f6c3deed4c406f74bf2d
+pytest=14_passed (reused source .venv)
 
 === TREE ===
 .gitignore
-.pytest_cache/.gitignore
-.pytest_cache/CACHEDIR.TAG
-.pytest_cache/README.md
-.pytest_cache/v/cache/nodeids
 ATOM_NATIVE_TOKENIZATION.md
 ATOM_RULES.md
 CHANGELOG.md
 DECAY_FIX.md
-EXPORT_MANIFEST.txt
 GEN_DEBUG.md
 README.md
 REPAIR_AND_TRAIN.md
@@ -93,26 +88,40 @@ tools/__init__.py
 tools/chat_atom_native.py
 tools/run_atom_native.py
 tools/smoke_gen_check.py
+EXPORT_MANIFEST.txt
 
 === SIZES ===
 16M	.
+8.0M	checkpoints
+8.0M	checkpoints/atom_native_chat_persist
+100K	data/samples
+60K	docs
+380K	src
+40K	tools
+64K	test
 
 === INCLUDED (spine) ===
-- src/atom_native.py, src/io/atomizer.py+data.py, src/toroidal/*, src/training, src/evaluation, src/main.py
+- src/atom_native.py, src/io/{atomizer,data}.py, src/toroidal/*, src/training, src/evaluation, src/main.py
 - tools/run_atom_native.py, chat_atom_native.py, smoke_gen_check.py
 - test/* (atom-native, gen smoke, invariants, resume)
-- docs bilingual + root ATOM_RULES, ATOM_NATIVE_TOKENIZATION, GEN_DEBUG, DECAY_FIX, REPAIR_AND_TRAIN
-- checkpoints/atom_native_chat_persist (~8MB best chat) + README
-- data/samples tiny dialogue slice
-- pyproject atom-ai: torch+numpy only
+- docs/: ARCHITECTURE, TRAINING, CHAT, MANIPULATIONS, ANTISLOP, GEN_DEBUG, DECAY_FIX, REPAIR_AND_TRAIN, ATOM_RULES, ATOM_NATIVE_TOKENIZATION
+- root copies: README, CHANGELOG, ATOM_RULES, ATOM_NATIVE_TOKENIZATION, GEN_DEBUG, DECAY_FIX, REPAIR_AND_TRAIN
+- checkpoints/atom_native_chat_persist/atom_native.pt (~7.9MB, 1.05M steps) + metrics/README
+- data/samples/{dialogue_tiny.txt,~12KB; corpus_train_dialogue_slice.txt,~80KB}
+- pyproject.toml package name atom-ai; deps torch+numpy only; no transformers required
 
 === EXCLUDED ===
-- _quarantine_transformer_slop/, _quarantine_docs_slop/
-- GPT-2 tokenizer, legacy_gpt2_data, legacy_token_id_trainer
-- agents/, __pycache__, .venv, egg-info
-- huge corpora (corpus_mixed, train.txt, raw_gutenberg, …)
-- logs/, results/, extra checkpoints (smoke/v2/non-persist)
-- nn.Transformer / MultiheadAttention (never present in spine)
+- _quarantine_transformer_slop/ and _quarantine_docs_slop/
+- GPT-2 tokenizer.py, legacy_gpt2_data, legacy_token_id_trainer
+- HF AutoTokenizer default paths
+- agents/, __pycache__, .venv, egg-info, .pytest_cache
+- huge corpora / raw_gutenberg / logs / results / extra checkpoints
+- any nn.Transformer / MultiheadAttention
+
+=== VERIFY ===
+- PYTHONPATH=. pytest test/ -q → 14 passed
+- import AtomNativeModel + Atomizer round-trip OK
+- energy_decay default bounds (0.3, 0.95)
 
 === DO NOT PUSH FROM THIS AGENT ===
 Parent will push to GitHub repo atom-ai.
