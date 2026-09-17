@@ -56,14 +56,20 @@ class ToroidalDynamics(nn.Module):
         phase = phase.view(*([1] * (alpha.ndim - 2)), self.n_modes, 1)
         rotated = torch.sin(phase) * alpha
 
-        # External token/context drive.  It is additive and shared across the
-        # field, rather than constructing pairwise token-token attention.
+        # External token/context drive.  Mode-modulated (choice A): each mode
+        # gets a content×phase Hadamard of the token — not the same broadcast
+        # vector on every mode (mean-broadcast made distinct texts collinear).
         drive = torch.zeros_like(alpha)
+        dim_phase = torch.arange(
+            self.d_model, device=alpha.device, dtype=alpha.dtype
+        ).view(*([1] * (alpha.ndim - 1)), self.d_model)
         if input_token is not None:
             token = input_token
             while token.ndim > 1:
                 token = token.mean(dim=0)
-            drive = token.reshape(*([1] * (alpha.ndim - 2)), 1, self.d_model)
+            tok = token.reshape(*([1] * (alpha.ndim - 2)), 1, self.d_model)
+            # drive_m,d = token_d * cos(mode_phase_m + 0.5 * token_d * d)
+            drive = tok * torch.cos(phase + 0.5 * tok * dim_phase)
             drive = drive.expand(*alpha.shape[:-2], self.n_modes, self.d_model)
             drive = self.coupling_scale * drive
 
@@ -72,6 +78,7 @@ class ToroidalDynamics(nn.Module):
             while ctx.ndim > 1:
                 ctx = ctx.mean(dim=0)
             ctx = ctx.reshape(*([1] * (alpha.ndim - 2)), 1, self.d_model)
+            ctx = ctx * torch.cos(phase + 0.5 * ctx * dim_phase)
             ctx = ctx.expand(*alpha.shape[:-2], self.n_modes, self.d_model)
             drive = drive + 0.5 * self.coupling_scale * ctx
 
