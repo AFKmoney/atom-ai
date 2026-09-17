@@ -11,12 +11,17 @@ while streaming complete corpora on a single box — not by matching 175B params
 
 from __future__ import annotations
 
+import queue
+import threading
 from collections import deque
 from glob import glob
 from pathlib import Path
-from typing import Deque, Iterator, Sequence
+from typing import Deque, Iterator, Sequence, TypeVar
 
 from src.io.atomizer import AtomPacket, Atomizer
+
+_T = TypeVar("_T")
+_PREFETCH_DONE = object()
 
 
 def resolve_shard_paths(
@@ -96,6 +101,47 @@ def _utf8_safe_split(buffer: bytes) -> tuple[bytes, bytes]:
     return buffer, b""
 
 
+
+def one_ahead_prefetch(iterable: Iterator[_T]) -> Iterator[_T]:
+    """Yield items from ``iterable`` while reading one ahead on a daemon thread.
+
+    Same order and values as iterating ``iterable`` directly.  The worker
+    blocks when the one-slot buffer is full, so at most one unread item is
+    buffered.  On generator close / StopIteration the worker is joined.
+    """
+    source = iter(iterable)
+    buf: queue.Queue = queue.Queue(maxsize=1)
+    error_box: list[BaseException] = []
+
+    def _worker() -> None:
+        try:
+            for item in source:
+                buf.put(item)
+        except BaseException as exc:  # noqa: BLE001 — forward to consumer
+            error_box.append(exc)
+        finally:
+            buf.put(_PREFETCH_DONE)
+
+    thread = threading.Thread(target=_worker, name="atom-stream-prefetch", daemon=True)
+    thread.start()
+    try:
+        while True:
+            item = buf.get()
+            if item is _PREFETCH_DONE:
+                break
+            yield item  # type: ignore[misc]
+        if error_box:
+            raise error_box[0]
+    finally:
+        # Drain so a blocked put can finish, then join.
+        try:
+            while True:
+                buf.get_nowait()
+        except queue.Empty:
+            pass
+        thread.join(timeout=5.0)
+
+
 def iter_byte_chunks(
     paths: Sequence[str | Path],
     chunk_bytes: int = 1 << 20,
@@ -148,6 +194,10 @@ class StreamingPacketSource:
         If True, restart from the first shard forever (infinite continuum).
     buffer_size:
         Bounded ring of recent packets for validation samples (default 2048).
+    prefetch:
+        If True (default), read the next byte chunk on a background thread
+        while the current chunk is consumed/atomized.  Same bytes and order;
+        disable with ``prefetch=False`` / ``--no-stream-prefetch``.
     """
 
     def __init__(
@@ -159,6 +209,7 @@ class StreamingPacketSource:
         loop: bool = True,
         buffer_size: int = 2048,
         reset_atomizer: bool = True,
+        prefetch: bool = True,
     ) -> None:
         if not paths:
             raise ValueError("StreamingPacketSource requires at least one shard path")
@@ -169,6 +220,7 @@ class StreamingPacketSource:
         self.chunk_bytes = int(chunk_bytes)
         self.loop = bool(loop)
         self.buffer_size = int(buffer_size)
+        self.prefetch = bool(prefetch)
         self.bytes_seen = 0
         self.packets_seen = 0
         self.shard_index = 0
@@ -190,6 +242,7 @@ class StreamingPacketSource:
             "n_shards": len(self.paths),
             "loop": self.loop,
             "chunk_bytes": self.chunk_bytes,
+            "prefetch": self.prefetch,
             "paths": [str(p) for p in self.paths],
         }
 
@@ -223,9 +276,12 @@ class StreamingPacketSource:
 
     def _chunk_stream(self) -> Iterator[tuple[int, bytes, bool]]:
         while True:
-            for shard_index, chunk, shard_ended in iter_byte_chunks(
+            chunks: Iterator[tuple[int, bytes, bool]] = iter_byte_chunks(
                 self.paths, chunk_bytes=self.chunk_bytes
-            ):
+            )
+            if self.prefetch:
+                chunks = one_ahead_prefetch(chunks)
+            for shard_index, chunk, shard_ended in chunks:
                 yield shard_index, chunk, shard_ended
             if not self.loop:
                 return
