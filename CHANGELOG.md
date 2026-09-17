@@ -1,3 +1,6 @@
+## 2026-09-17 — field persistence probe
+
+- Added `tools/probe_field_persistence.py`, `docs/FIELD_PROBE.md`, `docs/PERSISTENCE_TEST.md` (read-only field vs surface-LM probe).
 # Changelog — atom-ai / ATOM
 
 All dates in **America/Vancouver (PT)**.

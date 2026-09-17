@@ -42,3 +42,18 @@ matching GPT-3’s hardware narrative.
 4. Grow Θ only when dynamics demand it — not to chase 175B vanity counts.
 
 See also: `docs/TRAINING.md`, `ATOM_RULES.md`, `ATOM_NATIVE_TOKENIZATION.md`.
+
+
+## Persistence test (field farm vs CE-only)
+
+CE down + fluent-looking metrics **without** field reconstruction still means
+**Transformer regime without the farm.** Capacity that matters for ATOM is
+persistent structured matter in the toroidal field, not parameter count alone.
+
+Latest probe (`tools/probe_field_persistence.py`):
+
+- Mean RMS after prompt / after 20 gen: 0.006366 / 0.048601
+- Off-diag cosine surface logits / alpha: 0.997991 / 0.738060
+- Verdict: field differs across prompts but surface logits nearly identical — field not reliably read by surface (Transformer-regime risk / surface-only byte-LM behavior at decode)
+
+See `docs/PERSISTENCE_TEST.md` and `docs/FIELD_PROBE.md`.
