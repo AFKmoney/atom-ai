@@ -1,0 +1,26 @@
+path_full=data/corpus_dialogue_fr.txt
+bytes_full=4194371
+path_train=data/corpus_train_dialogue.txt
+bytes_train=2871786
+format=Utilisateur:/Assistant: multi-turn + literary dialogue lines
+encoding=UTF-8
+language=French primary (~80-90%), English mix (~10-20%)
+synthetic=thousands of generated FR/QC/EN chat turns (greetings, Q&A, small talk, stories, explanations, help)
+sources_ok=
+  - Le Cid — Corneille → data/raw_gutenberg/le_cid_corneille.txt
+  - Tartuffe — Molière → data/raw_gutenberg/tartuffe_moliere.txt
+  - Le Misanthrope — Molière → data/raw_gutenberg/misanthrope_moliere.txt
+  - L'Avare — Molière → data/raw_gutenberg/avare_moliere.txt
+  - Dom Juan — Molière → data/raw_gutenberg/don_juan_moliere.txt
+  - Phèdre — Racine → data/raw_gutenberg/phèdre_racine.txt
+  - Andromaque — Racine → data/raw_gutenberg/andromaque_racine.txt
+  - Fables — La Fontaine → data/raw_gutenberg/fables_la_fontaine.txt
+  - Hernani — Hugo → data/raw_gutenberg/hernani_hugo.txt
+  - Candide — Voltaire (local) → data/candide_voltaire.txt
+  - Contes de Perrault (local) → data/contes_perrault.txt
+  - Candide FR alt (local) → data/candide_fr.txt
+  - Existing chat seed FR/EN (local) → data/chat_seed_fr_en.txt
+sources_fail=
+  - (none; Misanthrope/Avare recovered via cache/epub)
+note=Training uses corpus_train_dialogue.txt (dialogue-heavy head). Full mix for archival density.
+built=2026-09-16 PT

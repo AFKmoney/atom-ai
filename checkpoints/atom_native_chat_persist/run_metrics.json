@@ -1,0 +1,100 @@
+{
+  "data_path": "data/corpus_train_dialogue.txt",
+  "data_bytes": 2871786,
+  "data_characters": 2799989,
+  "atomizer_version": "atomizer-v1-byte-span",
+  "feature_dim": 320,
+  "packet_count": 528009,
+  "train_packet_count": 527945,
+  "validation_packet_count": 64,
+  "mean_packet_bytes": 5.43889592791032,
+  "max_packet_bytes": 18,
+  "min_packet_bytes": 1,
+  "config": {
+    "d_model": 64,
+    "n_modes": 64,
+    "n_atoms_max": 512,
+    "max_span_bytes": 16,
+    "episode_length": 512,
+    "episode_reset": false,
+    "atom_flush_every": 256,
+    "learning_rate": 0.0003,
+    "steps": 400000,
+    "start_step": 650000,
+    "seed": 20260917,
+    "surface_alphabet": 256,
+    "field_max_rms": 4.0,
+    "energy_decay_bounds": null
+  },
+  "train": {
+    "steps": 400000,
+    "start_step": 650000,
+    "total_steps": 1050000,
+    "episode_length": 512,
+    "episode_reset": false,
+    "atom_flush_every": 256,
+    "elapsed_seconds": 4680.397556780023,
+    "transitions_per_second": 85.46282557142183,
+    "first_loss": 3.2470602989196777,
+    "final_loss": 5.458518981933594,
+    "final_total_perplexity": 234.74949853820132,
+    "finite_losses": true,
+    "finite_parameters": true,
+    "nan_or_inf": false,
+    "field_rms_before_max": 4.010853290557861,
+    "field_rms_after_max": 3.999999523162842,
+    "field_scale_min": 0.9972937703132629,
+    "field_norm_max": 256.0,
+    "field_limited_steps": 8311,
+    "field_limited_fraction": 0.0207775,
+    "final_dynamics": {
+      "coupling_scale": 2.0,
+      "energy_decay": 0.0010000000474974513,
+      "phase_sync": 0.9953377842903137
+    },
+    "final_atoms_before_validation": 8
+  },
+  "validation": {
+    "transitions": 63,
+    "loss": 5.943975017184303,
+    "total_perplexity": 381.4481830237317,
+    "byte_loss": 3.347962878999256,
+    "byte_perplexity": 28.444729227549345
+  },
+  "checkpoint": "checkpoints/atom_native_chat_persist/atom_native.pt",
+  "reload": {
+    "n_atoms": 128,
+    "field_norm": 8.3543701171875,
+    "time": 4003.5947265625,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "2065200a6e6520730a652020740a65752020696e",
+      "text": " e \nne s\ne  t\neu  in",
+      "reload_text": " e \nne s\ne  t\neu  in",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "0a6565697373206565207320206f69690a656969",
+      "text": "\neeiss ee s  oii\neii",
+      "reload_text": "\neeiss ee s  oii\neii",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "206f202075652061202020206165206573742065",
+      "text": " o  ue a    ae est e",
+      "reload_text": " o  ue a    ae est e",
+      "reload_match": true
+    }
+  }
+}

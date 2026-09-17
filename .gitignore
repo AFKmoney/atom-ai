@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+*.log
+.ipynb_checkpoints/
+.DS_Store
+
+# Local oversized artifacts (shipped sample ckpt is tracked intentionally)
+checkpoints/local/
+data/raw/
+data/*.mb.txt
+*.pth
+
+# Keep the published sample checkpoint
+!checkpoints/atom_native_chat_persist/
+!checkpoints/atom_native_chat_persist/**
+!checkpoints/BEST_CHAT.txt
+!checkpoints/README.md

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atom-ai"
+version = "0.2.0"
+description = "ATOM / atom-ai — atom-native toroidal field model (not a Transformer)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary — research and evaluation" }
+authors = [{ name = "PHIL" }]
+keywords = ["ATOM", "toroidal", "atom-native", "continuous-learning"]
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "black", "ruff"]
+# Intentionally NO transformers / datasets on the default or recommended path.
+
+[project.scripts]
+atom-ai = "src.main:main"
+atom-native-train = "tools.run_atom_native:main"
+atom-native-chat = "tools.chat_atom_native:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "tools*"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["test"]
