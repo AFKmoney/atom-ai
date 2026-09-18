@@ -870,6 +870,16 @@ def main() -> int:
     parser.add_argument("--last-k", type=int, default=4)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--no-role-prime", action="store_true")
+    parser.add_argument(
+        "--skip-docs",
+        action="store_true",
+        help="do not rewrite docs/FIELD_PROBE.md / PERSISTENCE_TEST.md / SCALE.md",
+    )
+    parser.add_argument(
+        "--report-json",
+        default=None,
+        help="optional path for field_probe_report.json (default logs/field_probe_report.json)",
+    )
     args = parser.parse_args()
 
     ckpt = resolve_checkpoint(args.checkpoint)
@@ -949,21 +959,25 @@ def main() -> int:
     }
     report["verdict"] = verdict_from(report)
 
-    json_path = REPO_ROOT / "logs/field_probe_report.json"
+    json_path = Path(args.report_json) if args.report_json else (REPO_ROOT / "logs/field_probe_report.json")
+    if not json_path.is_absolute():
+        json_path = REPO_ROOT / json_path
     md_path = REPO_ROOT / "docs/FIELD_PROBE.md"
     persist_path = REPO_ROOT / "docs/PERSISTENCE_TEST.md"
     scale_path = REPO_ROOT / "docs/SCALE.md"
 
     json_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.write_text(json.dumps(to_jsonable(report), indent=2) + "\n", encoding="utf-8")
-    write_markdown(report, md_path)
-    write_persistence_test_doc(report, persist_path)
-    append_scale_section(scale_path, report)
-
     print(f"[probe] wrote {json_path}")
-    print(f"[probe] wrote {md_path}")
-    print(f"[probe] wrote {persist_path}")
-    print(f"[probe] updated {scale_path}")
+    if not args.skip_docs:
+        write_markdown(report, md_path)
+        write_persistence_test_doc(report, persist_path)
+        append_scale_section(scale_path, report)
+        print(f"[probe] wrote {md_path}")
+        print(f"[probe] wrote {persist_path}")
+        print(f"[probe] updated {scale_path}")
+    else:
+        print("[probe] skip-docs: left FIELD_PROBE/PERSISTENCE_TEST/SCALE unchanged")
     print(f"[probe] VERDICT: {report['verdict']['label']}")
     return 0
 

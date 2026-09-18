@@ -291,6 +291,20 @@ def main() -> None:
         help="margin m for field-ignorance cosine hinge (default 0.85)",
     )
     parser.add_argument(
+        "--field-ignorance-ablate-shared",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="for L_ign ℓ(α_bar) only: pass atom_r/persistence as None (zeros); "
+             "ℓ(α) keeps live shared state (default: off)",
+    )
+    parser.add_argument(
+        "--field-ignorance-prompt-bank",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="build α_bar from fixed distinct prompts (probe-style), not train ticks "
+             "(default: off)",
+    )
+    parser.add_argument(
         "--slow-every",
         type=int,
         default=1,
@@ -396,6 +410,8 @@ def main() -> None:
         field_contrast_margin=float(args.field_contrast_margin),
         field_ignorance_weight=float(args.field_ignorance_weight),
         field_ignorance_margin=float(args.field_ignorance_margin),
+        field_ignorance_ablate_shared=bool(args.field_ignorance_ablate_shared),
+        field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     training_state = None
@@ -496,6 +512,8 @@ def main() -> None:
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
                 "field_ignorance_weight": float(args.field_ignorance_weight),
+                "field_ignorance_ablate_shared": bool(args.field_ignorance_ablate_shared),
+                "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -537,6 +555,8 @@ def main() -> None:
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
                 "field_ignorance_weight": float(args.field_ignorance_weight),
+                "field_ignorance_ablate_shared": bool(args.field_ignorance_ablate_shared),
+                "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -735,6 +755,8 @@ def main() -> None:
         field_contrast_margin=float(args.field_contrast_margin),
         field_ignorance_weight=float(args.field_ignorance_weight),
         field_ignorance_margin=float(args.field_ignorance_margin),
+        field_ignorance_ablate_shared=bool(args.field_ignorance_ablate_shared),
+        field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     reloaded.load(checkpoint_path)

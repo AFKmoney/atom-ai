@@ -30,6 +30,19 @@ from .toroidal.model import ToroidalFractalIntelligence
 # decay term into near-total wipe; values >1 flip it into growth.
 DEFAULT_ENERGY_DECAY_BOUNDS: tuple[float, float] = (0.3, 0.95)
 
+# Fixed distinct prompts for L_ign α_bar when --field-ignorance-prompt-bank is on.
+# Probe-style set (not adjacent train ticks). Keep short for refresh cost.
+DEFAULT_IGNORANCE_PROMPTS: tuple[str, ...] = (
+    "Bonjour",
+    "Qui es-tu ?",
+    "Il était une fois",
+    "Utilisateur: Bonjour\nAssistant:",
+    "The future of AI is",
+    "Valkyria Chronicles III is",
+    "Hello, how are you?",
+    "Comment ça va aujourd'hui ?",
+)
+
 
 class AtomCompiler(nn.Module):
     """Compile a packet observation into the eight atom properties.
@@ -368,6 +381,8 @@ class AtomNativeModel(nn.Module):
         field_contrast_margin: float = 0.55,
         field_ignorance_weight: float = 0.0,
         field_ignorance_margin: float = 0.85,
+        field_ignorance_ablate_shared: bool = False,
+        field_ignorance_prompt_bank: bool = False,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -396,6 +411,8 @@ class AtomNativeModel(nn.Module):
         self.field_contrast_margin = float(field_contrast_margin)
         self.field_ignorance_weight = float(field_ignorance_weight)
         self.field_ignorance_margin = float(field_ignorance_margin)
+        self.field_ignorance_ablate_shared = bool(field_ignorance_ablate_shared)
+        self.field_ignorance_prompt_bank = bool(field_ignorance_prompt_bank)
         self.slow_rms_rel_tol = float(slow_rms_rel_tol)
         self.field_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
         self.merge_count_total = 0
@@ -405,6 +422,10 @@ class AtomNativeModel(nn.Module):
         # (mode-shuffle alone is too weak vs CE; inter-prompt collapse returns).
         self._alpha_bank: list[torch.Tensor] = []
         self._alpha_bank_max = 8
+        # Distinct-prompt α bank for L_ign (filled by _refresh_prompt_alpha_bank).
+        self._prompt_alpha_bank: list[torch.Tensor] = []
+        self._prompt_bank_refresh_every = 256
+        self._ignorance_prompts: tuple[str, ...] = DEFAULT_IGNORANCE_PROMPTS
 
         # The legacy encoder and legacy 256-way production head are not used
         # by this adapter.  Keep them in the core checkpoint for compatibility,
@@ -676,6 +697,70 @@ class AtomNativeModel(nn.Module):
         atom, operation, confidence = self.compiler(features, atom_count=len(self.core.atoms))
         return self._advance(atom, operation, confidence)
 
+    @torch.no_grad()
+    def _refresh_prompt_alpha_bank(self) -> None:
+        """Fill ``_prompt_alpha_bank`` from fixed distinct prompts without lasting
+        mutation of the live train field / atoms / atomizer / train α-bank.
+
+        Snapshots core + atomizer + tick bookkeeping, runs each prompt from a
+        clean episode, stores detached α, then restores. Used only when
+        ``field_ignorance_prompt_bank`` is on.
+        """
+        device = self.core.state.alpha.device
+        snap = {
+            "state": {k: v.detach().clone() if torch.is_tensor(v) else v
+                      for k, v in self.core.state.state_dict().items()},
+            "atoms": self.core.atoms.state_dict(),
+            "consolidation": {
+                k: v.detach().clone() if torch.is_tensor(v) else v
+                for k, v in self.core.consolidation.state_dict().items()
+            },
+            "abstraction": {
+                k: v.detach().clone() if torch.is_tensor(v) else v
+                for k, v in self.core.abstraction.state_dict().items()
+            },
+            "atomizer": self.atomizer.state_dict(),
+            "energy_history": list(self.core.energy_history),
+            "consolidation_count": self.core.consolidation_count,
+            "abstraction_count": self.core.abstraction_count,
+            "tick": self._tick,
+            "prev_field_rms": self._prev_field_rms,
+            "alpha_bank": [a.detach().clone() for a in self._alpha_bank],
+            "training": self.training,
+        }
+        was_training = self.training
+        self.eval()
+        bank: list[torch.Tensor] = []
+        try:
+            for text in self._ignorance_prompts:
+                self.reset_state(reset_atomizer=True)
+                # restore train α-bank after reset_state cleared it (temp)
+                packets = self.atomizer.encode(text, reset=True)
+                if not packets:
+                    continue
+                out = None
+                for packet in packets:
+                    out = self.forward_packet(packet)
+                if out is not None:
+                    bank.append(out["field"].detach().clone().to(device=device))
+        finally:
+            self.core.state.load_state_dict(snap["state"], strict=False)
+            self.core.atoms.load_state_dict(snap["atoms"])
+            self.core.consolidation.load_state_dict(snap["consolidation"])
+            self.core.abstraction.load_state_dict(snap["abstraction"])
+            self.atomizer.load_state_dict(snap["atomizer"])
+            self.core.energy_history = snap["energy_history"]
+            self.core.consolidation_count = snap["consolidation_count"]
+            self.core.abstraction_count = snap["abstraction_count"]
+            self._tick = snap["tick"]
+            self._prev_field_rms = snap["prev_field_rms"]
+            self._alpha_bank = snap["alpha_bank"]
+            if was_training:
+                self.train()
+            else:
+                self.eval()
+        self._prompt_alpha_bank = bank
+
     def _field_auxiliary_losses(
         self,
         output: dict,
@@ -770,10 +855,16 @@ class AtomNativeModel(nn.Module):
         # logit template. Compare ℓ(α) vs ℓ(sg[α_bar]) where α_bar is the
         # sliding mean (or bank) of *other* prompts — not zero, not same-prompt.
         if self.field_ignorance_weight > 0:
-            # Bank already includes current snap (appended in transition_loss);
-            # use other entries only.
+            if self.field_ignorance_prompt_bank:
+                if not self._prompt_alpha_bank:
+                    self._refresh_prompt_alpha_bank()
+                source = self._prompt_alpha_bank
+            else:
+                # Bank already includes current snap (appended in transition_loss);
+                # use other entries only.
+                source = self._alpha_bank[:-1]
             others = [
-                a for a in self._alpha_bank[:-1]
+                a for a in source
                 if a.shape == alpha.shape and not torch.allclose(a, alpha.detach(), atol=1e-5)
             ]
             if others:
@@ -781,8 +872,16 @@ class AtomNativeModel(nn.Module):
                     [a.to(device=alpha.device, dtype=alpha.dtype) for a in others]
                 ).mean(dim=0)
                 alpha_bar = alpha_bar.detach()  # sg[α_bar]
+                # Ablate shared atom_r / persistence on the α_bar call only so
+                # the hinge isolates α-driven readout. ℓ(α) keeps live state.
+                if self.field_ignorance_ablate_shared:
+                    bar_persist = None
+                    bar_atom_r = None
+                else:
+                    bar_persist = persist_state
+                    bar_atom_r = atom_r
                 surf_bar = self.surface(
-                    None, alpha=alpha_bar, persistent_state=persist_state, atom_r=atom_r
+                    None, alpha=alpha_bar, persistent_state=bar_persist, atom_r=bar_atom_r
                 )
                 cos_ign = F.cosine_similarity(
                     true_flat.unsqueeze(0),
@@ -808,6 +907,16 @@ class AtomNativeModel(nn.Module):
             self._alpha_bank.append(snap)
             if len(self._alpha_bank) > self._alpha_bank_max:
                 self._alpha_bank.pop(0)
+            # Refresh distinct-prompt bank for L_ign (does not alter train bank).
+            if (
+                self.field_ignorance_prompt_bank
+                and self.field_ignorance_weight > 0
+                and (
+                    not self._prompt_alpha_bank
+                    or (self._tick > 0 and self._tick % self._prompt_bank_refresh_every == 0)
+                )
+            ):
+                self._refresh_prompt_alpha_bank()
         surface = output["surface"]
         payload = target.payload[: self.max_payload_bytes]
         target_length = torch.tensor(
@@ -945,6 +1054,8 @@ class AtomNativeModel(nn.Module):
                 "field_contrast_margin": self.field_contrast_margin,
                 "field_ignorance_weight": self.field_ignorance_weight,
                 "field_ignorance_margin": self.field_ignorance_margin,
+                "field_ignorance_ablate_shared": self.field_ignorance_ablate_shared,
+                "field_ignorance_prompt_bank": self.field_ignorance_prompt_bank,
                 "merge_count_total": self.merge_count_total,
             },
             "field_probe": self.field_probe.state_dict(),
@@ -1021,6 +1132,10 @@ class AtomNativeModel(nn.Module):
             self.field_ignorance_weight = float(cfg["field_ignorance_weight"])
         if "field_ignorance_margin" in cfg:
             self.field_ignorance_margin = float(cfg["field_ignorance_margin"])
+        if "field_ignorance_ablate_shared" in cfg:
+            self.field_ignorance_ablate_shared = bool(cfg["field_ignorance_ablate_shared"])
+        if "field_ignorance_prompt_bank" in cfg:
+            self.field_ignorance_prompt_bank = bool(cfg["field_ignorance_prompt_bank"])
         self.merge_count_total = int(cfg.get("merge_count_total", 0) or 0)
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()

@@ -163,6 +163,83 @@ class FieldIgnoranceTests(unittest.TestCase):
         self.assertIn("field_ignorance_loss", info)
         loss2.backward()
 
+    def test_l_ign_ablate_shared_zeros_bar_side_inputs(self) -> None:
+        """Ablate flag: ℓ(α_bar) uses None atom_r/persist; ℓ(α) unchanged."""
+        model = AtomNativeModel(
+            d_model=8,
+            n_modes=8,
+            n_atoms_max=32,
+            max_payload_bytes=8,
+            enable_merge=False,
+            field_contrast_weight=0.0,
+            field_loss_weight=0.0,
+            field_ignorance_weight=1.0,
+            field_ignorance_margin=0.85,
+            field_ignorance_ablate_shared=True,
+        )
+        with torch.no_grad():
+            other = torch.randn_like(model.core.state.alpha) * 0.5
+            model._alpha_bank.append(other.clone())
+            model.surface.skip_gate.fill_(4.0)
+            model.surface.field_gate.fill_(4.0)
+        packets = Atomizer(max_span_bytes=8).encode("ablate shared state test ")
+        out = model.forward_packet(packets[0])
+        with torch.no_grad():
+            model._alpha_bank.append(out["field"].detach().clone())
+        calls: list[dict] = []
+        orig_forward = model.surface.forward
+
+        def wrapped_forward(*args, **kwargs):
+            calls.append(
+                {
+                    "atom_r_is_none": kwargs.get("atom_r") is None,
+                    "persist_is_none": kwargs.get("persistent_state") is None,
+                }
+            )
+            return orig_forward(*args, **kwargs)
+
+        model.surface.forward = wrapped_forward  # type: ignore[method-assign]
+        try:
+            aux, info = model._field_auxiliary_losses(out, packets[0])
+        finally:
+            model.surface.forward = orig_forward  # type: ignore[method-assign]
+        self.assertTrue(torch.isfinite(aux))
+        self.assertTrue(calls, "expected at least one surface call for α_bar")
+        self.assertTrue(
+            any(c["atom_r_is_none"] and c["persist_is_none"] for c in calls),
+            f"ablate should pass None/None on bar call; saw {calls}",
+        )
+        self.assertIn("field_ignorance_loss", info)
+
+    def test_l_ign_prompt_bank_uses_distinct_prompts(self) -> None:
+        """Prompt-bank flag: α_bar from _prompt_alpha_bank, not train ticks."""
+        model = AtomNativeModel(
+            d_model=8,
+            n_modes=8,
+            n_atoms_max=32,
+            max_payload_bytes=8,
+            enable_merge=False,
+            field_contrast_weight=0.0,
+            field_loss_weight=0.0,
+            field_ignorance_weight=1.0,
+            field_ignorance_margin=0.85,
+            field_ignorance_prompt_bank=True,
+        )
+        model._ignorance_prompts = ("Bonjour", "Hello world")
+        packets = Atomizer(max_span_bytes=8).encode("train tick alpha beta ")
+        model.train()
+        with torch.no_grad():
+            model._alpha_bank.append(torch.ones_like(model.core.state.alpha))
+        alpha_before = model.core.state.alpha.detach().clone()
+        loss, info = model.transition_loss(packets[0], packets[1])
+        self.assertTrue(torch.isfinite(loss))
+        self.assertGreaterEqual(len(model._prompt_alpha_bank), 1)
+        self.assertGreaterEqual(len(model._alpha_bank), 1)
+        # Refresh must restore live field (not leave prompt-episode wipe).
+        self.assertEqual(tuple(model.core.state.alpha.shape), tuple(alpha_before.shape))
+        self.assertIn("field_ignorance_loss", info)
+        loss.backward()
+
 
 if __name__ == "__main__":
     unittest.main()
