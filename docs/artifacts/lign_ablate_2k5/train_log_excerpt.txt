@@ -1,0 +1,57 @@
+# train log excerpt — ablate
+
+===== TRAIN ablate =====
+train lock acquired: /workspace/exports/atom-ai/checkpoints/atom-ai-train.lock (pid=3147288)
+resumed weights from checkpoints/atom_native_lign_smoke/atom_native_src.pt (recorded step=2102500, legacy_surface_migrated=False)
+dynamics on load: energy_decay=0.44999998807907104 -> 0.44999998807907104 (repaired=False, bounds=(0.45, 0.95))
+optimizer groups: field/other lr=0.0001 (11 tensors), surface lr=0.0003 (14 tensors); energy_decay_bounds=(0.45, 0.95); field_max_rms=3.0
+optimizer restore skipped: surface LR param groups differ from checkpoint
+step=2102501 (run 1/2500) loss=6.40063 byte_ppl=32.202 atoms=1 merges=0 field=0.1173 rms=0.0021 scale=1.0000 fcos=0.999 ign=0.0000 mph=0.000
+step=2102700 (run 200/2500) loss=12.30129 byte_ppl=40.252 atoms=200 merges=0 field=9.9244 rms=0.1551 scale=1.0000 fcos=0.293 ign=0.1468 mph=0.500
+...
+3:resumed weights from checkpoints/atom_native_lign_smoke/atom_native_src.pt (recorded step=2102500, legacy_surface_migrated=False)
+7:step=2102501 (run 1/2500) loss=6.40063 byte_ppl=32.202 atoms=1 merges=0 field=0.1173 rms=0.0021 scale=1.0000 fcos=0.999 ign=0.0000 mph=0.000
+8:step=2102700 (run 200/2500) loss=12.30129 byte_ppl=40.252 atoms=200 merges=0 field=9.9244 rms=0.1551 scale=1.0000 fcos=0.293 ign=0.1468 mph=0.500
+9:step=2102900 (run 400/2500) loss=2.37023 byte_ppl=2.444 atoms=144 merges=0 field=21.5615 rms=0.3369 scale=1.0000 fcos=0.076 ign=0.1462 mph=0.500
+10:step=2103100 (run 600/2500) loss=0.84953 byte_ppl=1.217 atoms=88 merges=0 field=38.1373 rms=0.5959 scale=1.0000 fcos=0.215 ign=0.1497 mph=0.500
+11:step=2103300 (run 800/2500) loss=4.14532 byte_ppl=5.120 atoms=32 merges=0 field=64.3113 rms=1.0049 scale=1.0000 fcos=0.234 ign=0.1498 mph=0.500
+12:step=2103500 (run 1000/2500) loss=10.31853 byte_ppl=92.074 atoms=232 merges=0 field=106.9234 rms=1.6707 scale=1.0000 fcos=0.254 ign=0.1499 mph=0.500
+13:step=2103700 (run 1200/2500) loss=6.81425 byte_ppl=76.736 atoms=176 merges=0 field=174.8289 rms=2.7317 scale=1.0000 fcos=0.151 ign=0.1499 mph=0.500
+14:step=2103900 (run 1400/2500) loss=4.61975 byte_ppl=18.999 atoms=120 merges=0 field=191.9999 rms=3.0000 scale=0.9976 fcos=0.183 ign=0.1499 mph=0.500
+15:step=2104100 (run 1600/2500) loss=6.30454 byte_ppl=51.807 atoms=64 merges=0 field=191.9999 rms=3.0000 scale=0.9976 fcos=0.187 ign=0.1500 mph=0.500
+16:step=2104300 (run 1800/2500) loss=5.01119 byte_ppl=18.008 atoms=8 merges=0 field=191.9999 rms=3.0000 scale=0.9976 fcos=0.290 ign=0.1500 mph=0.500
+17:step=2104500 (run 2000/2500) loss=6.39907 byte_ppl=19.718 atoms=208 merges=0 field=191.9999 rms=3.0000 scale=0.9975 fcos=0.277 ign=0.1500 mph=0.500
+18:step=2104700 (run 2200/2500) loss=6.85184 byte_ppl=13.419 atoms=152 merges=0 field=191.9999 rms=3.0000 scale=0.9976 fcos=0.235 ign=0.1500 mph=0.500
+19:step=2104900 (run 2400/2500) loss=8.30257 byte_ppl=124.561 atoms=96 merges=0 field=191.9999 rms=3.0000 scale=0.9976 fcos=0.275 ign=0.1500 mph=0.500
+20:step=2105000 (run 2500/2500) loss=6.33053 byte_ppl=20.570 atoms=196 merges=0 field=191.9999 rms=3.0000 scale=0.9976 fcos=0.300 ign=0.1500 mph=0.500
+...
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3c69692c652c7121742d5671696e4eaa6a3c6576",
+      "text": "<ii,e,q!t-VqinN\ufffdj<ev",
+      "reload_text": "<ii,e,q!t-VqinN\ufffdj<ev",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3c687166662c2c21659174d8d720646b3e203d6b",
+      "text": "<hqff,,!e\ufffdt\ufffd\ufffd dk> =k",
+      "reload_text": "<hqff,,!e\ufffdt\ufffd\ufffd dk> =k",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3c69692c6f2c71216520706b3e203d6b3e203d6b",
+      "text": "<ii,o,q!e pk> =k> =k",
+      "reload_text": "<ii,o,q!e pk> =k> =k",
+      "reload_match": true
+    }
+  }
+}
