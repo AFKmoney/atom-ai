@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply --field-obligatory-hard mechanism to src/atom_native.py (idempotent)."""
+"""Apply --field-obligatory-hard to src/atom_native.py (idempotent)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,15 +7,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "src" / "atom_native.py"
 
-MARKER = "field_obligatory_hard"
-
-INIT_FLAG = """        self.field_obligatory_readout = False  # enabled via AtomNativeModel flag
-"""
-
-INIT_FLAG_NEW = """        self.field_obligatory_readout = False  # enabled via AtomNativeModel flag
-        self.field_obligatory_hard = False  # mix floor=1.0 + freeze non-α bypass
-        self._soft_obl_mix_floor = 0.35
-"""
+INIT_OLD = (
+    "        self.field_obligatory_readout = False  # enabled via AtomNativeModel flag\n"
+)
+INIT_NEW = (
+    "        self.field_obligatory_readout = False  # enabled via AtomNativeModel flag\n"
+    "        self.field_obligatory_hard = False  # mix floor=1.0 + freeze non-α bypass\n"
+    "        self._soft_obl_mix_floor = 0.35\n"
+)
 
 METHODS = '''
     def set_obligatory_hard(self, enabled: bool) -> None:
@@ -58,76 +57,44 @@ METHODS = '''
 
 '''
 
-FORWARD_SOFT_BLOCK = """            if self.field_obligatory_readout:
-                a_only = self.alpha_only_features(alpha)
-                a_rms = a_only.pow(2).mean().sqrt().clamp_min(1e-8)
-                a_hat = a_only / a_rms
-                # Frozen branch (CE cannot collapse) + trainable adapter.
-                frozen_byte = (self.alpha_byte_frozen @ a_hat).view(
-                    self.max_payload_bytes, 256
-                )
-                frozen_len = self.alpha_length_frozen @ a_hat
-                train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
-                train_len = self.alpha_length_proj(a_hat)
-                mix = self.obligatory_mix_weight()
-                # Hard mix uses FROZEN map so inter-prompt α structure reaches logits.
-                byte_logits = (1.0 - mix) * byte_logits + mix * frozen_byte
-                length_logits = (1.0 - mix) * length_logits + mix * frozen_len
-                obl = self.obligatory_scale()
-                byte_logits = byte_logits + obl * train_byte
-                length_logits = length_logits + obl * train_len
-            return {"byte_logits": byte_logits, "length_logits": length_logits}
-"""
+FORWARD_NEEDLE = (
+    "                train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)\n"
+    "                train_len = self.alpha_length_proj(a_hat)\n"
+    "                mix = self.obligatory_mix_weight()\n"
+)
 
-FORWARD_HARD_BLOCK = """            if self.field_obligatory_readout:
-                a_only = self.alpha_only_features(alpha)
-                a_rms = a_only.pow(2).mean().sqrt().clamp_min(1e-8)
-                a_hat = a_only / a_rms
-                # Frozen branch (CE cannot collapse) + trainable adapter.
-                frozen_byte = (self.alpha_byte_frozen @ a_hat).view(
-                    self.max_payload_bytes, 256
-                )
-                frozen_len = self.alpha_length_frozen @ a_hat
-                if getattr(self, "field_obligatory_hard", False):
-                    # Hard: mix≡1 and non-α bypass residual forced off.
-                    return {"byte_logits": frozen_byte, "length_logits": frozen_len}
-                train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
-                train_len = self.alpha_length_proj(a_hat)
-                mix = self.obligatory_mix_weight()
-                # Soft mix uses FROZEN map so inter-prompt α structure reaches logits.
-                byte_logits = (1.0 - mix) * byte_logits + mix * frozen_byte
-                length_logits = (1.0 - mix) * length_logits + mix * frozen_len
-                obl = self.obligatory_scale()
-                byte_logits = byte_logits + obl * train_byte
-                length_logits = length_logits + obl * train_len
-            return {"byte_logits": byte_logits, "length_logits": length_logits}
-"""
+FORWARD_INSERT = (
+    "                if getattr(self, \"field_obligatory_hard\", False):\n"
+    "                    # Hard: mix≡1 and non-α bypass residual forced off.\n"
+    "                    return {\"byte_logits\": frozen_byte, \"length_logits\": frozen_len}\n"
+    "                train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)\n"
+    "                train_len = self.alpha_length_proj(a_hat)\n"
+    "                mix = self.obligatory_mix_weight()\n"
+)
 
-MODEL_INIT_OLD = """        field_obligatory_readout: bool = False,
-        slow_rms_rel_tol: float = 0.15,
-    ) -> None:
-"""
+MODEL_INIT_OLD = (
+    "        field_obligatory_readout: bool = False,\n"
+    "        slow_rms_rel_tol: float = 0.15,\n"
+)
+MODEL_INIT_NEW = (
+    "        field_obligatory_readout: bool = False,\n"
+    "        field_obligatory_hard: bool = False,\n"
+    "        slow_rms_rel_tol: float = 0.15,\n"
+)
 
-MODEL_INIT_NEW = """        field_obligatory_readout: bool = False,
-        field_obligatory_hard: bool = False,
-        slow_rms_rel_tol: float = 0.15,
-    ) -> None:
-"""
-
-MODEL_ASSIGN_OLD = """        self.field_obligatory_readout = bool(field_obligatory_readout)
-        self.surface.field_obligatory_readout = self.field_obligatory_readout
-        self.slow_rms_rel_tol = float(slow_rms_rel_tol)
-"""
-
-MODEL_ASSIGN_NEW = """        self.field_obligatory_hard = bool(field_obligatory_hard)
-        self.field_obligatory_readout = bool(field_obligatory_readout) or self.field_obligatory_hard
-        self.surface.field_obligatory_readout = self.field_obligatory_readout
-        if self.field_obligatory_hard:
-            self.surface.set_obligatory_hard(True)
-        else:
-            self.surface.field_obligatory_hard = False
-        self.slow_rms_rel_tol = float(slow_rms_rel_tol)
-"""
+MODEL_ASSIGN_OLD = (
+    "        self.field_obligatory_readout = bool(field_obligatory_readout)\n"
+    "        self.surface.field_obligatory_readout = self.field_obligatory_readout\n"
+)
+MODEL_ASSIGN_NEW = (
+    "        self.field_obligatory_hard = bool(field_obligatory_hard)\n"
+    "        self.field_obligatory_readout = bool(field_obligatory_readout) or self.field_obligatory_hard\n"
+    "        self.surface.field_obligatory_readout = self.field_obligatory_readout\n"
+    "        if self.field_obligatory_hard:\n"
+    "            self.surface.set_obligatory_hard(True)\n"
+    "        else:\n"
+    "            self.surface.field_obligatory_hard = False\n"
+)
 
 
 def main() -> None:
@@ -135,26 +102,25 @@ def main() -> None:
     if "def set_obligatory_hard" in text and "field_obligatory_hard: bool" in text:
         print(f"already applied: {TARGET}")
         return
-    if INIT_FLAG not in text:
-        raise SystemExit("anchor INIT_FLAG not found")
-    text = text.replace(INIT_FLAG, INIT_FLAG_NEW, 1)
-    # Insert methods before field_features
-    anchor = "    def field_features("
-    if METHODS.strip() not in text:
+    if INIT_OLD not in text:
+        raise SystemExit("INIT_OLD anchor not found")
+    text = text.replace(INIT_OLD, INIT_NEW, 1)
+    if "def set_obligatory_hard" not in text:
+        anchor = "    def field_features("
         if anchor not in text:
-            raise SystemExit("anchor field_features not found")
-        text = text.replace(anchor, METHODS + "    def field_features(", 1)
-    if FORWARD_SOFT_BLOCK in text:
-        text = text.replace(FORWARD_SOFT_BLOCK, FORWARD_HARD_BLOCK, 1)
-    elif "if getattr(self, \"field_obligatory_hard\"" in text:
+            raise SystemExit("field_features anchor not found")
+        text = text.replace(anchor, METHODS + anchor, 1)
+    if "field_obligatory_hard" in text and "return {\"byte_logits\": frozen_byte" in text:
         pass
+    elif FORWARD_NEEDLE not in text:
+        raise SystemExit("FORWARD_NEEDLE not found")
     else:
-        raise SystemExit("forward soft block not found — check atom_native.py")
+        text = text.replace(FORWARD_NEEDLE, FORWARD_INSERT, 1)
     if MODEL_INIT_OLD not in text:
-        raise SystemExit("model init anchor not found")
+        raise SystemExit("MODEL_INIT_OLD not found")
     text = text.replace(MODEL_INIT_OLD, MODEL_INIT_NEW, 1)
     if MODEL_ASSIGN_OLD not in text:
-        raise SystemExit("model assign anchor not found")
+        raise SystemExit("MODEL_ASSIGN_OLD not found")
     text = text.replace(MODEL_ASSIGN_OLD, MODEL_ASSIGN_NEW, 1)
     TARGET.write_text(text, encoding="utf-8")
     print(f"applied hard obligatory to {TARGET}")
