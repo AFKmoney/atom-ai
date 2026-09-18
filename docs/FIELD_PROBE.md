@@ -1,6 +1,6 @@
 # FIELD_PROBE — persistence vs surface-only byte-LM
 
-_Generated: 2026-09-17 14:42:41 PDT_
+_Generated: 2026-09-17 16:42:00 PDT_
 
 ## Thesis
 
@@ -10,28 +10,28 @@ This probe judges the **field** (alpha / consolidation / atoms), not only CE/gen
 
 ## Checkpoint
 
-- Path: `/workspace/repos/toroidal-fractal-intelligence/checkpoints/atom_native_field_intel/atom_native_src.pt`
-- Bytes: 7695498
-- Config: `{"d_model": 64, "n_modes": 64, "n_atoms_max": 512, "max_payload_bytes": 16, "atomizer_version": "atomizer-v1-byte-span", "field_max_rms": 3.0, "energy_decay_bounds": [0.45, 0.95]}`
-- Training step: `2100000`
+- Path: `/workspace/exports/atom-ai/checkpoints/atom_native_lign_smoke/atom_native.pt`
+- Bytes: 20532400
+- Config: `{"d_model": 64, "n_modes": 64, "n_atoms_max": 512, "max_payload_bytes": 16, "atomizer_version": "atomizer-v1-byte-span", "field_max_rms": 3.0, "energy_decay_bounds": [0.45, 0.95], "enable_merge": true, "slow_every": 4, "field_loss_weight": 0.08, "field_contrast_weight": 0.45, "field_contrast_margin": 0.45, "field_ignorance_weight": 0.08, "field_ignorance_margin": 0.85, "merge_count_total": 0}`
+- Training step: `2105000`
 
 ## Hard numbers
 
 | Prompt | RMS after prompt | RMS after 20 gen | Δ RMS | n_atoms after prompt |
 |--------|------------------|------------------|-------|----------------------|
-| 'Bonjour' | 0.005059 | 0.027113 | +0.022054 | 3 |
-| 'Qui es-tu ?' | 0.007600 | 0.026148 | +0.018548 | 7 |
-| 'Il était une fois' | 0.007744 | 0.026161 | +0.018416 | 6 |
-| 'Utilisateur: Bonjour\nAssistant:' | 0.005059 | 0.027113 | +0.022054 | 3 |
+| 'Bonjour' | 0.003866 | 0.032612 | +0.028746 | 3 |
+| 'Qui es-tu ?' | 0.006797 | 0.034235 | +0.027438 | 7 |
+| 'Il était une fois' | 0.006036 | 0.033740 | +0.027704 | 6 |
+| 'Utilisateur: Bonjour\nAssistant:' | 0.003866 | 0.032612 | +0.028746 | 3 |
 
-- Mean RMS after prompt: **0.006366**
-- Mean RMS after 20 gens: **0.026634**
+- Mean RMS after prompt: **0.005141**
+- Mean RMS after 20 gens: **0.033300**
 
 ### Prompt sensitivity (off-diagonal mean cosine)
 
-- Alpha (field): **0.738060**
-- Output state: **0.729136**
-- Surface logits: **0.938330**
+- Alpha (field): **0.698694**
+- Output state: **0.982931**
+- Surface logits: **0.991285**
 - Persistence: **nan**
 
 Interpretation: cosine ≈ 1.0 ⇒ surface/field ignore prompt differences; meaningfully < 1 ⇒ prompt-sensitive state.
@@ -41,28 +41,28 @@ Interpretation: cosine ≈ 1.0 ⇒ surface/field ignore prompt differences; mean
 ```
 [
   [
-    1.0000001761348754,
-    0.9259407647120298,
-    0.9659873513195253,
-    1.0000001761348754
+    0.999999956863693,
+    0.9844636315849673,
+    0.9956222308491203,
+    0.999999956863693
   ],
   [
-    0.9259407647120298,
-    0.9999997059026202,
-    0.8461239439376202,
-    0.9259407647120298
+    0.9844636315849673,
+    1.0000003727045395,
+    0.9875383353338196,
+    0.9844636315849673
   ],
   [
-    0.9659873513195253,
-    0.8461239439376202,
-    1.000000270526985,
-    0.9659873513195253
+    0.9956222308491203,
+    0.9875383353338196,
+    1.0000000619036724,
+    0.9956222308491203
   ],
   [
-    1.0000001761348754,
-    0.9259407647120298,
-    0.9659873513195253,
-    1.0000001761348754
+    0.999999956863693,
+    0.9844636315849673,
+    0.9956222308491203,
+    0.999999956863693
   ]
 ]
 ```
@@ -72,28 +72,28 @@ Interpretation: cosine ≈ 1.0 ⇒ surface/field ignore prompt differences; mean
 ```
 [
   [
-    0.999999975229589,
-    0.6706318291779579,
-    0.7363234072234219,
-    0.999999975229589
+    1.0000002700269885,
+    0.47700414684046116,
+    0.8353664666956325,
+    1.0000002700269885
   ],
   [
-    0.6706318291779579,
-    1.0000000961980724,
-    0.6144523478159545,
-    0.6706318291779579
+    0.47700414684046116,
+    0.9999999644925277,
+    0.5674224384137968,
+    0.47700414684046116
   ],
   [
-    0.7363234072234219,
-    0.6144523478159545,
-    0.9999999408803348,
-    0.7363234072234219
+    0.8353664666956325,
+    0.5674224384137968,
+    0.9999999362448492,
+    0.8353664666956325
   ],
   [
-    0.999999975229589,
-    0.6706318291779579,
-    0.7363234072234219,
-    0.999999975229589
+    1.0000002700269885,
+    0.47700414684046116,
+    0.8353664666956325,
+    1.0000002700269885
   ]
 ]
 ```
@@ -102,7 +102,7 @@ Interpretation: cosine ≈ 1.0 ⇒ surface/field ignore prompt differences; mean
 
 - Field differs across prompts: **True**
 - Persistence differs: **False**
-- Mean pairwise alpha L2: **0.304768**
+- Mean pairwise alpha L2: **0.267299**
 - Alpha re-prime 1-NN accuracy: **0.750**
 - Reconstruction succeeds (diagnostic): **True**
 - Summary: partial/diagnostic linear map from field features to last-k packet features works in-sample
@@ -116,16 +116,16 @@ Linear probe:
   "n_prompts": 4,
   "field_dim": 4224,
   "feature_dim": 320,
-  "train_mse": 7.664130441398243e-11,
+  "train_mse": 7.1824834968481355e-09,
   "baseline_mean_mse": 0.0012413040967658162,
-  "mse_improvement_vs_mean": 0.0012413040201245118,
+  "mse_improvement_vs_mean": 0.0012412969142823194,
   "pred_target_cosine_per_prompt": [
-    1.0000000569247667,
-    0.9999998933658573,
-    1.0000000146999868,
-    1.0000000569247667
+    1.0000000845191621,
+    0.9999991857830204,
+    0.9999996325700593,
+    1.0000000845191621
   ],
-  "mean_pred_target_cosine": 1.0000000054788443,
+  "mean_pred_target_cosine": 0.999999746847851,
   "note": "In-sample fit only (P prompts). Success means field features linearly span last-k packet features on this set \u2014 not a general decoder."
 }
 ```
@@ -134,12 +134,12 @@ Atom collection probe:
 ```json
 {
   "status": "ok",
-  "mean_last_k_compiled_vs_stored_r_cosine": 1.0000000347693763,
+  "mean_last_k_compiled_vs_stored_r_cosine": 1.0000000384946675,
   "per_prompt": [
-    1.0000000397364275,
-    1.000000029802325,
-    1.000000029802325,
-    1.0000000397364275
+    1.00000003973643,
+    1.0000000447034871,
+    1.0000000298023224,
+    1.00000003973643
   ],
   "note": "Atom collection stores detached compiled atoms from this episode; high cosine is expected (same episode write). This is NOT recovery from field alone \u2014 it shows structural memory buffer retention."
 }

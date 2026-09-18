@@ -32,3 +32,17 @@ When the merge path runs, log:
 - `n_pairs_above_energy_floor` — pairs that clear the energy-floor checks
 
 Thresholds `phase_coherence_threshold` / `merge_energy_floor` are **unchanged**.
+
+## Smoke +2500 (2026-09-17)
+
+See `docs/LIGN_SMOKE.md` for full numbers.
+
+| metric | before | after |
+|--------|--------|-------|
+| logits cosine (inter-prompt) | 0.992294 | 0.991285 |
+| α cosine | 0.720524 | 0.698694 |
+| train `ign` (logged) | — | stuck **0.150** ⇒ cos_ign≈1.0 |
+| merges | — | **0** |
+| mph | — | **0.500** (threshold 0.55) |
+
+**Fail** vs target logits ≪ 0.960. Next: inspect ℓ path (shared atom_r/persistence; bank closeness; hinge saturation) — one mechanism, no extra CE marathon.
