@@ -1,0 +1,12 @@
+train lock skipped (--allow-parallel-train)
+resumed weights from checkpoints/atom_native_obligatory_hard/atom_native.pt (recorded step=3025000, legacy_surface_migrated=False)
+dynamics on load: energy_decay=0.30000001192092896 -> 0.30000001192092896 (repaired=False, bounds=(0.3, 0.95))
+field_obligatory_hard=ON hard-v2 (mix_floor=1.0, freeze bypass, logits=frozen+scale*alpha_proj)
+optimizer groups: field/other lr=0.0001 (11 tensors), surface lr=0.0003 (7 tensors); energy_decay_bounds=(0.3, 0.95); field_max_rms=3.0
+stream mode: 10 shard(s), chunk_bytes=1048576, loop_shards=True, stream_buffer=2048, stream_prefetch=True
+optimizer restore skipped: surface LR param groups differ from checkpoint
+step=3025001 (run 1/50000) loss=11.44321 byte_ppl=3025.823 atoms=1 merges=0 field=0.1177 rms=0.0021 scale=1.0000 fcos=0.000 ign=0.0000 mph=0.000 bytes=524288 pkts=97538 shard=0
+...
+step=3035000 (run 10000/50000) loss=7.50946 byte_ppl=217.244 atoms=16 merges=0 field=191.9999 rms=3.0000 scale=0.9980 fcos=0.000 ign=0.0000 mph=0.500 bytes=524288 pkts=97538 shard=0
+step=3050000 (run 25000/50000) loss=8.11656 byte_ppl=123.513 atoms=168 merges=0 field=191.9999 rms=3.0000 scale=0.9980 fcos=0.000 ign=0.0000 mph=0.500 bytes=524288 pkts=97538 shard=0
+step=3075000 (run 50000/50000) loss=6.51840 byte_ppl=85.514 atoms=80 merges=0 field=191.9999 rms=3.0000 scale=0.9980 fcos=0.000 ign=0.0000 mph=0.500 bytes=524288 pkts=97538 shard=0

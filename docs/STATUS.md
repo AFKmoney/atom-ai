@@ -44,7 +44,7 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 
 ## Next (scientific, one at a time)
 
-1. New single hypothesis on CE vs obligatory floor (do not just add more CE).
+1. Hard-v2 +200k: probe OK, chat still noise — next single hypothesis for phrase-level FR (do not stack MERGE retune).
 2. MERGE threshold only after mph evidence (this run: merges=0, mph≈0.5).
 3. Do not stack L_ign + obligatory without a new single hypothesis.
 
@@ -62,3 +62,16 @@ HF tokenizer on live path · attention/DDP/vocab farm · field wipe for CE · st
 | hard +25k | **0.861** | 0.842 | **PASS** vs soft |
 
 See `docs/OBLIGATORY_HARD.md`. Flag `--field-obligatory-hard`.
+
+
+## Hard-v2 coherence run (2026-09-18)
+
+| Metric | Value |
+|--------|-------|
+| start → end step | 2,925,000 → **3,125,000** (+200k) |
+| final logits cos | **0.916** (≪0.99) |
+| final α cos | **0.842** |
+| chat | **not coherent FR** (short-token loops) |
+| flag | `--field-obligatory-hard` (hard-v2 + RMS cap) |
+
+See `docs/HARD_V2_COHERENCE.md`. Do not claim fluency.

@@ -17,11 +17,11 @@ whether CE improved.
 
 | Metric | Value |
 |--------|-------|
-| Checkpoint | `/workspace/exports/atom-ai/checkpoints/atom_native_lign_smoke/atom_native.pt` |
-| Mean field RMS after prompt | 0.005141 |
-| Mean field RMS after 20 gen | 0.033300 |
-| Mean off-diag cosine (surface logits) | 0.991285 |
-| Mean off-diag cosine (alpha) | 0.698694 |
+| Checkpoint | `/workspace/exports/atom-ai/checkpoints/atom_native_obligatory_hard/atom_native.pt` |
+| Mean field RMS after prompt | 0.005304 |
+| Mean field RMS after 20 gen | 0.032809 |
+| Mean off-diag cosine (surface logits) | 0.915846 |
+| Mean off-diag cosine (alpha) | 0.841826 |
 | Reconstruction succeeds (diagnostic) | True |
 | Verdict | field is carrying structure (prompt-sensitive; diagnostic reconstruction partial) |
 

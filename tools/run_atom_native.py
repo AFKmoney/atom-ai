@@ -307,7 +307,7 @@ def main() -> None:
     parser.add_argument(
         "--field-obligatory-hard",
         action="store_true",
-        help="hard obligatory: mix floor=1.0 + freeze non-alpha CE bypass (implies readout)",
+        help="hard-v2 obligatory: mix floor=1.0 + freeze non-alpha bypass; logits=frozen_α+scale*α_proj (implies readout)",
     )
     parser.add_argument(
         "--field-obligatory-readout",
@@ -453,7 +453,7 @@ def main() -> None:
             model.field_obligatory_hard = True
             model.field_obligatory_readout = True
             model.surface.set_obligatory_hard(True)
-            print("field_obligatory_hard=ON (mix_floor=1.0, non-alpha bypass frozen)")
+            print("field_obligatory_hard=ON hard-v2 (mix_floor=1.0, freeze bypass, logits=frozen+scale*alpha_proj)")
         if args.field_obligatory_readout:
             print(
                 "field_obligatory_readout=ON "

@@ -35,3 +35,7 @@ Chat still noise — expected with pure frozen α map; not the success metric.
 ```
 
 Artifacts: `docs/artifacts/obligatory_hard_25k/`.
+
+## Hard-v2 (follow-on)
+
+See `docs/HARD_V2_COHERENCE.md` — frozen+α_proj with RMS cap; +200k chat still not coherent FR.

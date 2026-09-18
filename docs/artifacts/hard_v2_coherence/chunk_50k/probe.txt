@@ -1,0 +1,21 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_obligatory_hard/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=2975000
+[probe] prompt='Bonjour'
+        RMS 0.003785 -> 0.028928 (norm 0.2422 -> 1.8514) atoms 3 -> 22
+        gen_preview=" {� a2 a� a- 'p  'p  'e  'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee Hee Hee Hee Hee"
+[probe] prompt='Qui es-tu ?'
+        RMS 0.006347 -> 0.028637 (norm 0.4062 -> 1.8328) atoms 7 -> 26
+        gen_preview=" ai ae ai ae at ar at  a�  a�  a�  a�  a�  a�n a�  '�, '�  '�, 'p  'pn 'en 'ee 'ee 'ee"
+[probe] prompt='Il était une fois'
+        RMS 0.006002 -> 0.027274 (norm 0.3841 -> 1.7455) atoms 6 -> 25
+        gen_preview="t{�ea2� ota�ea2 a\n a2 a' a. at a- at  at  a'  at  at  a'  a'e aee aee aee aee 'ee 'ee 'ee 'ee"
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.003785 -> 0.028928 (norm 0.2422 -> 1.8514) atoms 3 -> 22
+        gen_preview=" {� a2 a� a- 'p  'p  'e  'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee 'ee Hee Hee Hee Hee"
+[probe] mean off-diag cosine logits=0.995981 alpha=0.824174
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/logs/field_probe_report.json
+[probe] wrote /workspace/exports/atom-ai/docs/FIELD_PROBE.md
+[probe] wrote /workspace/exports/atom-ai/docs/PERSISTENCE_TEST.md
+[probe] updated /workspace/exports/atom-ai/docs/SCALE.md
+[probe] VERDICT: field differs across prompts but surface logits nearly identical — field not reliably read by surface (Transformer-regime risk / surface-only byte-LM behavior at decode)

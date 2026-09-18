@@ -1,4 +1,4 @@
-"""Unit tests: field_obligatory_hard freezes non-α bypass; α must move logits."""
+"""Unit tests: field_obligatory_hard-v2 — frozen α + trainable α-proj; freeze bypass."""
 from __future__ import annotations
 
 import unittest
@@ -10,7 +10,7 @@ from src.io.atomizer import Atomizer
 
 
 class FieldObligatoryHardTests(unittest.TestCase):
-    """Hard mode: mix floor 1.0 + zero/frozen non-α residual on CE surface."""
+    """Hard-v2: mix floor 1.0; freeze non-α bypass; α_*_proj trainable."""
 
     def _tiny(self, **kwargs) -> AtomNativeModel:
         return AtomNativeModel(
@@ -62,7 +62,7 @@ class FieldObligatoryHardTests(unittest.TestCase):
             return float(torch.dot(fa, fb).item() / denom)
 
     def test_hard_zeroing_alpha_moves_logits(self) -> None:
-        """Hard: non-zero α ⇒ logits; α=0 ⇒ ~0 logits (pure frozen α map)."""
+        """Hard-v2: non-zero α ⇒ logits; α=0 ⇒ ~0 logits (frozen+proj of zeros)."""
         torch.manual_seed(42)
         model = self._tiny(field_obligatory_hard=True)
         model.eval()
@@ -102,7 +102,57 @@ class FieldObligatoryHardTests(unittest.TestCase):
         self.assertFalse(isinstance(surf.alpha_byte_frozen, torch.nn.Parameter))
         self.assertFalse(isinstance(surf.alpha_length_frozen, torch.nn.Parameter))
 
+
+    def test_hard_v2_trainable_rms_capped(self) -> None:
+        """Trainable residual RMS must not exceed frozen RMS under hard-v2."""
+        torch.manual_seed(0)
+        model = self._tiny(field_obligatory_hard=True)
+        surf = model.surface
+        with torch.no_grad():
+            # Inflate proj so uncapped residual would dominate frozen.
+            surf.alpha_byte_proj.weight.mul_(50.0)
+            surf.obl_gate.fill_(5.0)
+        alpha = torch.randn(16, 16) * 0.5
+        persist = torch.randn(16)
+        atom_r = torch.randn(16)
+        legacy = torch.randn(16)
+        a = surf.alpha_only_features(alpha)
+        a_hat = a / a.pow(2).mean().sqrt().clamp_min(1e-8)
+        frozen = (surf.alpha_byte_frozen @ a_hat).view(surf.max_payload_bytes, 256)
+        out = surf(legacy, alpha=alpha, persistent_state=persist, atom_r=atom_r)
+        residual = out["byte_logits"] - frozen
+        f_rms = float(frozen.pow(2).mean().sqrt().item())
+        r_rms = float(residual.pow(2).mean().sqrt().item())
+        self.assertLessEqual(r_rms, f_rms * 1.01 + 1e-6, msg=f"r_rms={r_rms} f_rms={f_rms}")
+
+    def test_hard_v2_alpha_proj_trainable(self) -> None:
+        """Hard-v2: alpha_*_proj (+ obl_gate) require grad; frozen maps stay buffers."""
+        model = self._tiny(field_obligatory_hard=True)
+        surf = model.surface
+        for module in (surf.alpha_byte_proj, surf.alpha_length_proj):
+            for param in module.parameters():
+                self.assertTrue(
+                    param.requires_grad,
+                    msg="alpha_*_proj must be trainable under hard-v2",
+                )
+        self.assertTrue(surf.obl_gate.requires_grad)
+        self.assertFalse(isinstance(surf.alpha_byte_frozen, torch.nn.Parameter))
+        self.assertFalse(isinstance(surf.alpha_length_frozen, torch.nn.Parameter))
+        # Gradients flow through trainable α adapter on a hard forward.
+        alpha = torch.randn(16, 16) * 0.5
+        persist = torch.randn(16)
+        atom_r = torch.randn(16)
+        legacy = torch.randn(16)
+        out = model.surface(
+            legacy, alpha=alpha, persistent_state=persist, atom_r=atom_r
+        )
+        loss = out["byte_logits"].pow(2).mean() + out["length_logits"].pow(2).mean()
+        loss.backward()
+        self.assertIsNotNone(surf.alpha_byte_proj.weight.grad)
+        self.assertGreater(float(surf.alpha_byte_proj.weight.grad.abs().sum()), 0.0)
+
     def test_hard_stricter_than_soft_on_short_ce_contract(self) -> None:
+
         """Hard keeps α-only logits; soft still α-sensitive but may use residual."""
         torch.manual_seed(7)
         soft = self._tiny(field_obligatory_readout=True)

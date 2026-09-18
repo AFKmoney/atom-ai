@@ -167,7 +167,7 @@ class AtomSurfaceHead(nn.Module):
         self.obl_gate = nn.Parameter(torch.tensor(1.0))  # trainable additive scale
         self.obl_floor = 0.5
         self.field_obligatory_readout = False  # enabled via AtomNativeModel flag
-        self.field_obligatory_hard = False  # mix floor=1.0 + freeze non-α bypass
+        self.field_obligatory_hard = False  # hard-v2: floor=1.0 + freeze bypass + α-proj
         self._soft_obl_mix_floor = 0.35
         self.state_norm = nn.LayerNorm(d_model)
         self.byte_decoder = nn.Linear(d_model, max_payload_bytes * 256)
@@ -256,7 +256,13 @@ class AtomSurfaceHead(nn.Module):
 
 
     def set_obligatory_hard(self, enabled: bool) -> None:
-        """Hard obligatory: mix floor 1.0; zero/freeze trainable non-α bypass."""
+        """Hard-v2 obligatory: mix floor 1.0; freeze non-α bypass; α-proj trainable.
+
+        Forward: logits = frozen_α_map(α) + cap * obligatory_scale() * α_*_proj(α)
+        with cap≤1 so trainable RMS cannot exceed frozen RMS.
+        Decoder / field skip / gates stay zeroed+frozen; CE may train only
+        alpha_byte_proj / alpha_length_proj (+ obl_gate). Field dynamics still train.
+        """
         enabled = bool(enabled)
         self.field_obligatory_hard = enabled
         if enabled:
@@ -401,8 +407,25 @@ class AtomSurfaceHead(nn.Module):
                 )
                 frozen_len = self.alpha_length_frozen @ a_hat
                 if getattr(self, "field_obligatory_hard", False):
-                    # Hard: mix≡1 and non-α bypass residual forced off.
-                    return {"byte_logits": frozen_byte, "length_logits": frozen_len}
+                    # Hard-v2: frozen α map + scale * trainable α-only proj.
+                    # Still no decoder/skip residual; CE trains only α_*_proj (+ obl_gate).
+                    # RMS cap: trainable residual may not exceed frozen RMS so CE
+                    # cannot drown α separation (soft collapse mode).
+                    train_byte = self.alpha_byte_proj(a_hat).view(
+                        self.max_payload_bytes, 256
+                    )
+                    train_len = self.alpha_length_proj(a_hat)
+                    obl = self.obligatory_scale()
+                    tb = obl * train_byte
+                    tl = obl * train_len
+                    f_rms = frozen_byte.pow(2).mean().sqrt().clamp_min(1e-8)
+                    t_rms = tb.pow(2).mean().sqrt().clamp_min(1e-8)
+                    # stop-grad on cap — avoid unstable d(cap*tb)/d(tb) NaNs
+                    cap = (f_rms / t_rms).clamp(max=1.0).detach()
+                    return {
+                        "byte_logits": frozen_byte + cap * tb,
+                        "length_logits": frozen_len + cap * tl,
+                    }
                 train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
                 train_len = self.alpha_length_proj(a_hat)
                 mix = self.obligatory_mix_weight()
@@ -1224,6 +1247,8 @@ class AtomNativeModel(nn.Module):
                 "field_ignorance_margin": self.field_ignorance_margin,
                 "field_ignorance_ablate_shared": self.field_ignorance_ablate_shared,
                 "field_ignorance_prompt_bank": self.field_ignorance_prompt_bank,
+                "field_obligatory_readout": bool(self.field_obligatory_readout),
+                "field_obligatory_hard": bool(self.field_obligatory_hard),
                 "field_obligatory_readout": self.field_obligatory_readout,
                 "merge_count_total": self.merge_count_total,
             },
@@ -1317,8 +1342,15 @@ class AtomNativeModel(nn.Module):
             self.field_ignorance_prompt_bank = bool(cfg["field_ignorance_prompt_bank"])
         if "field_obligatory_readout" in cfg:
             self.field_obligatory_readout = bool(cfg["field_obligatory_readout"])
-        # Constructor / CLI may set obligatory after load; always sync surface.
-        self.surface.field_obligatory_readout = bool(self.field_obligatory_readout)
+        if "field_obligatory_hard" in cfg and bool(cfg["field_obligatory_hard"]):
+            self.field_obligatory_hard = True
+            self.field_obligatory_readout = True
+            self.surface.set_obligatory_hard(True)
+        else:
+            self.field_obligatory_hard = False
+            self.surface.field_obligatory_hard = False
+            # Constructor / CLI may set obligatory after load; always sync surface.
+            self.surface.field_obligatory_readout = bool(self.field_obligatory_readout)
         self.merge_count_total = int(cfg.get("merge_count_total", 0) or 0)
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()

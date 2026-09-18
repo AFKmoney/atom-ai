@@ -32,6 +32,7 @@ def load_model(checkpoint: str | Path, device: str = "cpu") -> AtomNativeModel:
     field_max_rms = config.get("field_max_rms")
     if field_max_rms is None:
         field_max_rms = 3.0
+    hard = bool(config.get("field_obligatory_hard", False))
     model = AtomNativeModel(
         d_model=int(config.get("d_model", 64)),
         n_modes=int(config.get("n_modes", 64)),
@@ -39,8 +40,14 @@ def load_model(checkpoint: str | Path, device: str = "cpu") -> AtomNativeModel:
         max_payload_bytes=int(config.get("max_payload_bytes", 16)),
         field_max_rms=field_max_rms,
         energy_decay_bounds=energy_decay_bounds,
+        field_obligatory_hard=hard,
+        field_obligatory_readout=bool(config.get("field_obligatory_readout", False)) or hard,
     )
     training = model.load(path)
+    if hard or bool(config.get("field_obligatory_hard", False)):
+        model.field_obligatory_hard = True
+        model.field_obligatory_readout = True
+        model.surface.set_obligatory_hard(True)
     dyn = (training or {}).get("dynamics_on_load") or {}
     if dyn.get("energy_decay_repaired"):
         print(

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Apply --field-obligatory-hard to src/atom_native.py (idempotent)."""
+"""Apply --field-obligatory-hard (hard-v2 scaffold) to atom_native.py (idempotent).
+
+Note: hard-v2 forward (frozen+α_proj) lives in src/atom_native.py; this script
+only scaffolds the hard flag / freeze helpers if missing.
+"""
 from __future__ import annotations
 
 from pathlib import Path

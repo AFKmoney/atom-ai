@@ -1,0 +1,21 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_obligatory_hard/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=2975000
+[probe] prompt='Bonjour'
+        RMS 0.003785 -> 0.029797 (norm 0.2422 -> 1.9070) atoms 3 -> 22
+        gen_preview=" {�Sa�m {`S '`S H`L '`L '`L '`L '`L '`L '`L '`L '`L O`L O`L O`L O`L O`C O`C O`C O`C"
+[probe] prompt='Qui es-tu ?'
+        RMS 0.006347 -> 0.031910 (norm 0.4062 -> 2.0422) atoms 7 -> 26
+        gen_preview=" {�Sah {�LaT H`L '`L '`L '`L '`L '`L '`L '`L �`L '`L '`L �`L O`L O`L O`L O`L O`L O`L"
+[probe] prompt='Il était une fois'
+        RMS 0.006002 -> 0.027915 (norm 0.3841 -> 1.7866) atoms 6 -> 25
+        gen_preview='o{o{ {?qaG� d?S d?S d?S d?S d?S d?S d?S d?S d?� �B� �?� �B� .?� .?� .B� .B� .B�'
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.003785 -> 0.029797 (norm 0.2422 -> 1.9070) atoms 3 -> 22
+        gen_preview=" {�Sa�m {`S '`S H`L '`L '`L '`L '`L '`L '`L '`L '`L O`L O`L O`L O`L O`C O`C O`C O`C"
+[probe] mean off-diag cosine logits=0.899101 alpha=0.824174
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/logs/field_probe_report.json
+[probe] wrote /workspace/exports/atom-ai/docs/FIELD_PROBE.md
+[probe] wrote /workspace/exports/atom-ai/docs/PERSISTENCE_TEST.md
+[probe] updated /workspace/exports/atom-ai/docs/SCALE.md
+[probe] VERDICT: field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)
