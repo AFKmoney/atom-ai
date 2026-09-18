@@ -63,3 +63,8 @@ No fluency claim.
 
 `docs/artifacts/hard_v2_coherence/{chunk_50k,chunk_100k,chunk_150k,chunk_200k}/`
 (train excerpts, probes, chat). Train logs: `logs/hard_v2_chunk_*.txt`.
+
+## Follow-on (same day)
+
+Bottleneck diagnosed as under-capacity of Linear α→byte map under hard.
+Next single mechanism: deeper α-only MLP — see `docs/HARD_V2_DEEPER.md`.

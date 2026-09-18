@@ -1,4 +1,4 @@
-# ATOM status snapshot — 2026-09-17
+# ATOM status snapshot — 2026-09-18
 
 Repo: https://github.com/AFKmoney/atom-ai  
 English docs only. No fluency claim.
@@ -44,9 +44,10 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 
 ## Next (scientific, one at a time)
 
-1. Hard-v2 +200k: probe OK, chat still noise — next single hypothesis for phrase-level FR (do not stack MERGE retune).
-2. MERGE threshold only after mph evidence (this run: merges=0, mph≈0.5).
-3. Do not stack L_ign + obligatory without a new single hypothesis.
+1. Hard-v2+ deeper α MLP +150k: probe OK (logits 0.914), chat still noise — deeper Linear→MLP alone did not unlock multi-word FR.
+2. Next single hypothesis for phrase-level FR (do not stack MERGE retune / attention).
+3. MERGE threshold only after mph evidence (this run: merges=0, mph≈0.5).
+4. Do not stack L_ign + obligatory without a new single hypothesis.
 
 ## Banned
 
@@ -75,3 +76,15 @@ See `docs/OBLIGATORY_HARD.md`. Flag `--field-obligatory-hard`.
 | flag | `--field-obligatory-hard` (hard-v2 + RMS cap) |
 
 See `docs/HARD_V2_COHERENCE.md`. Do not claim fluency.
+
+## Hard-v2+ deeper α MLP (2026-09-18)
+
+| Metric | Value |
+|--------|-------|
+| start → end step | 3,125,000 → **3,275,000** (+150k) |
+| final logits cos | **0.914** (≪0.99) |
+| final α cos | **0.840** |
+| chat | **not coherent FR** (short-token noise) |
+| mechanism | α-only MLP `JL → 4d → GELU → out` under hard |
+
+See `docs/HARD_V2_DEEPER.md`. Do not claim fluency.

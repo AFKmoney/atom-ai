@@ -100,7 +100,36 @@ class AtomCompiler(nn.Module):
         return atom, operation, confidence
 
 
+class AlphaOnlyMLP(nn.Module):
+    """α-conditioned 2-layer map: Linear → GELU → Linear (no byte_decoder bypass).
+
+    Used under ``field_obligatory_hard`` as the *only* trainable α→logit adapter.
+    Input is the JL fingerprint (or any α-only feature); hidden defaults to 4*d.
+    """
+
+    def __init__(
+        self,
+        in_dim: int,
+        out_dim: int,
+        hidden_dim: int,
+        *,
+        bias_out: bool = False,
+    ) -> None:
+        super().__init__()
+        if hidden_dim < 1:
+            raise ValueError("hidden_dim must be positive")
+        self.in_dim = int(in_dim)
+        self.hidden_dim = int(hidden_dim)
+        self.out_dim = int(out_dim)
+        self.fc1 = nn.Linear(self.in_dim, self.hidden_dim)
+        self.fc2 = nn.Linear(self.hidden_dim, self.out_dim, bias=bias_out)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.fc2(F.gelu(self.fc1(x)))
+
+
 class AtomSurfaceHead(nn.Module):
+
     """Decode one variable-length surface packet from the living toroidal field.
 
     The output alphabet is raw bytes (256 classes), not GPT-2's 50,257 token
@@ -159,8 +188,21 @@ class AtomSurfaceHead(nn.Module):
         nn.init.normal_(fr_l, mean=0.0, std=(1.0 / self.alpha_only_dim) ** 0.5)
         self.register_buffer("alpha_byte_frozen", fr_b, persistent=True)
         self.register_buffer("alpha_length_frozen", fr_l, persistent=True)
-        self.alpha_byte_proj = nn.Linear(self.alpha_only_dim, max_payload_bytes * 256, bias=False)
-        self.alpha_length_proj = nn.Linear(self.alpha_only_dim, max_payload_bytes, bias=False)
+        # Deeper α-only decode (hard-v2+): α_feat → hidden 4*d → logits.
+        # Still conditioned ONLY on α (JL fingerprint); no byte_decoder/skip bypass.
+        self.alpha_mlp_hidden = 4 * d_model
+        self.alpha_byte_proj = AlphaOnlyMLP(
+            self.alpha_only_dim,
+            max_payload_bytes * 256,
+            self.alpha_mlp_hidden,
+            bias_out=False,
+        )
+        self.alpha_length_proj = AlphaOnlyMLP(
+            self.alpha_only_dim,
+            max_payload_bytes,
+            self.alpha_mlp_hidden,
+            bias_out=False,
+        )
         # mix_w ∈ [obl_mix_floor, 1] applied to FROZEN branch — CE cannot shut off.
         self.obl_mix = nn.Parameter(torch.tensor(0.0))
         self.obl_mix_floor = 0.35
@@ -218,17 +260,30 @@ class AtomSurfaceHead(nn.Module):
                     std=(1.0 / self.alpha_only_dim) ** 0.5,
                 )
                 buf.copy_(tmp.to(device=buf.device, dtype=buf.dtype))
-            for module in (self.alpha_byte_proj, self.alpha_length_proj):
-                w = module.weight
-                fan_in = w.shape[1]
-                bound = (6.0 / (fan_in + w.shape[0])) ** 0.5
-                w.copy_(
-                    torch.empty_like(w, device="cpu")
-                    .uniform_(-bound, bound, generator=gen)
-                    .to(device=w.device, dtype=w.dtype)
-                )
+            self._init_alpha_trainable_mlp(generator=gen)
             self.obl_gate.fill_(1.0)
             self.obl_mix.fill_(0.0)
+
+    def _init_alpha_trainable_mlp(
+        self, generator: torch.Generator | None = None
+    ) -> None:
+        """Xavier-uniform init for α-only MLP adapters (does not touch frozen JL/maps)."""
+        if generator is None:
+            generator = torch.Generator(device="cpu")
+            generator.manual_seed(20260918)
+        with torch.no_grad():
+            for module in (self.alpha_byte_proj, self.alpha_length_proj):
+                for layer in (module.fc1, module.fc2):
+                    w = layer.weight
+                    fan_in = w.shape[1]
+                    bound = (6.0 / (fan_in + w.shape[0])) ** 0.5
+                    w.copy_(
+                        torch.empty_like(w, device="cpu")
+                        .uniform_(-bound, bound, generator=generator)
+                        .to(device=w.device, dtype=w.dtype)
+                    )
+                    if layer.bias is not None:
+                        layer.bias.zero_()
 
     def alpha_only_features(self, alpha: torch.Tensor) -> torch.Tensor:
         """JL fingerprint of full flattened α — no persist/atom_r (zeros stay zeros).
@@ -258,10 +313,10 @@ class AtomSurfaceHead(nn.Module):
     def set_obligatory_hard(self, enabled: bool) -> None:
         """Hard-v2 obligatory: mix floor 1.0; freeze non-α bypass; α-proj trainable.
 
-        Forward: logits = frozen_α_map(α) + cap * obligatory_scale() * α_*_proj(α)
+        Forward: logits = frozen_α_map(α) + cap * obligatory_scale() * α_MLP(α)
         with cap≤1 so trainable RMS cannot exceed frozen RMS.
         Decoder / field skip / gates stay zeroed+frozen; CE may train only
-        alpha_byte_proj / alpha_length_proj (+ obl_gate). Field dynamics still train.
+        alpha_*_proj MLP (+ obl_gate). Field dynamics still train.
         """
         enabled = bool(enabled)
         self.field_obligatory_hard = enabled
@@ -407,8 +462,8 @@ class AtomSurfaceHead(nn.Module):
                 )
                 frozen_len = self.alpha_length_frozen @ a_hat
                 if getattr(self, "field_obligatory_hard", False):
-                    # Hard-v2: frozen α map + scale * trainable α-only proj.
-                    # Still no decoder/skip residual; CE trains only α_*_proj (+ obl_gate).
+                    # Hard-v2+: frozen α map + scale * trainable α-only MLP.
+                    # Still no decoder/skip residual; CE trains only α MLP (+ obl_gate).
                     # RMS cap: trainable residual may not exceed frozen RMS so CE
                     # cannot drown α separation (soft collapse mode).
                     train_byte = self.alpha_byte_proj(a_hat).view(
@@ -1272,12 +1327,27 @@ class AtomNativeModel(nn.Module):
         # Load matching tensors; activate new field path; damp biases that drown α.
         legacy_surface = "state_norm.weight" not in surface_state
         field_readout_missing = "field_to_state.weight" not in surface_state
-        obligatory_missing = ("alpha_byte_proj.weight" not in surface_state) or ("alpha_jl" not in surface_state)
+        has_alpha_proj = any(
+            key.startswith("alpha_byte_proj") for key in surface_state
+        )
+        obligatory_missing = (not has_alpha_proj) or ("alpha_jl" not in surface_state)
         current = self.surface.state_dict()
         filtered = {key: value for key, value in surface_state.items() if key in current and current[key].shape == value.shape}
         missing = [key for key in current if key not in filtered]
         self.surface.load_state_dict(filtered, strict=False)
-        if legacy_surface or missing or field_readout_missing:
+        mlp_missing = any(
+            key.startswith("alpha_byte_proj") or key.startswith("alpha_length_proj")
+            for key in missing
+        )
+        non_mlp_missing = [
+            key
+            for key in missing
+            if not (
+                key.startswith("alpha_byte_proj")
+                or key.startswith("alpha_length_proj")
+            )
+        ]
+        if legacy_surface or non_mlp_missing or field_readout_missing:
             with torch.no_grad():
                 if legacy_surface or "state_norm.weight" in missing:
                     self.surface.state_norm.reset_parameters()
@@ -1291,15 +1361,28 @@ class AtomNativeModel(nn.Module):
                     self.surface.field_feat_norm.reset_parameters()
                     # Open skip strongly so migrated ckpts separate logits before retrain.
                     self.surface.skip_gate.fill_(4.0)
-        if obligatory_missing or any(
-            key.startswith("alpha_") or key in {"obl_gate", "obl_mix"} for key in missing
-        ):
+
+        frozen_alpha_missing = any(
+            key in missing
+            for key in (
+                "alpha_jl",
+                "alpha_byte_frozen",
+                "alpha_length_frozen",
+                "obl_gate",
+                "obl_mix",
+            )
+        )
+        if obligatory_missing or frozen_alpha_missing:
             with torch.no_grad():
                 self.surface._init_obligatory_readout()
                 # Slight bias damp so fresh α-only residual is audible on load.
                 if not (legacy_surface or field_readout_missing):
                     self.surface.byte_decoder.bias.mul_(0.5)
                     self.surface.length_decoder.bias.mul_(0.5)
+        elif mlp_missing:
+            # Linear→MLP deepen: keep loaded frozen JL / maps; reinit trainable MLP only.
+            with torch.no_grad():
+                self.surface._init_alpha_trainable_mlp()
         core_state = checkpoint["core"]
         core = self.core
         core.encoder.load_state_dict(core_state["encoder"])
@@ -1358,7 +1441,8 @@ class AtomNativeModel(nn.Module):
         if training is None:
             training = {}
         training = dict(training)
-        training["legacy_surface_migrated"] = bool(legacy_surface or missing or field_readout_missing)
+        training["legacy_surface_migrated"] = bool(legacy_surface or bool(non_mlp_missing) or field_readout_missing)
+        training["alpha_mlp_migrated"] = bool(mlp_missing and not obligatory_missing)
         training["field_readout_migrated"] = bool(field_readout_missing)
         training["field_obligatory_migrated"] = bool(obligatory_missing)
         training["dynamics_on_load"] = dynamics_state

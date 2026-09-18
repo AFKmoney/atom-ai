@@ -52,8 +52,8 @@ persistent structured matter in the toroidal field, not parameter count alone.
 
 Latest probe (`tools/probe_field_persistence.py`):
 
-- Mean RMS after prompt / after 20 gen: 0.005304 / 0.032809
-- Off-diag cosine surface logits / alpha: 0.915846 / 0.841826
+- Mean RMS after prompt / after 20 gen: 0.005355 / 0.030459
+- Off-diag cosine surface logits / alpha: 0.914219 / 0.839724
 - Verdict: field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)
 
 See `docs/PERSISTENCE_TEST.md` and `docs/FIELD_PROBE.md`.

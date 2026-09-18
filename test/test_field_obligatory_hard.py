@@ -10,7 +10,7 @@ from src.io.atomizer import Atomizer
 
 
 class FieldObligatoryHardTests(unittest.TestCase):
-    """Hard-v2: mix floor 1.0; freeze non-α bypass; α_*_proj trainable."""
+    """Hard-v2+: mix floor 1.0; freeze non-α bypass; α-only MLP trainable."""
 
     def _tiny(self, **kwargs) -> AtomNativeModel:
         return AtomNativeModel(
@@ -109,8 +109,8 @@ class FieldObligatoryHardTests(unittest.TestCase):
         model = self._tiny(field_obligatory_hard=True)
         surf = model.surface
         with torch.no_grad():
-            # Inflate proj so uncapped residual would dominate frozen.
-            surf.alpha_byte_proj.weight.mul_(50.0)
+            # Inflate MLP so uncapped residual would dominate frozen.
+            surf.alpha_byte_proj.fc2.weight.mul_(50.0)
             surf.obl_gate.fill_(5.0)
         alpha = torch.randn(16, 16) * 0.5
         persist = torch.randn(16)
@@ -126,19 +126,22 @@ class FieldObligatoryHardTests(unittest.TestCase):
         self.assertLessEqual(r_rms, f_rms * 1.01 + 1e-6, msg=f"r_rms={r_rms} f_rms={f_rms}")
 
     def test_hard_v2_alpha_proj_trainable(self) -> None:
-        """Hard-v2: alpha_*_proj (+ obl_gate) require grad; frozen maps stay buffers."""
+        """Hard-v2+: α-only MLP (+ obl_gate) require grad; frozen maps stay buffers."""
         model = self._tiny(field_obligatory_hard=True)
         surf = model.surface
+        self.assertTrue(hasattr(surf.alpha_byte_proj, "fc1"))
+        self.assertTrue(hasattr(surf.alpha_byte_proj, "fc2"))
+        self.assertEqual(int(surf.alpha_mlp_hidden), 4 * int(surf.d_model))
         for module in (surf.alpha_byte_proj, surf.alpha_length_proj):
             for param in module.parameters():
                 self.assertTrue(
                     param.requires_grad,
-                    msg="alpha_*_proj must be trainable under hard-v2",
+                    msg="α-only MLP must be trainable under hard-v2+",
                 )
         self.assertTrue(surf.obl_gate.requires_grad)
         self.assertFalse(isinstance(surf.alpha_byte_frozen, torch.nn.Parameter))
         self.assertFalse(isinstance(surf.alpha_length_frozen, torch.nn.Parameter))
-        # Gradients flow through trainable α adapter on a hard forward.
+        # Gradients flow through trainable α MLP on a hard forward.
         alpha = torch.randn(16, 16) * 0.5
         persist = torch.randn(16)
         atom_r = torch.randn(16)
@@ -148,8 +151,11 @@ class FieldObligatoryHardTests(unittest.TestCase):
         )
         loss = out["byte_logits"].pow(2).mean() + out["length_logits"].pow(2).mean()
         loss.backward()
-        self.assertIsNotNone(surf.alpha_byte_proj.weight.grad)
-        self.assertGreater(float(surf.alpha_byte_proj.weight.grad.abs().sum()), 0.0)
+        grad_sum = 0.0
+        for param in surf.alpha_byte_proj.parameters():
+            self.assertIsNotNone(param.grad)
+            grad_sum += float(param.grad.abs().sum())
+        self.assertGreater(grad_sum, 0.0)
 
     def test_hard_stricter_than_soft_on_short_ce_contract(self) -> None:
 
@@ -166,6 +172,20 @@ class FieldObligatoryHardTests(unittest.TestCase):
         # Hard is pure frozen α map (α=0 → ~0 logits). Soft may separate more
         # via residual noise; only require both stay clearly prompt-sensitive.
         self.assertLess(cos_hard, 0.5, msg=f"hard two-α cosine too high: {cos_hard:.6f}")
+
+
+    def test_hard_v2_alpha_mlp_deeper_than_linear(self) -> None:
+        """α MLP is 2-layer (fc1→GELU→fc2); hidden=4*d; still α-only."""
+        model = self._tiny(field_obligatory_hard=True)
+        surf = model.surface
+        self.assertEqual(surf.alpha_byte_proj.in_dim, surf.alpha_only_dim)
+        self.assertEqual(surf.alpha_byte_proj.hidden_dim, 4 * surf.d_model)
+        self.assertEqual(
+            surf.alpha_byte_proj.out_dim, surf.max_payload_bytes * 256
+        )
+        # Decoder still frozen (no bypass).
+        for param in surf.byte_decoder.parameters():
+            self.assertFalse(param.requires_grad)
 
 
 if __name__ == "__main__":
