@@ -1,0 +1,19 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_obligatory_train/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=2925000
+[probe] prompt='Bonjour'
+        RMS 0.003939 -> 0.030213 (norm 0.2521 -> 1.9337) atoms 3 -> 22
+        gen_preview='E@@@@@@@@@@(ke umnE\n134umn@@@@@@@@'
+[probe] prompt='Qui es-tu ?'
+        RMS 0.006336 -> 0.026201 (norm 0.4055 -> 1.6769) atoms 7 -> 26
+        gen_preview='"""@ @he  @\ne  sxgvh xk @\n,\nh  sxdvh xk @@@@@@@@@@'
+[probe] prompt='Il était une fois'
+        RMS 0.006382 -> 0.029294 (norm 0.4084 -> 1.8748) atoms 6 -> 25
+        gen_preview='A@\n,@ @@@@@@@@@@@@@@'
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.003939 -> 0.030213 (norm 0.2521 -> 1.9337) atoms 3 -> 22
+        gen_preview='E@@@@@@@@@@(ke umnE\n134umn@@@@@@@@'
+[probe] mean off-diag cosine logits=0.991599 alpha=0.779656
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/logs/field_probe_report.json
+[probe] skip-docs: left FIELD_PROBE/PERSISTENCE_TEST/SCALE unchanged
+[probe] VERDICT: field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)
