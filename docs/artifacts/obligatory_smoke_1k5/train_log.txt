@@ -1,0 +1,144 @@
+train lock acquired: /workspace/exports/atom-ai/checkpoints/atom-ai-train.lock (pid=3203231)
+resumed weights from checkpoints/atom_native_obligatory/atom_native_src.pt (recorded step=2900000, legacy_surface_migrated=True)
+dynamics on load: energy_decay=0.44999998807907104 -> 0.44999998807907104 (repaired=False, bounds=(0.45, 0.95))
+field_obligatory_readout=ON (migrated=True)
+optimizer groups: field/other lr=0.0001 (11 tensors), surface lr=0.0003 (18 tensors); energy_decay_bounds=(0.45, 0.95); field_max_rms=3.0
+optimizer restore skipped: surface LayerNorm migration changed bias scale
+step=2900001 (run 1/1500) loss=19.63905 byte_ppl=371.923 atoms=1 merges=0 field=0.1144 rms=0.0020 scale=1.0000 fcos=0.533 ign=0.0000 mph=0.000
+step=2900150 (run 150/1500) loss=6.11410 byte_ppl=12.126 atoms=150 merges=0 field=5.9886 rms=0.0936 scale=1.0000 fcos=0.442 ign=0.0000 mph=0.500
+step=2900300 (run 300/1500) loss=6.34541 byte_ppl=24.867 atoms=44 merges=0 field=12.9070 rms=0.2017 scale=1.0000 fcos=0.441 ign=0.0000 mph=0.500
+step=2900450 (run 450/1500) loss=5.55369 byte_ppl=18.262 atoms=194 merges=0 field=23.9956 rms=0.3749 scale=1.0000 fcos=0.416 ign=0.0000 mph=0.500
+step=2900600 (run 600/1500) loss=2.70582 byte_ppl=3.240 atoms=88 merges=0 field=41.0934 rms=0.6421 scale=1.0000 fcos=-0.386 ign=0.0000 mph=0.500
+step=2900750 (run 750/1500) loss=5.33390 byte_ppl=32.511 atoms=238 merges=0 field=67.8665 rms=1.0604 scale=1.0000 fcos=0.435 ign=0.0000 mph=0.500
+step=2900900 (run 900/1500) loss=6.53696 byte_ppl=38.152 atoms=132 merges=0 field=109.2098 rms=1.7064 scale=1.0000 fcos=-0.516 ign=0.0000 mph=0.500
+step=2901050 (run 1050/1500) loss=6.44302 byte_ppl=28.035 atoms=26 merges=0 field=173.0942 rms=2.7046 scale=1.0000 fcos=-0.679 ign=0.0000 mph=0.500
+step=2901200 (run 1200/1500) loss=6.69914 byte_ppl=52.676 atoms=176 merges=0 field=191.9999 rms=3.0000 scale=0.9970 fcos=0.143 ign=0.0000 mph=0.500
+step=2901350 (run 1350/1500) loss=4.03876 byte_ppl=8.220 atoms=70 merges=0 field=191.9999 rms=3.0000 scale=0.9969 fcos=-0.690 ign=0.0000 mph=0.500
+step=2901500 (run 1500/1500) loss=3.74468 byte_ppl=6.494 atoms=220 merges=0 field=191.9998 rms=3.0000 scale=0.9970 fcos=-0.136 ign=0.0000 mph=0.500
+{
+  "stream": false,
+  "data_path": "data/corpus_train_chat.txt",
+  "data_glob": null,
+  "shard_paths": [
+    "/workspace/repos/toroidal-fractal-intelligence/data/corpus_train_chat.txt"
+  ],
+  "data_bytes": 777806,
+  "data_characters": 766865,
+  "atomizer_version": "atomizer-v1-byte-span",
+  "feature_dim": 320,
+  "packet_count": 154661,
+  "train_packet_count": 154597,
+  "validation_packet_count": 64,
+  "mean_packet_bytes": 5.029102359353684,
+  "max_packet_bytes": 17,
+  "min_packet_bytes": 1,
+  "config": {
+    "d_model": 64,
+    "n_modes": 64,
+    "n_atoms_max": 512,
+    "max_span_bytes": 16,
+    "episode_length": 512,
+    "episode_reset": false,
+    "atom_flush_every": 256,
+    "learning_rate": 0.0001,
+    "surface_learning_rate": 0.0003,
+    "steps": 1500,
+    "start_step": 2900000,
+    "seed": 20260917,
+    "surface_alphabet": 256,
+    "field_max_rms": 3.0,
+    "energy_decay_bounds": [
+      0.45,
+      0.95
+    ],
+    "stream": false,
+    "enable_merge": true,
+    "field_loss_weight": 0.08,
+    "field_contrast_weight": 0.45,
+    "field_ignorance_weight": 0.0,
+    "field_ignorance_ablate_shared": false,
+    "field_ignorance_prompt_bank": false,
+    "field_obligatory_readout": true,
+    "slow_every": 4
+  },
+  "train": {
+    "steps": 1500,
+    "start_step": 2900000,
+    "total_steps": 2901500,
+    "episode_length": 512,
+    "episode_reset": false,
+    "atom_flush_every": 256,
+    "elapsed_seconds": 33.635807926999405,
+    "transitions_per_second": 44.59533135804217,
+    "first_loss": 19.639047622680664,
+    "final_loss": 3.744676113128662,
+    "final_total_perplexity": 42.29530610578538,
+    "finite_losses": true,
+    "finite_parameters": true,
+    "nan_or_inf": false,
+    "field_rms_before_max": 3.0093190670013428,
+    "field_rms_after_max": 2.999999523162842,
+    "field_scale_min": 0.9969029426574707,
+    "field_norm_max": 191.99993896484375,
+    "field_limited_steps": 416,
+    "field_limited_fraction": 0.2773333333333333,
+    "final_dynamics": {
+      "coupling_scale": 1.9968849420547485,
+      "energy_decay": 0.45089760422706604,
+      "phase_sync": 0.5284976363182068,
+      "energy_decay_before": 0.45089760422706604,
+      "energy_decay_repaired": false,
+      "energy_decay_bounds": [
+        0.45,
+        0.95
+      ]
+    },
+    "final_atoms_before_validation": 5,
+    "stream": false,
+    "bytes_seen": 777806
+  },
+  "validation": {
+    "transitions": 63,
+    "loss": 8.926763716198149,
+    "total_perplexity": 7530.853915807848,
+    "byte_loss": 4.590077218555269,
+    "byte_perplexity": 98.50203605319966,
+    "source": "held_out_tail"
+  },
+  "checkpoint": "checkpoints/atom_native_obligatory/atom_native.pt",
+  "reload": {
+    "n_atoms": 220,
+    "field_norm": 191.9998321533203,
+    "time": 15.000247955322266,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "2c223665656e797973763f59903c0a796e206d63",
+      "text": ",\"6eenyysv?Y\ufffd<\nyn mc",
+      "reload_text": ",\"6eenyysv?Y\ufffd<\nyn mc",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "2e547265726472746e64656979722e0a20656965",
+      "text": ".Trerdrtndeiyr.\n eie",
+      "reload_text": ".Trerdrtndeiyr.\n eie",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "2236352069a16e6f20b0c23665206b777876650a",
+      "text": "\"65 i\ufffdno \ufffd\ufffd6e kwxve\n",
+      "reload_text": "\"65 i\ufffdno \ufffd\ufffd6e kwxve\n",
+      "reload_match": true
+    }
+  }
+}

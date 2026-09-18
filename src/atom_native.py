@@ -142,10 +142,36 @@ class AtomSurfaceHead(nn.Module):
         self.field_length_skip = nn.Linear(self.field_feat_dim, max_payload_bytes, bias=False)
         # softplus(4)≈4.0 — enough for inter-prompt logit cosine << 0.998 at load.
         self.skip_gate = nn.Parameter(torch.tensor(1.0))
+        # Obligatory α readout (main CE path): full-α JL fingerprint → logits.
+        # Frozen random map cannot be CE-collapsed; trainable residual can adapt.
+        # zeros_like(α) ⇒ exact zero branch. Persist/atom_r cannot bypass.
+        self.alpha_only_dim = 2 * d_model
+        self._alpha_flat_dim = int(self.n_modes) * int(d_model)
+        # Fixed JL projection of flattened α (buffer — not trained).
+        jl = torch.empty(self.alpha_only_dim, self._alpha_flat_dim)
+        torch.manual_seed(20260918)
+        nn.init.normal_(jl, mean=0.0, std=(1.0 / self._alpha_flat_dim) ** 0.5)
+        self.register_buffer("alpha_jl", jl, persistent=True)
+        # Frozen random α→logit map (buffer) + trainable adapter.
+        fr_b = torch.empty(max_payload_bytes * 256, self.alpha_only_dim)
+        fr_l = torch.empty(max_payload_bytes, self.alpha_only_dim)
+        nn.init.normal_(fr_b, mean=0.0, std=(1.0 / self.alpha_only_dim) ** 0.5)
+        nn.init.normal_(fr_l, mean=0.0, std=(1.0 / self.alpha_only_dim) ** 0.5)
+        self.register_buffer("alpha_byte_frozen", fr_b, persistent=True)
+        self.register_buffer("alpha_length_frozen", fr_l, persistent=True)
+        self.alpha_byte_proj = nn.Linear(self.alpha_only_dim, max_payload_bytes * 256, bias=False)
+        self.alpha_length_proj = nn.Linear(self.alpha_only_dim, max_payload_bytes, bias=False)
+        # mix_w ∈ [obl_mix_floor, 1] applied to FROZEN branch — CE cannot shut off.
+        self.obl_mix = nn.Parameter(torch.tensor(0.0))
+        self.obl_mix_floor = 0.35
+        self.obl_gate = nn.Parameter(torch.tensor(1.0))  # trainable additive scale
+        self.obl_floor = 0.5
+        self.field_obligatory_readout = False  # enabled via AtomNativeModel flag
         self.state_norm = nn.LayerNorm(d_model)
         self.byte_decoder = nn.Linear(d_model, max_payload_bytes * 256)
         self.length_decoder = nn.Linear(d_model, max_payload_bytes)
         self._init_field_readout()
+        self._init_obligatory_readout()
 
     def _init_field_readout(self) -> None:
         """Identity-on-mean + std residual; seeded Xavier skips. Safe for fresh + migrate."""
@@ -169,6 +195,62 @@ class AtomSurfaceHead(nn.Module):
                 )
             self.field_gate.fill_(2.0)
             self.skip_gate.fill_(1.0)
+
+    def _init_obligatory_readout(self) -> None:
+        """Seed JL/frozen buffers + trainable adapter (deterministic)."""
+        with torch.no_grad():
+            gen = torch.Generator(device="cpu")
+            gen.manual_seed(20260918)
+            jl = torch.empty_like(self.alpha_jl, device="cpu")
+            jl.normal_(generator=gen, mean=0.0, std=(1.0 / self._alpha_flat_dim) ** 0.5)
+            self.alpha_jl.copy_(jl.to(device=self.alpha_jl.device, dtype=self.alpha_jl.dtype))
+            for buf_name, fan_out in (
+                ("alpha_byte_frozen", self.alpha_byte_frozen.shape[0]),
+                ("alpha_length_frozen", self.alpha_length_frozen.shape[0]),
+            ):
+                buf = getattr(self, buf_name)
+                tmp = torch.empty_like(buf, device="cpu")
+                tmp.normal_(
+                    generator=gen,
+                    mean=0.0,
+                    std=(1.0 / self.alpha_only_dim) ** 0.5,
+                )
+                buf.copy_(tmp.to(device=buf.device, dtype=buf.dtype))
+            for module in (self.alpha_byte_proj, self.alpha_length_proj):
+                w = module.weight
+                fan_in = w.shape[1]
+                bound = (6.0 / (fan_in + w.shape[0])) ** 0.5
+                w.copy_(
+                    torch.empty_like(w, device="cpu")
+                    .uniform_(-bound, bound, generator=gen)
+                    .to(device=w.device, dtype=w.dtype)
+                )
+            self.obl_gate.fill_(1.0)
+            self.obl_mix.fill_(0.0)
+
+    def alpha_only_features(self, alpha: torch.Tensor) -> torch.Tensor:
+        """JL fingerprint of full flattened α — no persist/atom_r (zeros stay zeros).
+
+        mean‖std alone collapses inter-prompt cosine (~0.93) while full α sits
+        near ~0.71; a fixed JL map preserves that separation without new attention.
+        """
+        flat = alpha.reshape(-1)
+        # Match buffer device/dtype; pad/trim if shape drifts.
+        if flat.numel() < self._alpha_flat_dim:
+            flat = F.pad(flat, (0, self._alpha_flat_dim - flat.numel()))
+        elif flat.numel() > self._alpha_flat_dim:
+            flat = flat[: self._alpha_flat_dim]
+        flat = flat.to(device=self.alpha_jl.device, dtype=self.alpha_jl.dtype)
+        return self.alpha_jl @ flat
+
+    def obligatory_scale(self) -> torch.Tensor:
+        """softplus(obl_gate) + floor — additive residual cannot reach zero."""
+        return F.softplus(self.obl_gate) + float(self.obl_floor)
+
+    def obligatory_mix_weight(self) -> torch.Tensor:
+        """Convex mix weight ∈ [obl_mix_floor, 1] — CE cannot shut α-branch off."""
+        floor = float(self.obl_mix_floor)
+        return floor + (1.0 - floor) * torch.sigmoid(self.obl_mix)
 
     def field_features(
         self,
@@ -232,7 +314,12 @@ class AtomSurfaceHead(nn.Module):
         persistent_state: torch.Tensor | None = None,
         atom_r: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
-        """Decode from living field α when provided; else legacy mean-state path."""
+        """Decode from living field α when provided; else legacy mean-state path.
+
+        When ``field_obligatory_readout`` is on, an α-only residual (mean‖std)
+        is always added into the main CE logits with a non-zero floor scale so
+        persist/atom_r / decoder bias cannot fully bypass living α.
+        """
         if alpha is not None:
             feats = self.field_feat_norm(
                 self.field_features(alpha, persistent_state, atom_r)
@@ -249,10 +336,38 @@ class AtomSurfaceHead(nn.Module):
             byte_logits = self.byte_decoder(h).view(self.max_payload_bytes, 256)
             length_logits = self.length_decoder(h)
             skip = F.softplus(self.skip_gate)
-            byte_logits = byte_logits + skip * self.field_byte_skip(feats).view(
+            # When obligatory: skip uses α-only feats (padded) so shared persist/
+            # atom_r cannot substitute for α inside the skip path either.
+            if self.field_obligatory_readout:
+                a_only = self.alpha_only_features(alpha)
+                a_rms = a_only.pow(2).mean().sqrt().clamp_min(1e-8)
+                a_hat = a_only / a_rms
+                skip_in = F.pad(a_hat, (0, self.field_feat_dim - self.alpha_only_dim))
+                skip_in = self.field_feat_norm(skip_in)
+            else:
+                skip_in = feats
+            byte_logits = byte_logits + skip * self.field_byte_skip(skip_in).view(
                 self.max_payload_bytes, 256
             )
-            length_logits = length_logits + skip * self.field_length_skip(feats)
+            length_logits = length_logits + skip * self.field_length_skip(skip_in)
+            if self.field_obligatory_readout:
+                a_only = self.alpha_only_features(alpha)
+                a_rms = a_only.pow(2).mean().sqrt().clamp_min(1e-8)
+                a_hat = a_only / a_rms
+                # Frozen branch (CE cannot collapse) + trainable adapter.
+                frozen_byte = (self.alpha_byte_frozen @ a_hat).view(
+                    self.max_payload_bytes, 256
+                )
+                frozen_len = self.alpha_length_frozen @ a_hat
+                train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
+                train_len = self.alpha_length_proj(a_hat)
+                mix = self.obligatory_mix_weight()
+                # Hard mix uses FROZEN map so inter-prompt α structure reaches logits.
+                byte_logits = (1.0 - mix) * byte_logits + mix * frozen_byte
+                length_logits = (1.0 - mix) * length_logits + mix * frozen_len
+                obl = self.obligatory_scale()
+                byte_logits = byte_logits + obl * train_byte
+                length_logits = length_logits + obl * train_len
             return {"byte_logits": byte_logits, "length_logits": length_logits}
 
         if state is None:
@@ -383,6 +498,7 @@ class AtomNativeModel(nn.Module):
         field_ignorance_margin: float = 0.85,
         field_ignorance_ablate_shared: bool = False,
         field_ignorance_prompt_bank: bool = False,
+        field_obligatory_readout: bool = False,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -413,6 +529,8 @@ class AtomNativeModel(nn.Module):
         self.field_ignorance_margin = float(field_ignorance_margin)
         self.field_ignorance_ablate_shared = bool(field_ignorance_ablate_shared)
         self.field_ignorance_prompt_bank = bool(field_ignorance_prompt_bank)
+        self.field_obligatory_readout = bool(field_obligatory_readout)
+        self.surface.field_obligatory_readout = self.field_obligatory_readout
         self.slow_rms_rel_tol = float(slow_rms_rel_tol)
         self.field_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
         self.merge_count_total = 0
@@ -1056,6 +1174,7 @@ class AtomNativeModel(nn.Module):
                 "field_ignorance_margin": self.field_ignorance_margin,
                 "field_ignorance_ablate_shared": self.field_ignorance_ablate_shared,
                 "field_ignorance_prompt_bank": self.field_ignorance_prompt_bank,
+                "field_obligatory_readout": self.field_obligatory_readout,
                 "merge_count_total": self.merge_count_total,
             },
             "field_probe": self.field_probe.state_dict(),
@@ -1078,6 +1197,7 @@ class AtomNativeModel(nn.Module):
         # Load matching tensors; activate new field path; damp biases that drown α.
         legacy_surface = "state_norm.weight" not in surface_state
         field_readout_missing = "field_to_state.weight" not in surface_state
+        obligatory_missing = ("alpha_byte_proj.weight" not in surface_state) or ("alpha_jl" not in surface_state)
         current = self.surface.state_dict()
         filtered = {key: value for key, value in surface_state.items() if key in current and current[key].shape == value.shape}
         missing = [key for key in current if key not in filtered]
@@ -1096,6 +1216,15 @@ class AtomNativeModel(nn.Module):
                     self.surface.field_feat_norm.reset_parameters()
                     # Open skip strongly so migrated ckpts separate logits before retrain.
                     self.surface.skip_gate.fill_(4.0)
+        if obligatory_missing or any(
+            key.startswith("alpha_") or key in {"obl_gate", "obl_mix"} for key in missing
+        ):
+            with torch.no_grad():
+                self.surface._init_obligatory_readout()
+                # Slight bias damp so fresh α-only residual is audible on load.
+                if not (legacy_surface or field_readout_missing):
+                    self.surface.byte_decoder.bias.mul_(0.5)
+                    self.surface.length_decoder.bias.mul_(0.5)
         core_state = checkpoint["core"]
         core = self.core
         core.encoder.load_state_dict(core_state["encoder"])
@@ -1136,6 +1265,10 @@ class AtomNativeModel(nn.Module):
             self.field_ignorance_ablate_shared = bool(cfg["field_ignorance_ablate_shared"])
         if "field_ignorance_prompt_bank" in cfg:
             self.field_ignorance_prompt_bank = bool(cfg["field_ignorance_prompt_bank"])
+        if "field_obligatory_readout" in cfg:
+            self.field_obligatory_readout = bool(cfg["field_obligatory_readout"])
+        # Constructor / CLI may set obligatory after load; always sync surface.
+        self.surface.field_obligatory_readout = bool(self.field_obligatory_readout)
         self.merge_count_total = int(cfg.get("merge_count_total", 0) or 0)
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
@@ -1145,5 +1278,6 @@ class AtomNativeModel(nn.Module):
         training = dict(training)
         training["legacy_surface_migrated"] = bool(legacy_surface or missing or field_readout_missing)
         training["field_readout_migrated"] = bool(field_readout_missing)
+        training["field_obligatory_migrated"] = bool(obligatory_missing)
         training["dynamics_on_load"] = dynamics_state
         return training

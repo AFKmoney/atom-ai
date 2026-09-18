@@ -305,6 +305,13 @@ def main() -> None:
              "(default: off)",
     )
     parser.add_argument(
+        "--field-obligatory-readout",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="main CE path: α-only residual into surface logits with non-zero floor "
+             "(cannot bypass α via persist/atom_r alone; default: off)",
+    )
+    parser.add_argument(
         "--slow-every",
         type=int,
         default=1,
@@ -412,6 +419,7 @@ def main() -> None:
         field_ignorance_margin=float(args.field_ignorance_margin),
         field_ignorance_ablate_shared=bool(args.field_ignorance_ablate_shared),
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
+        field_obligatory_readout=bool(args.field_obligatory_readout),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     training_state = None
@@ -432,6 +440,18 @@ def main() -> None:
                 f"(repaired={dyn_load.get('energy_decay_repaired')}, "
                 f"bounds={dyn_load.get('energy_decay_bounds')})"
             )
+        # CLI wins over ckpt config for obligatory readout (smoke / migrate).
+        model.field_obligatory_readout = bool(args.field_obligatory_readout)
+        model.surface.field_obligatory_readout = bool(args.field_obligatory_readout)
+        if args.field_obligatory_readout:
+            print(
+                "field_obligatory_readout=ON "
+                f"(migrated={bool((training_state or {}).get('field_obligatory_migrated'))})"
+            )
+    elif args.field_obligatory_readout:
+        model.field_obligatory_readout = True
+        model.surface.field_obligatory_readout = True
+        print("field_obligatory_readout=ON (fresh)")
     surface_lr = (
         float(args.surface_learning_rate)
         if args.surface_learning_rate is not None
@@ -514,6 +534,7 @@ def main() -> None:
                 "field_ignorance_weight": float(args.field_ignorance_weight),
                 "field_ignorance_ablate_shared": bool(args.field_ignorance_ablate_shared),
                 "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
+                "field_obligatory_readout": bool(args.field_obligatory_readout),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -557,6 +578,7 @@ def main() -> None:
                 "field_ignorance_weight": float(args.field_ignorance_weight),
                 "field_ignorance_ablate_shared": bool(args.field_ignorance_ablate_shared),
                 "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
+                "field_obligatory_readout": bool(args.field_obligatory_readout),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -757,6 +779,7 @@ def main() -> None:
         field_ignorance_margin=float(args.field_ignorance_margin),
         field_ignorance_ablate_shared=bool(args.field_ignorance_ablate_shared),
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
+        field_obligatory_readout=bool(args.field_obligatory_readout),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     reloaded.load(checkpoint_path)

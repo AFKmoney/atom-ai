@@ -31,10 +31,10 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 |------------|------------|-------|-------|
 | migrate-only (earlier) | ~0.938 | ~0.74 | readout partially alive |
 | field_intel v1 | ~0.992 | ~0.32 | field separates; surface ignores |
-| **L_ign baseline +2500** | 0.992→**0.991** | 0.721→ 0.699 | hinge saturated — falsified |
-| **ablate-shared +2500** | 0.992→**0.992** | 0.721→ 0.699 | no logits drop — falsified |
-| **prompt-bank +2500** | 0.992→**0.991** | 0.721→ 0.699 | hinge off — falsified |
-| **both +2500** | 0.992→**0.992** | 0.721→ 0.698 | no logits drop — falsified |
+| **L_ign baseline +2500** | 0.992→**0.991** | 0.721→0.699 | hinge saturated — falsified |
+| **ablate-shared +2500** | 0.992→**0.992** | 0.721→0.699 | no logits drop — falsified |
+| **prompt-bank +2500** | 0.992→**0.991** | 0.721→0.699 | hinge off — falsified |
+| **both +2500** | 0.992→**0.992** | 0.721→0.698 | no logits drop — falsified |
 | **stream 2.9M (Part A)** | **0.980** | **0.707** | finished stream |
 | **obligatory migrate-only** | **0.753** | 0.707 | flag ON, no train |
 | **obligatory +1500** | 0.980→**0.865** | 0.707→**0.705** | **PASS** vs Part A |

@@ -1,0 +1,19 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_obligatory/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=2901500
+[probe] prompt='Bonjour'
+        RMS 0.003839 -> 0.023296 (norm 0.2457 -> 1.4910) atoms 3 -> 22
+        gen_preview='=E�ki)y��.�kiwx��.�giwx�F.�gi�yG�. ei�xo�. e hxo�,ke myo<\ne i\n e<\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nh '
+[probe] prompt='Qui es-tu ?'
+        RMS 0.007586 -> 0.025576 (norm 0.4855 -> 1.6369) atoms 7 -> 26
+        gen_preview='<\ndei yslizo<\ndei yslizo<\ndei ysaizot\nd i ysaiYo,\nd i ysaiY3,\nd i yva Yoi\nd i yva Y3t\nd i yva Yot\nd i yva Y3i\nd i yvd \n3t\nd i yvd Y3i\nd ieyvd Y3<\nd ieyvd Yo<\nd '
+[probe] prompt='Il était une fois'
+        RMS 0.005830 -> 0.025307 (norm 0.3731 -> 1.6196) atoms 6 -> 25
+        gen_preview='.\nh .\nh .hh .\nhe.hhe.,he hlv.,he.,he.,he.,he.,he.,he.,he.,ee.,ee.,ee..eeahee.heeahke'
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.003839 -> 0.023296 (norm 0.2457 -> 1.4910) atoms 3 -> 22
+        gen_preview='=E�ki)y��.�kiwx��.�giwx�F.�gi�yG�. ei�xo�. e hxo�,ke myo<\ne i\n e<\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nd <\nh '
+[probe] mean off-diag cosine logits=0.865194 alpha=0.705011
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/docs/artifacts/obligatory_smoke_1k5/probe_after_report.json
+[probe] skip-docs: left FIELD_PROBE/PERSISTENCE_TEST/SCALE unchanged
+[probe] VERDICT: field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)
