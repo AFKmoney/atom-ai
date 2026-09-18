@@ -1,0 +1,31 @@
+{
+  "part_a": {
+    "logits": 0.9799355809256632,
+    "alpha": 0.7067174167542339,
+    "rms_prompt": 0.005340076517313719,
+    "rms_gen": 0.026839961763471365
+  },
+  "migrate_only": {
+    "logits": 0.7534786422462006,
+    "alpha": 0.7067174167542339,
+    "mix": 0.6749999523162842
+  },
+  "after_smoke_1k5": {
+    "logits": 0.8651944387414311,
+    "alpha": 0.7050114575518265,
+    "rms_prompt": 0.005273624788969755,
+    "rms_gen": 0.024368965532630682,
+    "step": 2901500
+  },
+  "after_train_25k": {
+    "logits": 0.9915992667380161,
+    "alpha": 0.7796559309833486,
+    "rms_prompt": 0.005149099742993712,
+    "rms_gen": 0.02898056898266077,
+    "label": "field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)",
+    "step": 2925000
+  },
+  "success_bar": "logits <= 0.865 and ideally closer to migrate-only 0.753 without killing alpha (~0.70)",
+  "success": false,
+  "verdict": "CE re-collapsed obligatory gain: logits 0.865(+1.5k) -> 0.992(+25k); alpha 0.705 -> 0.780"
+}

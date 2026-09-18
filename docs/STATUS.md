@@ -12,7 +12,9 @@ Science on tree:
 - `L_ign` (m=0.85, w=0.08) + merge mph logging — **falsified** as readout fix
 - CPU perf: train lock default ON + stream one-ahead prefetch
 - **L_ign readout levers:** `--field-ignorance-ablate-shared`, `--field-ignorance-prompt-bank` (falsified)
-- **NEW: `--field-obligatory-readout`** — frozen α JL→logit mix on main CE path (`docs/READOUT_OBLIGATORY.md`)
+- **`--field-obligatory-readout`** — frozen α JL→logit mix on main CE path
+  - smoke +1500: **PASS** (`docs/READOUT_OBLIGATORY.md`)
+  - mid-train +25k: **FAIL / CE re-collapse** (`docs/OBLIGATORY_TRAIN_25K.md`)
 
 ## Stream 2.9M probe (finished marathon)
 
@@ -38,11 +40,12 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 | **stream 2.9M (Part A)** | **0.980** | **0.707** | finished stream |
 | **obligatory migrate-only** | **0.753** | 0.707 | flag ON, no train |
 | **obligatory +1500** | 0.980→**0.865** | 0.707→**0.705** | **PASS** vs Part A |
+| **obligatory +25k** | 0.865→**0.992** | 0.705→**0.780** | **FAIL** — CE re-collapse |
 
 ## Next (scientific, one at a time)
 
-1. Longer obligatory-aware train only if needed; keep frozen mix floor.
-2. MERGE threshold only after mph evidence, separate commit.
+1. New single hypothesis on CE vs obligatory floor (do not just add more CE).
+2. MERGE threshold only after mph evidence (this run: merges=0, mph≈0.5).
 3. Do not stack L_ign + obligatory without a new single hypothesis.
 
 ## Banned
