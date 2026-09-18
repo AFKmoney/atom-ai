@@ -1,0 +1,128 @@
+{
+  "stream": false,
+  "data_path": "data/corpus_train_chat.txt",
+  "data_glob": null,
+  "shard_paths": [
+    "/workspace/repos/toroidal-fractal-intelligence/data/corpus_train_chat.txt"
+  ],
+  "data_bytes": 777806,
+  "data_characters": 766865,
+  "atomizer_version": "atomizer-v1-byte-span",
+  "feature_dim": 320,
+  "packet_count": 154661,
+  "train_packet_count": 154597,
+  "validation_packet_count": 64,
+  "mean_packet_bytes": 5.029102359353684,
+  "max_packet_bytes": 17,
+  "min_packet_bytes": 1,
+  "config": {
+    "d_model": 64,
+    "n_modes": 64,
+    "n_atoms_max": 512,
+    "max_span_bytes": 16,
+    "episode_length": 512,
+    "episode_reset": false,
+    "atom_flush_every": 256,
+    "learning_rate": 0.0001,
+    "surface_learning_rate": 0.0003,
+    "steps": 20000,
+    "start_step": 2905000,
+    "seed": 20260918,
+    "surface_alphabet": 256,
+    "field_max_rms": 3.0,
+    "energy_decay_bounds": [
+      0.45,
+      0.95
+    ],
+    "stream": false,
+    "enable_merge": true,
+    "field_loss_weight": 0.05,
+    "field_contrast_weight": 0.1,
+    "field_ignorance_weight": 0.0,
+    "field_ignorance_ablate_shared": false,
+    "field_ignorance_prompt_bank": false,
+    "field_obligatory_readout": true,
+    "field_obligatory_hard": true,
+    "slow_every": 1
+  },
+  "train": {
+    "steps": 20000,
+    "start_step": 2905000,
+    "total_steps": 2925000,
+    "episode_length": 512,
+    "episode_reset": false,
+    "atom_flush_every": 256,
+    "elapsed_seconds": 437.16986433600005,
+    "transitions_per_second": 45.74880757249177,
+    "first_loss": 8.122807502746582,
+    "final_loss": 8.504480361938477,
+    "final_total_perplexity": 4936.838185958101,
+    "finite_losses": true,
+    "finite_parameters": true,
+    "nan_or_inf": false,
+    "field_rms_before_max": 3.0091934204101562,
+    "field_rms_after_max": 2.999999523162842,
+    "field_scale_min": 0.9969445466995239,
+    "field_norm_max": 191.99998474121094,
+    "field_limited_steps": 18941,
+    "field_limited_fraction": 0.94705,
+    "final_dynamics": {
+      "coupling_scale": 2.0,
+      "energy_decay": 0.44999998807907104,
+      "phase_sync": 0.6462218761444092,
+      "energy_decay_before": 0.4499572515487671,
+      "energy_decay_repaired": true,
+      "energy_decay_bounds": [
+        0.45,
+        0.95
+      ]
+    },
+    "final_atoms_before_validation": 10,
+    "stream": false,
+    "bytes_seen": 777806
+  },
+  "validation": {
+    "transitions": 63,
+    "loss": 8.506844777909537,
+    "total_perplexity": 4948.524735499277,
+    "byte_loss": 5.687372722322979,
+    "byte_perplexity": 295.1172462583266,
+    "source": "held_out_tail"
+  },
+  "checkpoint": "checkpoints/atom_native_obligatory_hard/atom_native.pt",
+  "reload": {
+    "n_atoms": 32,
+    "field_norm": 191.9999237060547,
+    "time": 199.96937561035156,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "dbf376f3f3360db771f3ae21714dae8825bcdfa8",
+      "text": "\ufffd\ufffdv\ufffd\ufffd6\r\ufffdq\ufffd!qM\ufffd\ufffd%\ufffd\u07e8",
+      "reload_text": "\ufffd\ufffdv\ufffd\ufffd6\r\ufffdq\ufffd!qM\ufffd\ufffd%\ufffd\u07e8",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "f328f320d9b76d7b20ae896d207bd9db6d2db6a4",
+      "text": "\ufffd(\ufffd \u0677m{ \ufffd\ufffdm {\ufffd\ufffdm-\ufffd\ufffd",
+      "reload_text": "\ufffd(\ufffd \u0677m{ \ufffd\ufffdm {\ufffd\ufffdm-\ufffd\ufffd",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "7628f3aedb61afd9d56d20aedb2528aedb2598ec",
+      "text": "v(\ufffd\ufffda\ufffd\ufffd\ufffdm \ufffd\ufffd%(\ufffd\ufffd%\ufffd\ufffd",
+      "reload_text": "v(\ufffd\ufffda\ufffd\ufffd\ufffdm \ufffd\ufffd%(\ufffd\ufffd%\ufffd\ufffd",
+      "reload_match": true
+    }
+  }
+}

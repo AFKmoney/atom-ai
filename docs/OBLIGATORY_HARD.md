@@ -1,35 +1,37 @@
-# OBLIGATORY_HARD — mix floor 1.0 + freeze non-α bypass
+# Field-obligatory HARD — 2026-09-18
 
-_Updated: 2026-09-18 (PT)_
+English. Numbers. No fluency claim.
 
-English. Numbers only. No fluency claim. No MERGE retune. No L_ign. No stream marathon.
+## Mechanism (one)
 
-## Hypothesis (one mechanism)
+`--field-obligatory-hard` (implies readout):
 
-Soft `--field-obligatory-readout` (mix floor **0.35**) **re-collapsed** under +25k CE
-(logits **0.992**). CE can still route around the frozen α→logit branch via the
-trainable **non-α** residual `(1−mix)·(decoder+skip)`.
+1. `obl_mix_floor = 1.0` — CE cannot mix away from α
+2. Non-α bypass residual **zeroed + frozen** (decoder / field_to_state / skips / gates)
+3. Main CE path returns **frozen α JL→logit only** (`alpha_byte_frozen @ α_hat`)
 
-**Hard mode** (`--field-obligatory-hard`):
-1. Force obligatory ON.
-2. Set **`obl_mix_floor = 1.0`** ⇒ mix weight ≡ 1 ⇒ surface logits = frozen α map.
-3. **Zero + freeze** trainable non-α bypass params on the main CE surface path
-   (`byte_decoder`, `length_decoder`, `field_to_state`, field skips, gates).
-4. Keep frozen α→logit buffers (`alpha_byte_frozen` / `alpha_length_frozen` / JL).
+Falsified earlier: soft obligatory (+25k logits→0.992), L_ign / ablate / bank.
 
-Expected under short CE: logits cannot return to a shared template independent of α.
-Unit: α vs `zeros_like(α)` (same `atom_r`) ⇒ logit cosine **≪ 0.99**.
+## Runs (resume stream 2.9M)
 
-## Status
+| stage | steps from 2.9M | logits off-diag cos | α off-diag cos |
+|-------|-----------------|---------------------|----------------|
+| stream 2.9M (soft/off) | 0 | **0.980** | **0.707** |
+| soft obligatory +25k | 25000 | **0.992** | 0.780 |
+| **hard +5k** | 5000 | **0.776** | **0.763** |
+| **hard +25k** (5k+20k) | 25000 | **0.861** | **0.842** |
 
-Implementation + train/probe pending box PID capacity
-(`/sys/fs/cgroup/pids.current` == `pids.max` == 19209 → `spawn bash EAGAIN`).
+## Verdict
 
-Soft +25k reference (already on main): logits **0.991599**, α **0.779656**.
+**PASS vs soft collapse.** Hard keeps logits **≪ 0.99** after 25k CE (0.861). Mild rise 0.776→0.861 (frozen JL still adapts via field dynamics / α distribution), but CE cannot re-glue the shared surface template the way soft did.
 
-## Measure plan (when shell recovers)
+Chat still noise — expected with pure frozen α map; not the success metric.
 
-Resume stream `atom_native.pt` @ ~2.9M, hard ON, L_ign=0:
-1. 5000 steps → probe logits/α
-2. If not collapsed, +20000 (25k total) → probe again; else stop
-3. Chat 3 FR prompts (text only)
+## Flags
+
+```
+--field-obligatory-hard
+--field-ignorance-weight 0
+```
+
+Artifacts: `docs/artifacts/obligatory_hard_25k/`.

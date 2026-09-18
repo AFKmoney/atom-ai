@@ -51,3 +51,14 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 ## Banned
 
 HF tokenizer on live path · attention/DDP/vocab farm · field wipe for CE · stacking multiple mechanisms · declaring fluent · force-push · retuning MERGE in the same change · restarting finished stream marathon.
+
+## Hard obligatory (2026-09-18)
+
+| Experiment | logits | α | notes |
+|------------|--------|---|-------|
+| stream 2.9M | 0.980 | 0.707 | baseline |
+| soft obligatory +25k | **0.992** | 0.780 | CE collapse — falsified |
+| hard +5k | **0.776** | 0.763 | holds |
+| hard +25k | **0.861** | 0.842 | **PASS** vs soft |
+
+See `docs/OBLIGATORY_HARD.md`. Flag `--field-obligatory-hard`.

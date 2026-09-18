@@ -305,6 +305,11 @@ def main() -> None:
              "(default: off)",
     )
     parser.add_argument(
+        "--field-obligatory-hard",
+        action="store_true",
+        help="hard obligatory: mix floor=1.0 + freeze non-alpha CE bypass (implies readout)",
+    )
+    parser.add_argument(
         "--field-obligatory-readout",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -419,7 +424,8 @@ def main() -> None:
         field_ignorance_margin=float(args.field_ignorance_margin),
         field_ignorance_ablate_shared=bool(args.field_ignorance_ablate_shared),
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
-        field_obligatory_readout=bool(args.field_obligatory_readout),
+        field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
+        field_obligatory_hard=bool(args.field_obligatory_hard),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     training_state = None
@@ -443,6 +449,11 @@ def main() -> None:
         # CLI wins over ckpt config for obligatory readout (smoke / migrate).
         model.field_obligatory_readout = bool(args.field_obligatory_readout)
         model.surface.field_obligatory_readout = bool(args.field_obligatory_readout)
+        if getattr(args, "field_obligatory_hard", False):
+            model.field_obligatory_hard = True
+            model.field_obligatory_readout = True
+            model.surface.set_obligatory_hard(True)
+            print("field_obligatory_hard=ON (mix_floor=1.0, non-alpha bypass frozen)")
         if args.field_obligatory_readout:
             print(
                 "field_obligatory_readout=ON "
@@ -534,7 +545,8 @@ def main() -> None:
                 "field_ignorance_weight": float(args.field_ignorance_weight),
                 "field_ignorance_ablate_shared": bool(args.field_ignorance_ablate_shared),
                 "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
-                "field_obligatory_readout": bool(args.field_obligatory_readout),
+                "field_obligatory_readout": bool(args.field_obligatory_readout) or bool(getattr(args, "field_obligatory_hard", False)),
+                "field_obligatory_hard": bool(getattr(args, "field_obligatory_hard", False)),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -578,7 +590,8 @@ def main() -> None:
                 "field_ignorance_weight": float(args.field_ignorance_weight),
                 "field_ignorance_ablate_shared": bool(args.field_ignorance_ablate_shared),
                 "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
-                "field_obligatory_readout": bool(args.field_obligatory_readout),
+                "field_obligatory_readout": bool(args.field_obligatory_readout) or bool(getattr(args, "field_obligatory_hard", False)),
+                "field_obligatory_hard": bool(getattr(args, "field_obligatory_hard", False)),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -779,7 +792,8 @@ def main() -> None:
         field_ignorance_margin=float(args.field_ignorance_margin),
         field_ignorance_ablate_shared=bool(args.field_ignorance_ablate_shared),
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
-        field_obligatory_readout=bool(args.field_obligatory_readout),
+        field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
+        field_obligatory_hard=bool(args.field_obligatory_hard),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     reloaded.load(checkpoint_path)

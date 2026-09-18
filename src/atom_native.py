@@ -167,6 +167,8 @@ class AtomSurfaceHead(nn.Module):
         self.obl_gate = nn.Parameter(torch.tensor(1.0))  # trainable additive scale
         self.obl_floor = 0.5
         self.field_obligatory_readout = False  # enabled via AtomNativeModel flag
+        self.field_obligatory_hard = False  # mix floor=1.0 + freeze non-α bypass
+        self._soft_obl_mix_floor = 0.35
         self.state_norm = nn.LayerNorm(d_model)
         self.byte_decoder = nn.Linear(d_model, max_payload_bytes * 256)
         self.length_decoder = nn.Linear(d_model, max_payload_bytes)
@@ -251,6 +253,45 @@ class AtomSurfaceHead(nn.Module):
         """Convex mix weight ∈ [obl_mix_floor, 1] — CE cannot shut α-branch off."""
         floor = float(self.obl_mix_floor)
         return floor + (1.0 - floor) * torch.sigmoid(self.obl_mix)
+
+
+    def set_obligatory_hard(self, enabled: bool) -> None:
+        """Hard obligatory: mix floor 1.0; zero/freeze trainable non-α bypass."""
+        enabled = bool(enabled)
+        self.field_obligatory_hard = enabled
+        if enabled:
+            self.field_obligatory_readout = True
+            self.obl_mix_floor = 1.0
+            self._freeze_non_alpha_bypass(True)
+        else:
+            self.obl_mix_floor = float(getattr(self, "_soft_obl_mix_floor", 0.35))
+            self._freeze_non_alpha_bypass(False)
+
+    def _freeze_non_alpha_bypass(self, freeze: bool) -> None:
+        """Zero + freeze decoder/skip/gates that can bypass α on the CE path."""
+        modules = (
+            self.field_to_state,
+            self.field_byte_skip,
+            self.field_length_skip,
+            self.byte_decoder,
+            self.length_decoder,
+        )
+        scalars = (self.field_gate, self.skip_gate, self.obl_mix)
+        with torch.no_grad():
+            if freeze:
+                for module in modules:
+                    for param in module.parameters():
+                        param.zero_()
+                        param.requires_grad_(False)
+                for param in scalars:
+                    param.zero_()
+                    param.requires_grad_(False)
+            else:
+                for module in modules:
+                    for param in module.parameters():
+                        param.requires_grad_(True)
+                for param in scalars:
+                    param.requires_grad_(True)
 
     def field_features(
         self,
@@ -359,6 +400,9 @@ class AtomSurfaceHead(nn.Module):
                     self.max_payload_bytes, 256
                 )
                 frozen_len = self.alpha_length_frozen @ a_hat
+                if getattr(self, "field_obligatory_hard", False):
+                    # Hard: mix≡1 and non-α bypass residual forced off.
+                    return {"byte_logits": frozen_byte, "length_logits": frozen_len}
                 train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
                 train_len = self.alpha_length_proj(a_hat)
                 mix = self.obligatory_mix_weight()
@@ -499,6 +543,7 @@ class AtomNativeModel(nn.Module):
         field_ignorance_ablate_shared: bool = False,
         field_ignorance_prompt_bank: bool = False,
         field_obligatory_readout: bool = False,
+        field_obligatory_hard: bool = False,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -529,8 +574,13 @@ class AtomNativeModel(nn.Module):
         self.field_ignorance_margin = float(field_ignorance_margin)
         self.field_ignorance_ablate_shared = bool(field_ignorance_ablate_shared)
         self.field_ignorance_prompt_bank = bool(field_ignorance_prompt_bank)
-        self.field_obligatory_readout = bool(field_obligatory_readout)
+        self.field_obligatory_hard = bool(field_obligatory_hard)
+        self.field_obligatory_readout = bool(field_obligatory_readout) or self.field_obligatory_hard
         self.surface.field_obligatory_readout = self.field_obligatory_readout
+        if self.field_obligatory_hard:
+            self.surface.set_obligatory_hard(True)
+        else:
+            self.surface.field_obligatory_hard = False
         self.slow_rms_rel_tol = float(slow_rms_rel_tol)
         self.field_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
         self.merge_count_total = 0

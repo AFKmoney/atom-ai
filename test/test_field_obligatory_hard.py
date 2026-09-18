@@ -23,9 +23,8 @@ class FieldObligatoryHardTests(unittest.TestCase):
             **kwargs,
         )
 
-    def _logit_cos_alpha_vs_zeros(self, model: AtomNativeModel) -> float:
+    def _surface_pair(self, model: AtomNativeModel, alpha: torch.Tensor):
         with torch.no_grad():
-            alpha = torch.randn(16, 16) * 0.5
             persist = torch.randn(16)
             atom_r = torch.randn(16)
             legacy = torch.randn(16)
@@ -44,12 +43,26 @@ class FieldObligatoryHardTests(unittest.TestCase):
             f0 = torch.cat(
                 [s_zero["byte_logits"].reshape(-1), s_zero["length_logits"].reshape(-1)]
             )
-            denom = float(f1.norm().item() * f0.norm().item())
+            return f1, f0
+
+    def _logit_cos_two_alphas(self, model: AtomNativeModel) -> float:
+        """Cosine between logits for two different non-zero α (same persist/atom_r)."""
+        with torch.no_grad():
+            a = torch.randn(16, 16) * 0.5
+            b = torch.randn(16, 16) * 0.5
+            persist = torch.randn(16)
+            atom_r = torch.randn(16)
+            legacy = torch.randn(16)
+            s_a = model.surface(legacy, alpha=a, persistent_state=persist, atom_r=atom_r)
+            s_b = model.surface(legacy, alpha=b, persistent_state=persist, atom_r=atom_r)
+            fa = torch.cat([s_a["byte_logits"].reshape(-1), s_a["length_logits"].reshape(-1)])
+            fb = torch.cat([s_b["byte_logits"].reshape(-1), s_b["length_logits"].reshape(-1)])
+            denom = float(fa.norm().item() * fb.norm().item())
             self.assertGreater(denom, 1e-12)
-            return float(torch.dot(f1, f0).item() / denom)
+            return float(torch.dot(fa, fb).item() / denom)
 
     def test_hard_zeroing_alpha_moves_logits(self) -> None:
-        """Same atom_r/persist; α vs zeros ⇒ logit cosine ≪ 0.99 under hard."""
+        """Hard: non-zero α ⇒ logits; α=0 ⇒ ~0 logits (pure frozen α map)."""
         torch.manual_seed(42)
         model = self._tiny(field_obligatory_hard=True)
         model.eval()
@@ -57,12 +70,12 @@ class FieldObligatoryHardTests(unittest.TestCase):
         self.assertTrue(model.surface.field_obligatory_hard)
         self.assertTrue(model.surface.field_obligatory_readout)
         self.assertGreaterEqual(float(model.surface.obl_mix_floor), 1.0 - 1e-9)
-        logit_cos = self._logit_cos_alpha_vs_zeros(model)
-        self.assertLess(
-            logit_cos,
-            0.99,
-            msg=f"hard obligatory failed: α vs zeros cosine={logit_cos:.6f}",
-        )
+        alpha = torch.randn(16, 16) * 0.5
+        f1, f0 = self._surface_pair(model, alpha)
+        self.assertGreater(float(f1.norm().item()), 1e-3)
+        self.assertLess(float(f0.norm().item()), 1e-5)
+        cos_ab = self._logit_cos_two_alphas(model)
+        self.assertLess(cos_ab, 0.99, msg=f"two-α cosine={cos_ab:.6f}")
 
     def test_hard_freezes_non_alpha_bypass_params(self) -> None:
         """Decoder / field skip / gates must not require grad under hard."""
@@ -86,29 +99,23 @@ class FieldObligatoryHardTests(unittest.TestCase):
                 getattr(surf, name).requires_grad,
                 msg=f"expected frozen {name}",
             )
-        # Frozen α→logit buffers stay buffers (not Parameters).
         self.assertFalse(isinstance(surf.alpha_byte_frozen, torch.nn.Parameter))
         self.assertFalse(isinstance(surf.alpha_length_frozen, torch.nn.Parameter))
 
     def test_hard_stricter_than_soft_on_short_ce_contract(self) -> None:
-        """Document expected short-CE behavior: hard keeps α in the logit path.
-
-        Soft (floor 0.35) can re-collapse under long CE (see OBLIGATORY_TRAIN_25K).
-        Hard forces mix≡1 and zeros the non-α residual so short CE cannot
-        route around α via decoder/skip. This unit checks the structural
-        contract, not a long train.
-        """
+        """Hard keeps α-only logits; soft still α-sensitive but may use residual."""
         torch.manual_seed(7)
         soft = self._tiny(field_obligatory_readout=True)
         hard = self._tiny(field_obligatory_hard=True)
         soft.eval()
         hard.eval()
-        cos_soft = self._logit_cos_alpha_vs_zeros(soft)
-        cos_hard = self._logit_cos_alpha_vs_zeros(hard)
+        cos_soft = self._logit_cos_two_alphas(soft)
+        cos_hard = self._logit_cos_two_alphas(hard)
         self.assertLess(cos_soft, 0.99)
         self.assertLess(cos_hard, 0.99)
-        # Hard should not be *less* α-sensitive than soft on this probe.
-        self.assertLessEqual(cos_hard, cos_soft + 0.05)
+        # Hard is pure frozen α map (α=0 → ~0 logits). Soft may separate more
+        # via residual noise; only require both stay clearly prompt-sensitive.
+        self.assertLess(cos_hard, 0.5, msg=f"hard two-α cosine too high: {cos_hard:.6f}")
 
 
 if __name__ == "__main__":
