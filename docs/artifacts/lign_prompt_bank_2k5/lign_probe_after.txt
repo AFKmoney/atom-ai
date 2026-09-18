@@ -1,0 +1,19 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_lign_prompt_bank/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=2105000
+[probe] prompt='Bonjour'
+        RMS 0.003866 -> 0.032612 (norm 0.2474 -> 2.0872) atoms 3 -> 22
+        gen_preview='unk> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k>'
+[probe] prompt='Qui es-tu ?'
+        RMS 0.006797 -> 0.034235 (norm 0.4350 -> 2.1911) atoms 7 -> 26
+        gen_preview='unk> ,k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k>'
+[probe] prompt='Il était une fois'
+        RMS 0.006036 -> 0.033740 (norm 0.3863 -> 2.1594) atoms 6 -> 25
+        gen_preview='unk> ,k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k>'
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.003866 -> 0.032612 (norm 0.2474 -> 2.0872) atoms 3 -> 22
+        gen_preview='unk> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k> =k>'
+[probe] mean off-diag cosine logits=0.991156 alpha=0.698703
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/docs/artifacts/lign_prompt_bank_2k5/probe_after_report.json
+[probe] skip-docs: left FIELD_PROBE/PERSISTENCE_TEST/SCALE unchanged
+[probe] VERDICT: field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)
