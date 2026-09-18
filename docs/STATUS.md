@@ -44,9 +44,9 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 
 ## Next (scientific, one at a time)
 
-1. Hard-v2+ deeper α MLP +150k: probe OK (logits 0.914), chat still noise — deeper Linear→MLP alone did not unlock multi-word FR.
-2. Next single hypothesis for phrase-level FR (do not stack MERGE retune / attention).
-3. MERGE threshold only after mph evidence (this run: merges=0, mph≈0.5).
+1. Printable aux +50k: probe OK (logits 0.912), prn +0.018, chat still noise — **STOP**; do not burn another chunk on printable alone.
+2. Next single hypothesis: **Atomizer longer linguistic spans** (dialogue-aligned) *or* MERGE densify after mph evidence — pick one.
+3. Do not stack attention / HF / MERGE retune / field wipe with a new lever.
 4. Do not stack L_ign + obligatory without a new single hypothesis.
 
 ## Banned
@@ -88,3 +88,18 @@ See `docs/HARD_V2_COHERENCE.md`. Do not claim fluency.
 | mechanism | α-only MLP `JL → 4d → GELU → out` under hard |
 
 See `docs/HARD_V2_DEEPER.md`. Do not claim fluency.
+
+## Printable aux on hard α-MLP (2026-09-18)
+
+| Metric | Value |
+|--------|-------|
+| start → end step | 3,275,000 → **3,325,000** (+50k) |
+| final logits cos | **0.912** (≪0.99) |
+| final α cos | **0.837** |
+| printable mass | 0.872 → **0.890** (+0.018) |
+| chat | **not coherent FR** (short-token noise) |
+| mechanism | `printable_aux_weight=0.08` on hard logits + chat hard-path force |
+| verdict | **STOP** — aux alone did not unlock multi-word FR |
+
+See `docs/PRINTABLE_AUX.md`. Do not claim fluency.
+

@@ -216,6 +216,12 @@ class AtomSurfaceHead(nn.Module):
         self.length_decoder = nn.Linear(d_model, max_payload_bytes)
         self._init_field_readout()
         self._init_obligatory_readout()
+        # Binary mask over byte alphabet (1=printable UTF-8 / Latin-1 friendly).
+        # Used by decode bias and by printable_aux train loss on hard logits.
+        _pm = torch.zeros(256)
+        for value in self._PRINTABLE:
+            _pm[value] = 1.0
+        self.register_buffer("printable_mask", _pm, persistent=False)
 
     def _init_field_readout(self) -> None:
         """Identity-on-mean + std residual; seeded Xavier skips. Safe for fresh + migrate."""
@@ -505,17 +511,29 @@ class AtomSurfaceHead(nn.Module):
         """Softly discourage control/non-text bytes without hard-masking UTF-8."""
         if strength <= 0:
             return byte_logits
-        penalty = torch.full(
-            (256,),
-            -strength,
-            dtype=byte_logits.dtype,
-            device=byte_logits.device,
-        )
-        for value in self._PRINTABLE:
-            penalty[value] = 0.0
+        mask = getattr(self, "printable_mask", None)
+        if mask is None:
+            penalty = torch.full(
+                (256,),
+                -strength,
+                dtype=byte_logits.dtype,
+                device=byte_logits.device,
+            )
+            for value in self._PRINTABLE:
+                penalty[value] = 0.0
+        else:
+            # printable→0, non-printable→-strength (vectorized)
+            penalty = (1.0 - mask.to(device=byte_logits.device, dtype=byte_logits.dtype)) * (-strength)
         # Keep NUL strongly suppressed; allow tab/LF/CR via printable set.
+        penalty = penalty.clone()
         penalty[0] = -strength * 2.0
         return byte_logits + penalty
+
+    def printable_mass(self, byte_logits: torch.Tensor) -> torch.Tensor:
+        """Per-position softmax mass on printable UTF-8 / Latin-1 friendly bytes."""
+        probs = byte_logits.softmax(dim=-1)
+        mask = self.printable_mask.to(device=probs.device, dtype=probs.dtype)
+        return (probs * mask).sum(dim=-1)
 
     def decode(
         self,
@@ -543,8 +561,10 @@ class AtomSurfaceHead(nn.Module):
                 length = int(length_indices[torch.multinomial(probs, 1)].item()) + 1
         length = max(1, min(length, self.max_payload_bytes))
         byte_logits = output["byte_logits"][:length] / temperature
-        if prefer_printable:
-            byte_logits = self._apply_printable_bias(byte_logits)
+        # Hard α-MLP path: always prefer printable (chat_atom_native contract).
+        if prefer_printable or getattr(self, "field_obligatory_hard", False):
+            strength = 2.5 if getattr(self, "field_obligatory_hard", False) else 2.0
+            byte_logits = self._apply_printable_bias(byte_logits, strength=strength)
         if deterministic:
             values = byte_logits.argmax(dim=-1)
         else:
@@ -622,6 +642,7 @@ class AtomNativeModel(nn.Module):
         field_ignorance_prompt_bank: bool = False,
         field_obligatory_readout: bool = False,
         field_obligatory_hard: bool = False,
+        printable_aux_weight: float = 0.0,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -654,6 +675,8 @@ class AtomNativeModel(nn.Module):
         self.field_ignorance_prompt_bank = bool(field_ignorance_prompt_bank)
         self.field_obligatory_hard = bool(field_obligatory_hard)
         self.field_obligatory_readout = bool(field_obligatory_readout) or self.field_obligatory_hard
+        # Light aux: push hard α-MLP logits toward printable UTF-8 mass (no decoder bypass).
+        self.printable_aux_weight = float(printable_aux_weight)
         self.surface.field_obligatory_readout = self.field_obligatory_readout
         if self.field_obligatory_hard:
             self.surface.set_obligatory_hard(True)
@@ -1026,6 +1049,8 @@ class AtomNativeModel(nn.Module):
             "field_contrast_loss": 0.0,
             "field_persist_loss": 0.0,
             "field_ignorance_loss": 0.0,
+            "printable_aux_loss": 0.0,
+            "printable_mass_mean": float("nan"),
             "field_logit_cos_zero": float("nan"),
             "field_logit_cos_shuf": float("nan"),
             "field_logit_cos_ignorance": float("nan"),
@@ -1033,6 +1058,7 @@ class AtomNativeModel(nn.Module):
         contrast = zero
         persist = zero
         ignorance = zero
+        printable = zero
         alpha = output["field"]
         atom_r = output.get("atom_r")
         persist_state = output.get("persistent_state")
@@ -1137,10 +1163,22 @@ class AtomNativeModel(nn.Module):
                 info["field_logit_cos_ignorance"] = float(cos_ign.detach().item())
                 info["field_ignorance_loss"] = float(ignorance.detach().item())
 
+        # Printable UTF-8 aux on hard (or any) surface logits: reward mass on
+        # printable bytes so CE under frozen+MLP stops favoring binary garbage.
+        # Gradients flow into α-MLP only under hard (decoder frozen).
+        if self.printable_aux_weight > 0:
+            byte_logits = output["surface"]["byte_logits"]
+            mass = self.surface.printable_mass(byte_logits)
+            # 1 - mass ∈ [0,1]; also lightly penalize via -log(mass) for sharp push.
+            printable = (1.0 - mass).mean() + 0.25 * (-mass.clamp_min(1e-6).log()).mean()
+            info["printable_aux_loss"] = float(printable.detach().item())
+            info["printable_mass_mean"] = float(mass.detach().mean().item())
+
         total_aux = (
             self.field_contrast_weight * contrast
             + self.field_loss_weight * persist
             + self.field_ignorance_weight * ignorance
+            + self.printable_aux_weight * printable
         )
         return total_aux, info
 
@@ -1232,6 +1270,10 @@ class AtomNativeModel(nn.Module):
         feature context stays closer to the training distribution.
         """
         self.eval()
+        # Chat / generation stays on hard α-MLP when flag is set (no soft fallback).
+        if self.field_obligatory_hard:
+            self.surface.set_obligatory_hard(True)
+            prefer_printable = True
         if reset:
             self.reset_state(reset_atomizer=True)
         prompt_packets = self.atomizer.encode(prompt, reset=reset)
@@ -1304,7 +1346,7 @@ class AtomNativeModel(nn.Module):
                 "field_ignorance_prompt_bank": self.field_ignorance_prompt_bank,
                 "field_obligatory_readout": bool(self.field_obligatory_readout),
                 "field_obligatory_hard": bool(self.field_obligatory_hard),
-                "field_obligatory_readout": self.field_obligatory_readout,
+                "printable_aux_weight": float(self.printable_aux_weight),
                 "merge_count_total": self.merge_count_total,
             },
             "field_probe": self.field_probe.state_dict(),
@@ -1425,6 +1467,8 @@ class AtomNativeModel(nn.Module):
             self.field_ignorance_prompt_bank = bool(cfg["field_ignorance_prompt_bank"])
         if "field_obligatory_readout" in cfg:
             self.field_obligatory_readout = bool(cfg["field_obligatory_readout"])
+        if "printable_aux_weight" in cfg:
+            self.printable_aux_weight = float(cfg["printable_aux_weight"])
         if "field_obligatory_hard" in cfg and bool(cfg["field_obligatory_hard"]):
             self.field_obligatory_hard = True
             self.field_obligatory_readout = True

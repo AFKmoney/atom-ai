@@ -310,6 +310,12 @@ def main() -> None:
         help="hard-v2 obligatory: mix floor=1.0 + freeze non-alpha bypass; logits=frozen_α+scale*α_proj (implies readout)",
     )
     parser.add_argument(
+        "--printable-aux-weight",
+        type=float,
+        default=0.0,
+        help="aux weight rewarding printable UTF-8 mass on hard logits (0 disables; try ~0.08)",
+    )
+    parser.add_argument(
         "--field-obligatory-readout",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -426,6 +432,7 @@ def main() -> None:
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
         field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
         field_obligatory_hard=bool(args.field_obligatory_hard),
+        printable_aux_weight=float(args.printable_aux_weight),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     training_state = None
@@ -449,11 +456,15 @@ def main() -> None:
         # CLI wins over ckpt config for obligatory readout (smoke / migrate).
         model.field_obligatory_readout = bool(args.field_obligatory_readout)
         model.surface.field_obligatory_readout = bool(args.field_obligatory_readout)
+        # CLI wins for printable aux (mechanism under test).
+        model.printable_aux_weight = float(args.printable_aux_weight)
         if getattr(args, "field_obligatory_hard", False):
             model.field_obligatory_hard = True
             model.field_obligatory_readout = True
             model.surface.set_obligatory_hard(True)
             print("field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*scale*alpha_MLP)")
+            if float(args.printable_aux_weight) > 0:
+                print(f"printable_aux_weight={float(args.printable_aux_weight)} (reward printable mass on hard logits)")
         if args.field_obligatory_readout:
             print(
                 "field_obligatory_readout=ON "
@@ -547,6 +558,7 @@ def main() -> None:
                 "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
                 "field_obligatory_readout": bool(args.field_obligatory_readout) or bool(getattr(args, "field_obligatory_hard", False)),
                 "field_obligatory_hard": bool(getattr(args, "field_obligatory_hard", False)),
+                "printable_aux_weight": float(args.printable_aux_weight),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -592,6 +604,7 @@ def main() -> None:
                 "field_ignorance_prompt_bank": bool(args.field_ignorance_prompt_bank),
                 "field_obligatory_readout": bool(args.field_obligatory_readout) or bool(getattr(args, "field_obligatory_hard", False)),
                 "field_obligatory_hard": bool(getattr(args, "field_obligatory_hard", False)),
+                "printable_aux_weight": float(args.printable_aux_weight),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -691,6 +704,8 @@ def main() -> None:
                 "field_contrast_loss": info.get("field_contrast_loss", 0.0),
                 "field_persist_loss": info.get("field_persist_loss", 0.0),
                 "field_ignorance_loss": info.get("field_ignorance_loss", 0.0),
+                "printable_aux_loss": info.get("printable_aux_loss", 0.0),
+                "printable_mass_mean": info.get("printable_mass_mean", float("nan")),
                 "max_phase_coherence": info.get("max_phase_coherence", 0.0),
                 "n_pairs_above_energy_floor": info.get("n_pairs_above_energy_floor", 0),
                 "energy_decay": dynamics_state["energy_decay"],
@@ -718,6 +733,7 @@ def main() -> None:
                 f"rms={record['field_rms_after']:.4f} scale={record['field_scale']:.4f} "
                 f"fcos={info.get('field_logit_cos_zero', float('nan')):.3f} "
                 f"ign={info.get('field_ignorance_loss', 0.0):.4f} "
+                f"prn={info.get('printable_mass_mean', float('nan')):.3f} "
                 f"mph={info.get('max_phase_coherence', 0.0):.3f}"
                 f"{extra}"
             )
@@ -794,6 +810,7 @@ def main() -> None:
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
         field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
         field_obligatory_hard=bool(args.field_obligatory_hard),
+        printable_aux_weight=float(args.printable_aux_weight),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     reloaded.load(checkpoint_path)

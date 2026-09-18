@@ -188,5 +188,51 @@ class FieldObligatoryHardTests(unittest.TestCase):
             self.assertFalse(param.requires_grad)
 
 
+    def test_printable_aux_pushes_mass_and_grads_alpha_mlp(self) -> None:
+        """printable_aux_weight>0: loss rises with garbage logits; grads hit α MLP."""
+        torch.manual_seed(3)
+        model = self._tiny(field_obligatory_hard=True, printable_aux_weight=0.08)
+        self.assertGreater(model.printable_aux_weight, 0.0)
+        # Synthetic packet transition.
+        packets = model.atomizer.encode("Assistant: Bonjour", reset=True)
+        self.assertGreaterEqual(len(packets), 2)
+        model.train()
+        loss, info = model.transition_loss(packets[0], packets[1])
+        self.assertIn("printable_aux_loss", info)
+        self.assertGreater(float(info["printable_aux_loss"]), 0.0)
+        self.assertTrue(0.0 <= float(info["printable_mass_mean"]) <= 1.0)
+        loss.backward()
+        grad_sum = 0.0
+        for param in model.surface.alpha_byte_proj.parameters():
+            self.assertIsNotNone(param.grad)
+            grad_sum += float(param.grad.abs().sum())
+        self.assertGreater(grad_sum, 0.0)
+        # Decoder still frozen / no grad under hard.
+        for param in model.surface.byte_decoder.parameters():
+            self.assertFalse(param.requires_grad)
+
+    def test_hard_decode_forces_prefer_printable(self) -> None:
+        """Under hard, decode applies printable bias even if prefer_printable=False."""
+        torch.manual_seed(5)
+        model = self._tiny(field_obligatory_hard=True)
+        model.eval()
+        poisoned = {
+            "byte_logits": torch.zeros(8, 256),
+            "length_logits": torch.zeros(8),
+        }
+        with torch.no_grad():
+            # Mild NUL preference — printable bias (strength 2.5 → NUL -5) flips it.
+            poisoned["byte_logits"][:, 0] = 3.0
+            poisoned["byte_logits"][:, ord("A")] = 1.0  # best among printable after bias
+            poisoned["length_logits"][0] = 5.0
+        raw = model.surface.decode(poisoned, prefer_printable=False, deterministic=True)
+        self.assertNotEqual(raw[:1], b"\x00")
+        self.assertEqual(raw[:1], b"A")
+        # generate_packets also forces prefer_printable under hard.
+        out = model.generate_packets("Hi", max_packets=1, prefer_printable=False, temperature=1.0)
+        self.assertTrue(model.surface.field_obligatory_hard)
+        self.assertIsInstance(out, (bytes, bytearray))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -48,6 +48,8 @@ def load_model(checkpoint: str | Path, device: str = "cpu") -> AtomNativeModel:
         model.field_obligatory_hard = True
         model.field_obligatory_readout = True
         model.surface.set_obligatory_hard(True)
+        # Stay on hard α-MLP; prefer_printable is forced in generate_packets.
+        assert model.surface.field_obligatory_hard, "chat must stay on hard α-MLP path"
     dyn = (training or {}).get("dynamics_on_load") or {}
     if dyn.get("energy_decay_repaired"):
         print(
