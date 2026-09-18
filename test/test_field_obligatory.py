@@ -100,3 +100,4 @@ class FieldObligatoryReadoutTests(unittest.TestCase):
             msg=f"obligatory should lower cosine: off={cos_off:.6f} on={cos_on:.6f}",
         )
         self.assertLess(cos_on, 0.99, msg=f"obligatory on still too high: {cos_on:.6f}")
+
