@@ -107,8 +107,8 @@ class Atomizer:
         phase_period: float = 256.0,
         pack_mode: str = "linguistic",
     ) -> None:
-        if max_span_bytes < 2:
-            raise ValueError("max_span_bytes must be at least 2")
+        if max_span_bytes < 1:
+            raise ValueError("max_span_bytes must be at least 1")
         if phase_period <= 0:
             raise ValueError("phase_period must be positive")
         mode = str(pack_mode).strip().lower()
@@ -373,7 +373,11 @@ class Atomizer:
                     if len(self._buffer) >= self._soft_flush_bytes:
                         packets.extend(self._flush_pending(reason))
                         continue
-                if len(self._buffer) >= self.max_span_bytes and self._ends_at_utf8_boundary(self._buffer):
+                # Byte-tick (max_span 1): pure byte stream; UTF-8 composition is
+                # the model's job, so mid-codepoint splits are allowed by design.
+                if len(self._buffer) >= self.max_span_bytes and (
+                    self.max_span_bytes == 1 or self._ends_at_utf8_boundary(self._buffer)
+                ):
                     cut = self._best_linguistic_cut(self._buffer)
                     if cut is not None and 2 <= cut < len(self._buffer):
                         # Prefer WS/punct cut; label by the byte that ended the prefix.
@@ -391,7 +395,9 @@ class Atomizer:
             # Eager (legacy): flush on every structural boundary.
             if reason is not None:
                 packets.extend(self._flush_pending(reason))
-            elif len(self._buffer) >= self.max_span_bytes and self._ends_at_utf8_boundary(self._buffer):
+            elif len(self._buffer) >= self.max_span_bytes and (
+                self.max_span_bytes == 1 or self._ends_at_utf8_boundary(self._buffer)
+            ):
                 packets.extend(self._flush_pending("max_span"))
         if flush:
             packets.extend(self._flush_pending("eos"))
@@ -401,12 +407,30 @@ class Atomizer:
         return self.encode_bytes(text.encode("utf-8"), reset=reset, flush=True)
 
     def packet_from_payload(self, payload: bytes, boundary: str = "generated") -> AtomPacket:
-        """Commit a predicted surface packet to the atomizer context."""
+        """Commit a predicted surface packet to the atomizer context.
+
+        Byte-tick contract (ARCHITECTURE.md): ``"generated"`` is OOD and is
+        never written -- a train-like boundary is inferred from the bytes so
+        train and generate share the same feature distribution.
+        """
         if not payload:
             raise ValueError("generated atom payload cannot be empty")
         if self._buffer:
             raise ValueError("cannot inject a generated packet while a raw span is pending")
+        if boundary == "generated":
+            boundary = self._infer_commit_boundary(bytes(payload))
         return self._emit(bytes(payload), self.position, boundary)
+
+    @classmethod
+    def _infer_commit_boundary(cls, payload: bytes) -> str:
+        last = payload[-1]
+        if last in (10, 13):
+            return "newline"
+        if last in cls._PUNCTUATION:
+            return "punctuation"
+        if last in (9, 32):
+            return "whitespace"
+        return "max_span"
 
     def state_dict(self) -> dict:
         return {

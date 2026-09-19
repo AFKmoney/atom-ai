@@ -180,6 +180,14 @@ def main() -> None:
              "(default: on; use --no-stream-prefetch to disable)",
     )
     parser.add_argument(
+        "--stream-skip-packets",
+        type=int,
+        default=0,
+        help="in --stream mode, skip N packet transitions before training "
+             "(default 0; use k*steps when chaining resumed chunks so each "
+             "chunk sees fresh corpus instead of re-training the prefix)",
+    )
+    parser.add_argument(
         "--allow-parallel-train",
         action="store_true",
         default=False,
@@ -330,6 +338,21 @@ def main() -> None:
         help="hard-v2 obligatory: mix floor=1.0 + freeze non-alpha bypass; logits=frozen_α+scale*α_proj (implies readout)",
     )
     parser.add_argument(
+        "--payload-copy",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="allow the α-local payload copy-bias branch on the hard CE path "
+             "(default: on; use --no-payload-copy for the speech line so "
+             "train matches chat payload_copy=False)",
+    )
+    parser.add_argument(
+        "--last-atom-readout",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="byte-tick last-atom readout + dentate 2-gram on the hard path "
+             "(requires --max-span-bytes 1; default: off)",
+    )
+    parser.add_argument(
         "--printable-aux-weight",
         type=float,
         default=0.0,
@@ -418,6 +441,18 @@ def main() -> None:
             prefetch=bool(args.stream_prefetch),
         )
         del first_pair
+        skip = max(0, int(args.stream_skip_packets))
+        if skip:
+            print(f"stream skip: advancing {skip} packet transitions...")
+            for _ in range(skip):
+                try:
+                    next(stream_source)
+                except StopIteration as exc:
+                    raise RuntimeError(
+                        f"stream exhausted while skipping {skip} packets; "
+                        "enable --loop-shards or reduce --stream-skip-packets"
+                    ) from exc
+            print(f"stream skip done: packets_seen={stream_source.packets_seen}")
         data_bytes = sum(p.stat().st_size for p in shard_paths)
         metadata_lengths_placeholder = True
     else:
@@ -460,6 +495,7 @@ def main() -> None:
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
         field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
         field_obligatory_hard=bool(args.field_obligatory_hard),
+        last_atom_readout=bool(args.last_atom_readout),
         printable_aux_weight=float(args.printable_aux_weight),
         field_next_packet_weight=float(args.field_next_packet_weight),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
@@ -536,6 +572,11 @@ def main() -> None:
         model.field_obligatory_readout = True
         model.surface.field_obligatory_readout = True
         print("field_obligatory_readout=ON (fresh)")
+    # CLI wins for train-time payload copy-bias (after load, which restores
+    # the checkpoint value for provenance). Speech line: --no-payload-copy.
+    model.surface.payload_enabled = bool(args.payload_copy)
+    print(f"payload_copy={bool(args.payload_copy)} (train-time copy-bias branch)")
+    print(f"last_atom_readout={bool(args.last_atom_readout)} (byte-tick 2-gram + dentate)")
     surface_lr = (
         float(args.surface_learning_rate)
         if args.surface_learning_rate is not None
@@ -612,7 +653,10 @@ def main() -> None:
                 "loop_shards": bool(args.loop_shards),
                 "stream_buffer": args.stream_buffer,
                 "stream_prefetch": bool(args.stream_prefetch),
+                "stream_skip_packets": max(0, int(args.stream_skip_packets)),
+                "last_atom_readout": bool(args.last_atom_readout),
                 "enable_merge": bool(args.enable_merge),
+                "payload_copy": bool(args.payload_copy),
                 "merge_coherence_threshold": float(args.merge_coherence_threshold),
                 "merge_energy_floor": float(args.merge_energy_floor),
                 "field_loss_weight": float(args.field_loss_weight),
@@ -662,6 +706,8 @@ def main() -> None:
                 "energy_decay_bounds": energy_decay_bounds,
                 "stream": False,
                 "enable_merge": bool(args.enable_merge),
+                "payload_copy": bool(args.payload_copy),
+                "last_atom_readout": bool(args.last_atom_readout),
                 "merge_coherence_threshold": float(args.merge_coherence_threshold),
                 "merge_energy_floor": float(args.merge_energy_floor),
                 "field_loss_weight": float(args.field_loss_weight),
@@ -880,6 +926,7 @@ def main() -> None:
         field_ignorance_prompt_bank=bool(args.field_ignorance_prompt_bank),
         field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
         field_obligatory_hard=bool(args.field_obligatory_hard),
+        last_atom_readout=bool(args.last_atom_readout),
         printable_aux_weight=float(args.printable_aux_weight),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
