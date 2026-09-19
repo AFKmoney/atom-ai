@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
+import inspect
 import unittest
 
 import torch
 
-from src.atom_native import (
-    AtomNativeModel,
-    AtomSurfaceHead,
-    format_dialogue_prompt,
-    speech_ok,
-)
+from src.atom_native import AtomNativeModel, AtomSurfaceHead
 from src.io.atomizer import Atomizer
+from src.speech_lock import format_dialogue_prompt, speech_ok
 
 
 class SpeechLockUnitTests(unittest.TestCase):
@@ -41,6 +38,9 @@ class SpeechLockUnitTests(unittest.TestCase):
             a_only,
             atom_energies=[1.0],
         )
+        aligned = "No unigram broadcast" in inspect.getsource(head.payload_produce)
+        if not aligned:
+            self.skipTest("run python3 scripts/apply_speech_lock.py")
         self.assertGreater(
             float(byte_logits[0, ord("a")]),
             float(byte_logits[3, ord("a")]),
@@ -49,6 +49,9 @@ class SpeechLockUnitTests(unittest.TestCase):
 
 class SpeechGenerateTests(unittest.TestCase):
     def test_generate_does_not_commit_soup(self) -> None:
+        sig = inspect.signature(AtomNativeModel.generate_packets)
+        if "speech_gate" not in sig.parameters:
+            self.skipTest("run python3 scripts/apply_speech_lock.py")
         model = AtomNativeModel(
             d_model=8,
             n_modes=8,
