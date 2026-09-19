@@ -222,8 +222,8 @@ class AtomSurfaceHead(nn.Module):
         for value in self._PRINTABLE:
             _pm[value] = 1.0
         self.register_buffer("printable_mask", _pm, persistent=False)
-        # Atom-payload production (hard path): embed/pool living atom payloads + α gate
-        # + copy-bias toward bytes present in those payloads. NOT byte_decoder bypass.
+        # Atom-payload production (hard path): per-atom α-local embed + copy-bias
+        # (no mean-pool / global-hist). NOT byte_decoder bypass.
         self.byte_embed = nn.Embedding(256, d_model)
         self.payload_alpha_gate = nn.Linear(self.alpha_only_dim, d_model, bias=False)
         self.payload_to_byte = nn.Linear(d_model, max_payload_bytes * 256, bias=False)
@@ -338,11 +338,16 @@ class AtomSurfaceHead(nn.Module):
         atom_payloads: list[bytes] | None,
         a_hat: torch.Tensor,
         a_only: torch.Tensor,
+        *,
+        atom_energies: list[float | torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """α-gated pool of atom payload embeddings + copy-bias toward payload bytes.
+        """Per-atom α-local payload embed + copy-bias (no mean-pool / global-hist).
 
-        Returns (byte_logits [L,256], length_logits [L]). Vanishes when α is exactly zero
-        (presence gate) or when no living atom carries a non-empty payload.
+        Each living atom contributes from its own payload, gated by similarity of
+        that atom's embed with the α-derived gate and by atom energy. Softmax over
+        atoms keeps the mixture local to α so distinct prompt atoms diversify
+        surface logits. Returns (byte_logits [L,256], length_logits [L]).
+        Vanishes when α is exactly zero or no non-empty payloads.
         No Transformer QKV; no byte_decoder reopen.
         """
         device = a_hat.device
@@ -350,44 +355,75 @@ class AtomSurfaceHead(nn.Module):
         L = self.max_payload_bytes
         zero_b = torch.zeros(L, 256, device=device, dtype=dtype)
         zero_l = torch.zeros(L, device=device, dtype=dtype)
-        payloads = [bytes(p) for p in (atom_payloads or []) if p]
-        if not payloads:
-            return zero_b, zero_l
+        raw = list(atom_payloads or [])
+        energy_raw = list(atom_energies) if atom_energies is not None else [1.0] * len(raw)
+        if len(energy_raw) < len(raw):
+            energy_raw = energy_raw + [1.0] * (len(raw) - len(energy_raw))
 
         embeds: list[torch.Tensor] = []
         lengths: list[int] = []
-        hist = torch.zeros(256, device=device, dtype=dtype)
-        for payload in payloads:
-            ids = list(payload[:L])
+        local_hists: list[torch.Tensor] = []
+        energies: list[torch.Tensor] = []
+        kept_payloads: list[bytes] = []
+        for payload, energy in zip(raw, energy_raw):
+            payload_b = bytes(payload) if payload else b""
+            ids = list(payload_b[:L])
             if not ids:
                 continue
+            kept_payloads.append(payload_b)
             lengths.append(len(ids))
             idx = torch.tensor(ids, device=device, dtype=torch.long)
             embeds.append(self.byte_embed(idx).mean(dim=0))
-            hist.scatter_add_(
+            hist_i = torch.zeros(256, device=device, dtype=dtype)
+            hist_i.scatter_add_(
                 0,
                 idx,
                 torch.ones(idx.numel(), device=device, dtype=dtype),
             )
+            local_hists.append(hist_i)
+            if torch.is_tensor(energy):
+                e_val = energy.detach().to(device=device, dtype=dtype).reshape(-1).mean()
+            else:
+                e_val = torch.tensor(float(energy), device=device, dtype=dtype)
+            energies.append(F.softplus(e_val).clamp_min(1e-6))
         if not embeds:
             return zero_b, zero_l
 
-        pooled = torch.stack(embeds, dim=0).mean(dim=0)
         gate = torch.sigmoid(self.payload_alpha_gate(a_hat))
+        # α-local scores: payload-embed alignment with α-gate × energy.
+        scores = []
+        for embed, energy in zip(embeds, energies):
+            sim = (embed * gate).sum()
+            scores.append(sim + torch.log(energy))
+        score_t = torch.stack(scores, dim=0)
+        # Soft pool for embed MLP path; hard α-local winner for copy-bias so one
+        # living atom's payload owns surface bytes (no mean-pool / global-hist).
+        pool_w = F.softmax(score_t, dim=0)
+        copy_w = torch.zeros_like(score_t)
+        copy_w[int(score_t.argmax().item())] = 1.0
+
+        pooled = torch.stack(
+            [pool_w[i] * embeds[i] for i in range(len(embeds))], dim=0
+        ).sum(dim=0)
         gated = pooled * gate
         byte_logits = self.payload_to_byte(gated).view(L, 256)
         length_logits = self.payload_to_length(gated)
 
-        copy = F.softplus(self.payload_copy_scale)
-        # Global copy-bias: prefer any byte present in living atom payloads.
-        mass = hist.sum().clamp_min(1.0)
-        byte_logits = byte_logits + copy * (hist / mass).unsqueeze(0)
-        # Position-local copy: boost payload[i] at slot i (merged concat friendly).
-        for payload in payloads:
-            for i, b in enumerate(payload[:L]):
-                byte_logits[i, int(b)] = byte_logits[i, int(b)] + copy
+        # Architectural gain: single-atom copy must stay audible vs frozen α RMS (~1).
+        copy = F.softplus(self.payload_copy_scale) * 4.0
+        # Per-atom copy-bias: winner atom's own hist / positions only.
+        for i, (payload, hist_i) in enumerate(zip(kept_payloads, local_hists)):
+            w = copy_w[i]
+            mass_i = hist_i.sum().clamp_min(1.0)
+            byte_logits = byte_logits + copy * w * (hist_i / mass_i).unsqueeze(0)
+            for pos, b in enumerate(payload[:L]):
+                byte_logits[pos, int(b)] = byte_logits[pos, int(b)] + copy * w
         if lengths:
-            mean_len = sum(lengths) / float(len(lengths))
+            # Length prior from sharp α-local winner length (not uniform mean).
+            mean_len = float(
+                sum(copy_w[i].detach() * float(lengths[i]) for i in range(len(lengths)))
+                / max(float(copy_w.detach().sum().item()), 1e-8)
+            )
             li = max(0, min(L - 1, int(round(mean_len)) - 1))
             length_logits = length_logits.clone()
             length_logits[li] = length_logits[li] + copy
@@ -504,6 +540,7 @@ class AtomSurfaceHead(nn.Module):
         persistent_state: torch.Tensor | None = None,
         atom_r: torch.Tensor | None = None,
         atom_payloads: list[bytes] | None = None,
+        atom_energies: list[float | torch.Tensor] | None = None,
     ) -> dict[str, torch.Tensor]:
         """Decode from living field α when provided; else legacy mean-state path.
 
@@ -512,7 +549,7 @@ class AtomSurfaceHead(nn.Module):
         persist/atom_r / decoder bias cannot fully bypass living α.
 
         Under ``field_obligatory_hard``, living ``atom_payloads`` drive an
-        α-gated payload production branch (pool + copy-bias) alongside α-MLP.
+        α-local per-atom payload branch (no mean-pool / global-hist) alongside α-MLP.
         """
         if alpha is not None:
             feats = self.field_feat_norm(
@@ -555,7 +592,7 @@ class AtomSurfaceHead(nn.Module):
                 frozen_len = self.alpha_length_frozen @ a_hat
                 if getattr(self, "field_obligatory_hard", False):
                     # Hard-v2+: frozen α map + capped α-MLP + *uncapped* atom-payload
-                    # production (embed/pool gated by α + copy-bias). Payload stays
+                    # production (per-atom α-local embed + copy-bias). Payload stays
                     # outside the RMS cap so living bytes are not crushed; α=0 still
                     # zeros payload via unclamped a_scale. No decoder/skip reopen.
                     train_byte = self.alpha_byte_proj(a_hat).view(
@@ -563,7 +600,10 @@ class AtomSurfaceHead(nn.Module):
                     )
                     train_len = self.alpha_length_proj(a_hat)
                     pay_byte, pay_len = self.payload_produce(
-                        atom_payloads, a_hat, a_only
+                        atom_payloads,
+                        a_hat,
+                        a_only,
+                        atom_energies=atom_energies,
                     )
                     obl = self.obligatory_scale()
                     tb = obl * train_byte
@@ -1081,8 +1121,12 @@ class AtomNativeModel(nn.Module):
         output_state = self._output_state(
             alpha_new, persist_for_readout, abstractions, atom_r=atom.r
         )
+        living_atoms = list(self.core.atoms.atoms)
         living_payloads = [
-            bytes(getattr(a, "payload", b"") or b"") for a in self.core.atoms.atoms
+            bytes(getattr(a, "payload", b"") or b"") for a in living_atoms
+        ]
+        living_energies = [
+            a.E.detach().float().mean() for a in living_atoms
         ]
         surface = self.surface(
             output_state,
@@ -1090,6 +1134,7 @@ class AtomNativeModel(nn.Module):
             persistent_state=persist_for_readout,
             atom_r=atom.r,
             atom_payloads=living_payloads,
+            atom_energies=living_energies,
         )
         with torch.no_grad():
             self.core.state.alpha.copy_(alpha_new.detach())

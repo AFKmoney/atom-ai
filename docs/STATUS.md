@@ -5,10 +5,16 @@ English docs only. No fluency claim.
 
 ## main (this push)
 
+**Per-atom α-local copy-bias** (`docs/ALPHA_LOCAL_COPY.md`): replace mean-pool /
+global-hist with α-local winner copy; hard+MERGE train unchanged; chat merge-off
+kept. Unit diversifies (<0.99); probe logits still **0.999** @ 0 and after
+**+10k→3.508M**; chat still noise. **STOP** — next: shrink frozen α→logit map so
+payload owns surface.
+
 **Chat/probe MERGE-off ingest** (`docs/CHAT_MERGE_OFF.md`): `generate_packets` /
 probe use `merge_enabled=False`; train MERGE thr=**0.45** unchanged; **no train**.
 Chat atoms **6** (was 1); probe atoms **2–3→21**; logits still **0.999**; chat
-still noise. **STOP** — next: per-atom α-local copy-bias (no mean-pool).
+still noise — led to α-local copy above.
 
 **Multi-atom payload ring** (`docs/MULTI_ATOM_RING.md`): `atom_flush_every`
 **256→0**; +15k @ 3.483M→**3.498M**; atoms still **1** (MERGE); logits **0.999**,
