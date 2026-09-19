@@ -6,10 +6,10 @@ from __future__ import annotations
 def format_dialogue_prompt(prompt: str) -> str:
     raw = (prompt or "").strip()
     if not raw:
-        return "Utilisateur:\nAssistant:"
+        return "Utilisateur:\nAssistant: "
     if "Utilisateur:" in raw or "Assistant:" in raw:
         return raw if raw.endswith("Assistant:") or raw.endswith("Assistant: ") else raw
-    return f"Utilisateur: {raw}\nAssistant:"
+    return f"Utilisateur: {raw}\nAssistant: "
 
 
 _SPEECH_HINTS = frozenset(
