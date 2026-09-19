@@ -19,11 +19,11 @@ whether CE improved.
 |--------|-------|
 | Checkpoint | `/workspace/exports/atom-ai/checkpoints/atom_native_obligatory_hard/atom_native.pt` |
 | Mean field RMS after prompt | 0.003228 |
-| Mean field RMS after 20 gen | 0.026825 |
-| Mean off-diag cosine (surface logits) | 0.838419 |
-| Mean off-diag cosine (alpha) | 0.676471 |
+| Mean field RMS after 20 gen | 0.021050 |
+| Mean off-diag cosine (surface logits) | 0.998568 |
+| Mean off-diag cosine (alpha) | 0.644693 |
 | Reconstruction succeeds (diagnostic) | True |
-| Verdict | field is carrying structure (prompt-sensitive; diagnostic reconstruction partial) |
+| Verdict | field differs across prompts but surface logits nearly identical — field not reliably read by surface (Transformer-regime risk / surface-only byte-LM behavior at decode) |
 
 Full detail: `docs/FIELD_PROBE.md`, `logs/field_probe_report.json`.
 

@@ -5,9 +5,10 @@ English docs only. No fluency claim.
 
 ## main (this push)
 
-**Field→next-packet** (`docs/FIELD_NEXT_PACKET.md`): w=0.05 under hard+MERGE;
-+25k @ 3.433M→**3.458M**; nxp 0.95→**0.03**; merges keep firing; logits **0.838**,
-α **0.676**; chat still noise.
+**Atom-payload production** (`docs/ATOM_PAYLOAD_PROD.md`): living atom payloads + α
+(pool/copy-bias) under hard+MERGE; +25k @ 3.458M→**3.483M**; nxp stays low;
+merges **57772**; logits **0.999** (re-collapse), α **0.645**; chat still noise.
+**STOP** — next: multi-atom payload ring / raise atom_flush.
 
 **MERGE operational** (`docs/MERGE_OPERATIONAL.md`): thr **0.55→0.45**; smoke +8k
 @ 3.425M→**3.433M**; **merges=7968** (was 0); mph ~0.69; chat still noise.
@@ -125,3 +126,15 @@ See `docs/PRINTABLE_AUX.md`. Do not claim fluency.
 
 See `docs/LINGUISTIC_SPANS.md`. Do not claim fluency. Next: MERGE densify.
 
+## Atom-payload production (2026-09-18)
+
+| Metric | Value |
+|--------|-------|
+| start → end step | 3,458,000 → **3,483,000** (+25k) |
+| final logits cos | **0.999** (re-collapse) |
+| final α cos | **0.645** |
+| chat | **not coherent FR** (noise / empty) |
+| mechanism | living atom payload embed/pool + copy-bias + α under hard |
+| verdict | **STOP** — surface homogenized by shared flushed payloads |
+
+See `docs/ATOM_PAYLOAD_PROD.md`. Do not claim fluency. Next: payload ring / flush.

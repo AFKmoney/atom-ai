@@ -1,0 +1,19 @@
+train lock skipped (--allow-parallel-train)
+resumed weights from checkpoints/atom_native_obligatory_hard/atom_native.pt (recorded step=3458000, legacy_surface_migrated=False, span_head_migrated=False)
+atomizer pack_mode=linguistic max_span_bytes=32
+dynamics on load: energy_decay=0.30000001192092896 -> 0.30000001192092896 (repaired=False, bounds=(0.3, 0.95))
+field_next_packet_weight=0.05 (predict next packet features from α+atoms)
+MERGE gates: enable=True coherence_thr=0.450 energy_floor=0.080
+field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*(α_MLP+payload_prod))
+optimizer groups: field/other lr=0.0003 (13 tensors), surface lr=0.0003 (16 tensors); energy_decay_bounds=(0.3, 0.95); field_max_rms=3.0
+stream mode: 10 shard(s), chunk_bytes=1048576, loop_shards=True, stream_buffer=2048, stream_prefetch=True
+optimizer restore skipped: loaded state dict contains a parameter group that doesn't match the size of optimizer's group
+step=3458001 (run 1/25000) loss=10.25753 byte_ppl=198.881 atoms=1 merges=32870 field=0.1160 rms=0.0021 scale=1.0000 fcos=0.707 ign=0.0000 prn=nan nxp=0.263 mph=0.000 bytes=524288 pkts=27462 shard=0
+step=3458050 (run 50/25000) loss=4.43882 byte_ppl=3.608 atoms=1 merges=32919 field=2.1507 rms=0.0336 scale=1.0000 fcos=0.613 ign=0.0000 prn=nan nxp=0.153 mph=0.693 bytes=524288 pkts=27462 shard=0
+...
+step=3458001 (run 1/25000) loss=10.25753 byte_ppl=198.881 atoms=1 merges=32870 field=0.1160 rms=0.0021 scale=1.0000 fcos=0.707 ign=0.0000 prn=nan nxp=0.263 mph=0.000 bytes=524288 pkts=27462 shard=0
+step=3458050 (run 50/25000) loss=4.43882 byte_ppl=3.608 atoms=1 merges=32919 field=2.1507 rms=0.0336 scale=1.0000 fcos=0.613 ign=0.0000 prn=nan nxp=0.153 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3458100 (run 100/25000) loss=8.68879 byte_ppl=106.130 atoms=1 merges=32969 field=3.8964 rms=0.0609 scale=1.0000 fcos=0.602 ign=0.0000 prn=nan nxp=0.130 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3482900 (run 24900/25000) loss=6.03467 byte_ppl=24.774 atoms=1 merges=57672 field=191.9999 rms=3.0000 scale=0.9985 fcos=0.547 ign=0.0000 prn=nan nxp=0.111 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3482950 (run 24950/25000) loss=5.60185 byte_ppl=13.055 atoms=1 merges=57722 field=191.9998 rms=3.0000 scale=0.9985 fcos=0.542 ign=0.0000 prn=nan nxp=0.019 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483000 (run 25000/25000) loss=5.55077 byte_ppl=15.015 atoms=1 merges=57772 field=191.9999 rms=3.0000 scale=0.9985 fcos=0.545 ign=0.0000 prn=nan nxp=0.014 mph=0.693 bytes=524288 pkts=27462 shard=0

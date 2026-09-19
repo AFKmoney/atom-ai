@@ -222,6 +222,24 @@ class AtomSurfaceHead(nn.Module):
         for value in self._PRINTABLE:
             _pm[value] = 1.0
         self.register_buffer("printable_mask", _pm, persistent=False)
+        # Atom-payload production (hard path): embed/pool living atom payloads + α gate
+        # + copy-bias toward bytes present in those payloads. NOT byte_decoder bypass.
+        self.byte_embed = nn.Embedding(256, d_model)
+        self.payload_alpha_gate = nn.Linear(self.alpha_only_dim, d_model, bias=False)
+        self.payload_to_byte = nn.Linear(d_model, max_payload_bytes * 256, bias=False)
+        self.payload_to_length = nn.Linear(d_model, max_payload_bytes, bias=False)
+        self.payload_copy_scale = nn.Parameter(torch.tensor(1.0))
+        self._init_payload_production()
+
+    def _init_payload_production(self) -> None:
+        """Small init so payload branch is audible but does not swamp frozen α."""
+        with torch.no_grad():
+            nn.init.normal_(self.byte_embed.weight, mean=0.0, std=0.02)
+            nn.init.zeros_(self.payload_alpha_gate.weight)
+            # Slight identity-ish open: gate starts near 0.5 after sigmoid(0).
+            nn.init.normal_(self.payload_to_byte.weight, mean=0.0, std=0.02)
+            nn.init.normal_(self.payload_to_length.weight, mean=0.0, std=0.02)
+            self.payload_copy_scale.fill_(1.0)
 
     def _init_field_readout(self) -> None:
         """Identity-on-mean + std residual; seeded Xavier skips. Safe for fresh + migrate."""
@@ -315,14 +333,78 @@ class AtomSurfaceHead(nn.Module):
         floor = float(self.obl_mix_floor)
         return floor + (1.0 - floor) * torch.sigmoid(self.obl_mix)
 
+    def payload_produce(
+        self,
+        atom_payloads: list[bytes] | None,
+        a_hat: torch.Tensor,
+        a_only: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """α-gated pool of atom payload embeddings + copy-bias toward payload bytes.
+
+        Returns (byte_logits [L,256], length_logits [L]). Vanishes when α is exactly zero
+        (presence gate) or when no living atom carries a non-empty payload.
+        No Transformer QKV; no byte_decoder reopen.
+        """
+        device = a_hat.device
+        dtype = a_hat.dtype
+        L = self.max_payload_bytes
+        zero_b = torch.zeros(L, 256, device=device, dtype=dtype)
+        zero_l = torch.zeros(L, device=device, dtype=dtype)
+        payloads = [bytes(p) for p in (atom_payloads or []) if p]
+        if not payloads:
+            return zero_b, zero_l
+
+        embeds: list[torch.Tensor] = []
+        lengths: list[int] = []
+        hist = torch.zeros(256, device=device, dtype=dtype)
+        for payload in payloads:
+            ids = list(payload[:L])
+            if not ids:
+                continue
+            lengths.append(len(ids))
+            idx = torch.tensor(ids, device=device, dtype=torch.long)
+            embeds.append(self.byte_embed(idx).mean(dim=0))
+            hist.scatter_add_(
+                0,
+                idx,
+                torch.ones(idx.numel(), device=device, dtype=dtype),
+            )
+        if not embeds:
+            return zero_b, zero_l
+
+        pooled = torch.stack(embeds, dim=0).mean(dim=0)
+        gate = torch.sigmoid(self.payload_alpha_gate(a_hat))
+        gated = pooled * gate
+        byte_logits = self.payload_to_byte(gated).view(L, 256)
+        length_logits = self.payload_to_length(gated)
+
+        copy = F.softplus(self.payload_copy_scale)
+        # Global copy-bias: prefer any byte present in living atom payloads.
+        mass = hist.sum().clamp_min(1.0)
+        byte_logits = byte_logits + copy * (hist / mass).unsqueeze(0)
+        # Position-local copy: boost payload[i] at slot i (merged concat friendly).
+        for payload in payloads:
+            for i, b in enumerate(payload[:L]):
+                byte_logits[i, int(b)] = byte_logits[i, int(b)] + copy
+        if lengths:
+            mean_len = sum(lengths) / float(len(lengths))
+            li = max(0, min(L - 1, int(round(mean_len)) - 1))
+            length_logits = length_logits.clone()
+            length_logits[li] = length_logits[li] + copy
+
+        # Presence gate: exact α=0 ⇒ off (hard zeroing); nonzero α ⇒ full-strength
+        # payload branch (do not crush copy-bias by tiny JL RMS).
+        alive = (a_only.detach().pow(2).sum() > 0).to(dtype=dtype)
+        return alive * byte_logits, alive * length_logits
 
     def set_obligatory_hard(self, enabled: bool) -> None:
-        """Hard-v2 obligatory: mix floor 1.0; freeze non-α bypass; α-proj trainable.
+        """Hard-v2 obligatory: mix floor 1.0; freeze non-α bypass; α-proj + payload.
 
-        Forward: logits = frozen_α_map(α) + cap * obligatory_scale() * α_MLP(α)
+        Forward: logits = frozen_α_map(α) + cap * (scale*α_MLP(α) + payload_prod)
         with cap≤1 so trainable RMS cannot exceed frozen RMS.
-        Decoder / field skip / gates stay zeroed+frozen; CE may train only
-        alpha_*_proj MLP (+ obl_gate). Field dynamics still train.
+        Decoder / field skip / gates stay zeroed+frozen; CE may train
+        alpha_*_proj MLP (+ obl_gate) and atom-payload production. Field dynamics
+        still train. Payload path is atom-native (not byte_decoder reopen).
         """
         enabled = bool(enabled)
         self.field_obligatory_hard = enabled
@@ -421,12 +503,16 @@ class AtomSurfaceHead(nn.Module):
         alpha: torch.Tensor | None = None,
         persistent_state: torch.Tensor | None = None,
         atom_r: torch.Tensor | None = None,
+        atom_payloads: list[bytes] | None = None,
     ) -> dict[str, torch.Tensor]:
         """Decode from living field α when provided; else legacy mean-state path.
 
         When ``field_obligatory_readout`` is on, an α-only residual (mean‖std)
         is always added into the main CE logits with a non-zero floor scale so
         persist/atom_r / decoder bias cannot fully bypass living α.
+
+        Under ``field_obligatory_hard``, living ``atom_payloads`` drive an
+        α-gated payload production branch (pool + copy-bias) alongside α-MLP.
         """
         if alpha is not None:
             feats = self.field_feat_norm(
@@ -468,14 +554,17 @@ class AtomSurfaceHead(nn.Module):
                 )
                 frozen_len = self.alpha_length_frozen @ a_hat
                 if getattr(self, "field_obligatory_hard", False):
-                    # Hard-v2+: frozen α map + scale * trainable α-only MLP.
-                    # Still no decoder/skip residual; CE trains only α MLP (+ obl_gate).
-                    # RMS cap: trainable residual may not exceed frozen RMS so CE
-                    # cannot drown α separation (soft collapse mode).
+                    # Hard-v2+: frozen α map + capped α-MLP + *uncapped* atom-payload
+                    # production (embed/pool gated by α + copy-bias). Payload stays
+                    # outside the RMS cap so living bytes are not crushed; α=0 still
+                    # zeros payload via unclamped a_scale. No decoder/skip reopen.
                     train_byte = self.alpha_byte_proj(a_hat).view(
                         self.max_payload_bytes, 256
                     )
                     train_len = self.alpha_length_proj(a_hat)
+                    pay_byte, pay_len = self.payload_produce(
+                        atom_payloads, a_hat, a_only
+                    )
                     obl = self.obligatory_scale()
                     tb = obl * train_byte
                     tl = obl * train_len
@@ -484,8 +573,8 @@ class AtomSurfaceHead(nn.Module):
                     # stop-grad on cap — avoid unstable d(cap*tb)/d(tb) NaNs
                     cap = (f_rms / t_rms).clamp(max=1.0).detach()
                     return {
-                        "byte_logits": frozen_byte + cap * tb,
-                        "length_logits": frozen_len + cap * tl,
+                        "byte_logits": frozen_byte + cap * tb + pay_byte,
+                        "length_logits": frozen_len + cap * tl + pay_len,
                     }
                 train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
                 train_len = self.alpha_length_proj(a_hat)
@@ -848,22 +937,33 @@ class AtomNativeModel(nn.Module):
         )
         if merge_count <= 0 or not remove_idx:
             return 0, diag
+        # Capture payloads before remove (MERGE concatenates constituent bytes).
+        pre_payloads = [bytes(getattr(a, "payload", b"") or b"") for a in atoms.atoms]
         atoms.remove(remove_idx)
         # Aggregation squeezes the compiler's leading batch-1 dim for math; restore
         # (1, d) / (1, 1) so ToroidalAtomCollection can stack with live atoms.
-        new_atoms = [
-            ToroidalAtom(
-                r=self._atom_prop_batch1(item["r"]),
-                phi=self._atom_prop_batch1(item["phi"]),
-                omega=self._atom_prop_batch1(item["omega"]),
-                E=self._atom_prop_batch1(item["E"]),
-                kappa=self._atom_prop_batch1(item["kappa"]),
-                M=self._atom_prop_batch1(item["M"]),
-                tau=self._atom_prop_batch1(item["tau"]),
-                rho=self._atom_prop_batch1(item["rho"], is_rho=True),
+        max_keep = max(64, int(self.max_payload_bytes) * 4)
+        new_atoms = []
+        for item in merged:
+            constituents = item.get("constituents") or []
+            merged_payload = b"".join(
+                pre_payloads[i] for i in constituents if 0 <= i < len(pre_payloads)
             )
-            for item in merged
-        ]
+            if len(merged_payload) > max_keep:
+                merged_payload = merged_payload[-max_keep:]
+            new_atoms.append(
+                ToroidalAtom(
+                    r=self._atom_prop_batch1(item["r"]),
+                    phi=self._atom_prop_batch1(item["phi"]),
+                    omega=self._atom_prop_batch1(item["omega"]),
+                    E=self._atom_prop_batch1(item["E"]),
+                    kappa=self._atom_prop_batch1(item["kappa"]),
+                    M=self._atom_prop_batch1(item["M"]),
+                    tau=self._atom_prop_batch1(item["tau"]),
+                    rho=self._atom_prop_batch1(item["rho"], is_rho=True),
+                    payload=merged_payload,
+                )
+            )
         atoms.extend(new_atoms)
         self.merge_count_total += merge_count
         return merge_count, diag
@@ -896,6 +996,7 @@ class AtomNativeModel(nn.Module):
             M=atom.M.detach().clone(),
             tau=atom.tau.detach().clone(),
             rho=atom.rho.detach().clone(),
+            payload=bytes(getattr(atom, "payload", b"") or b""),
         )
         self.core.atoms.add(memory_atom)
         merge_count, merge_diag = self._maybe_merge_atoms()
@@ -966,11 +1067,15 @@ class AtomNativeModel(nn.Module):
         output_state = self._output_state(
             alpha_new, persist_for_readout, abstractions, atom_r=atom.r
         )
+        living_payloads = [
+            bytes(getattr(a, "payload", b"") or b"") for a in self.core.atoms.atoms
+        ]
         surface = self.surface(
             output_state,
             alpha=alpha_new,
             persistent_state=persist_for_readout,
             atom_r=atom.r,
+            atom_payloads=living_payloads,
         )
         with torch.no_grad():
             self.core.state.alpha.copy_(alpha_new.detach())
@@ -997,6 +1102,8 @@ class AtomNativeModel(nn.Module):
     def forward_packet(self, packet: AtomPacket) -> dict:
         features = packet.features.to(self.core.state.alpha.device)
         atom, operation, confidence = self.compiler(features, atom_count=len(self.core.atoms))
+        # Living atom carries the packet's surface bytes for payload production.
+        atom.payload = bytes(packet.payload or b"")
         return self._advance(atom, operation, confidence)
 
     @torch.no_grad()
@@ -1517,14 +1624,24 @@ class AtomNativeModel(nn.Module):
             key.startswith("alpha_byte_proj") or key.startswith("alpha_length_proj")
             for key in missing
         )
+        def _is_payload_key(key: str) -> bool:
+            return (
+                key.startswith("byte_embed")
+                or key.startswith("payload_")
+            )
+        payload_missing = any(_is_payload_key(key) for key in missing)
         non_mlp_missing = [
             key
             for key in missing
             if not (
                 key.startswith("alpha_byte_proj")
                 or key.startswith("alpha_length_proj")
+                or _is_payload_key(key)
             )
         ]
+        if payload_missing:
+            with torch.no_grad():
+                self.surface._init_payload_production()
         if legacy_surface or non_mlp_missing or field_readout_missing:
             with torch.no_grad():
                 if legacy_surface or "state_norm.weight" in missing:
@@ -1641,6 +1758,7 @@ class AtomNativeModel(nn.Module):
         training["alpha_mlp_migrated"] = bool(mlp_missing and not obligatory_missing)
         training["field_readout_migrated"] = bool(field_readout_missing)
         training["field_obligatory_migrated"] = bool(obligatory_missing)
+        training["payload_prod_migrated"] = bool(payload_missing)
         training["span_head_migrated"] = bool(span_migrate.get("span_head_migrated"))
         training["span_head_migrate_info"] = span_migrate
         training["dynamics_on_load"] = dynamics_state

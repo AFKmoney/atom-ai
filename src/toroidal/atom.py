@@ -37,6 +37,7 @@ class ToroidalAtom(nn.Module):
         M: torch.Tensor,
         tau: torch.Tensor,
         rho: torch.Tensor,
+        payload: bytes = b"",
     ) -> None:
         super().__init__()
         self.register_buffer("r", r)
@@ -47,6 +48,8 @@ class ToroidalAtom(nn.Module):
         self.register_buffer("M", M)
         self.register_buffer("tau", tau)
         self.register_buffer("rho", rho)
+        # Surface bytes carried by this living atom (not a buffer; episode memory).
+        self.payload = bytes(payload) if payload else b""
 
     def energy(self) -> torch.Tensor:
         """Scalar energy of this atom."""
@@ -71,6 +74,7 @@ class ToroidalAtom(nn.Module):
             M=self.M.clone(),
             tau=self.tau.clone(),
             rho=self.rho.clone(),
+            payload=self.payload,
         )
 
     def to(self, device):
@@ -83,6 +87,7 @@ class ToroidalAtom(nn.Module):
             M=self.M.to(device),
             tau=self.tau.to(device),
             rho=self.rho.to(device),
+            payload=self.payload,
         )
 
 
@@ -196,6 +201,7 @@ class ToroidalAtomCollection(nn.Module):
                     "r": a.r.cpu(), "phi": a.phi.cpu(), "omega": a.omega.cpu(),
                     "E": a.E.cpu(), "kappa": a.kappa.cpu(), "M": a.M.cpu(),
                     "tau": a.tau.cpu(), "rho": a.rho.cpu(),
+                    "payload": bytes(getattr(a, "payload", b"") or b""),
                 }
                 for a in self.atoms
             ]
@@ -208,5 +214,6 @@ class ToroidalAtomCollection(nn.Module):
                 r=sd["r"], phi=sd["phi"], omega=sd["omega"],
                 E=sd["E"], kappa=sd["kappa"], M=sd["M"],
                 tau=sd["tau"], rho=sd["rho"],
+                payload=bytes(sd.get("payload", b"") or b""),
             ))
         self._rebuild_buffers()

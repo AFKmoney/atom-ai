@@ -520,7 +520,10 @@ def main() -> None:
             model.field_obligatory_hard = True
             model.field_obligatory_readout = True
             model.surface.set_obligatory_hard(True)
-            print("field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*scale*alpha_MLP)")
+            print(
+                "field_obligatory_hard=ON hard-v2+ "
+                "(mix_floor=1.0, freeze bypass, logits=frozen+cap*(α_MLP+payload_prod))"
+            )
             if float(args.printable_aux_weight) > 0:
                 print(f"printable_aux_weight={float(args.printable_aux_weight)} (reward printable mass on hard logits)")
         if args.field_obligatory_readout:
