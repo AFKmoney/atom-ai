@@ -251,9 +251,10 @@ def main() -> None:
     parser.add_argument(
         "--atom-flush-every",
         type=int,
-        default=256,
-        help="clear structural atom list every N steps (0=never); keeps field. "
-             "Bounds aggregation cost inside long episodes (default 256).",
+        default=0,
+        help="clear structural atom list every N steps (0=never, default). "
+             "0 retains the multi-atom payload ring (MERGE keeps last ~128B) so "
+             "α-gated copy-bias sees prompt-distinct bytes; set >0 only to bound cost.",
     )
     parser.add_argument(
         "--log-every",

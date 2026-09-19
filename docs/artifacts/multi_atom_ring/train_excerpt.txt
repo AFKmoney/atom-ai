@@ -1,0 +1,26 @@
+train lock skipped (--allow-parallel-train)
+resumed weights from checkpoints/atom_native_obligatory_hard/atom_native.pt (recorded step=3483000, legacy_surface_migrated=False, span_head_migrated=False)
+atomizer pack_mode=linguistic max_span_bytes=32
+dynamics on load: energy_decay=0.30000001192092896 -> 0.30000001192092896 (repaired=False, bounds=(0.3, 0.95))
+field_next_packet_weight=0.05 (predict next packet features from α+atoms)
+MERGE gates: enable=True coherence_thr=0.450 energy_floor=0.080
+field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*(α_MLP+payload_prod))
+field_obligatory_readout=ON (migrated=False)
+optimizer groups: field/other lr=0.0003 (13 tensors), surface lr=0.0003 (16 tensors); energy_decay_bounds=(0.3, 0.95); field_max_rms=3.0
+stream mode: 10 shard(s), chunk_bytes=1048576, loop_shards=True, stream_buffer=2048, stream_prefetch=True
+optimizer restore skipped: surface LR param groups differ from checkpoint
+step=3483001 (run 1/15000) loss=9.92980 byte_ppl=194.269 atoms=1 merges=57772 field=0.1184 rms=0.0021 scale=1.0000 fcos=0.581 ign=0.0000 prn=nan nxp=0.385 mph=0.000 bytes=524288 pkts=27462 shard=0
+step=3483025 (run 25/15000) loss=4.70933 byte_ppl=60.222 atoms=1 merges=57796 field=1.2040 rms=0.0188 scale=1.0000 fcos=0.552 ign=0.0000 prn=nan nxp=0.193 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483050 (run 50/15000) loss=3.24655 byte_ppl=1.774 atoms=1 merges=57821 field=2.0174 rms=0.0315 scale=1.0000 fcos=0.548 ign=0.0000 prn=nan nxp=0.411 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483075 (run 75/15000) loss=7.34976 byte_ppl=37.598 atoms=1 merges=57846 field=2.9974 rms=0.0468 scale=1.0000 fcos=0.547 ign=0.0000 prn=nan nxp=0.142 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483100 (run 100/15000) loss=8.72047 byte_ppl=41.162 atoms=1 merges=57871 field=3.7876 rms=0.0592 scale=1.0000 fcos=0.543 ign=0.0000 prn=nan nxp=0.164 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483125 (run 125/15000) loss=6.50144 byte_ppl=18.350 atoms=1 merges=57896 field=4.5042 rms=0.0704 scale=1.0000 fcos=0.539 ign=0.0000 prn=nan nxp=0.497 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483150 (run 150/15000) loss=1.48831 byte_ppl=1.171 atoms=1 merges=57921 field=5.2320 rms=0.0818 scale=1.0000 fcos=0.537 ign=0.0000 prn=nan nxp=0.124 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483175 (run 175/15000) loss=7.39990 byte_ppl=23.895 atoms=1 merges=57946 field=6.0639 rms=0.0948 scale=1.0000 fcos=0.539 ign=0.0000 prn=nan nxp=0.094 mph=0.693 bytes=524288 pkts=27462 shard=0
+step=3483200 (run 200/15000) loss=4.71635 byte_ppl=14.057 atoms=1 merges=57971 field=6.8235 rms=0.1066 scale=1.0000 fcos=0.537 ign=0.0000 prn=nan nxp=0.013 mph=0.693 bytes=524288 pkts=27462 shard=0
+...
+    "atom_flush_every": 0,
+    "total_steps": 3498000,
+    "atom_flush_every": 0,
+    "transitions_per_second": 34.176748589745316,
+    "final_loss": 5.988890647888184,

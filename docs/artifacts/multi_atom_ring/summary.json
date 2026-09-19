@@ -1,0 +1,15 @@
+{
+  "timestamp_local": "2026-09-18 18:05:43 PT",
+  "mechanism": "multi_atom_payload_ring",
+  "fix": "atom_flush_every 256->0 (default + train)",
+  "start_step": 3483000,
+  "end_step": 3498000,
+  "run_steps": 15000,
+  "logits_cos": 0.998685,
+  "alpha_cos": 0.615816,
+  "atoms_during_train": 1,
+  "chat_coherent_fr": false,
+  "verdict": "STOP \u2014 still noise; logits cos\u22480.999; flush=0 did not de-homogenize (MERGE keeps atoms=1)",
+  "next_hypothesis": "Disable MERGE on chat/probe ingest (train MERGE stays at thr=0.45) so prompt packets remain distinct living atoms for \u03b1-gated payload copy-bias.",
+  "checkpoint": "checkpoints/atom_native_chat/atom_native.pt"
+}

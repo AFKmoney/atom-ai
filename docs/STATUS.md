@@ -5,10 +5,13 @@ English docs only. No fluency claim.
 
 ## main (this push)
 
+**Multi-atom payload ring** (`docs/MULTI_ATOM_RING.md`): `atom_flush_every`
+**256→0**; +15k @ 3.483M→**3.498M**; atoms still **1** (MERGE); logits **0.999**,
+α **0.616**; chat still noise. **STOP** — next: MERGE off on chat/probe ingest.
+
 **Atom-payload production** (`docs/ATOM_PAYLOAD_PROD.md`): living atom payloads + α
-(pool/copy-bias) under hard+MERGE; +25k @ 3.458M→**3.483M**; nxp stays low;
-merges **57772**; logits **0.999** (re-collapse), α **0.645**; chat still noise.
-**STOP** — next: multi-atom payload ring / raise atom_flush.
+(pool/copy-bias) under hard+MERGE; +25k @ 3.458M→**3.483M**; logits **0.999**;
+chat still noise — falsified flush homogenization; ring test above.
 
 **MERGE operational** (`docs/MERGE_OPERATIONAL.md`): thr **0.55→0.45**; smoke +8k
 @ 3.425M→**3.433M**; **merges=7968** (was 0); mph ~0.69; chat still noise.
