@@ -1,9 +1,20 @@
 # Released checkpoints
 
-| File | Approx step | Notes |
-|------|-------------|-------|
-| `atom_native_3_508M.pt` | 3,508,000 | Latest tip (α-local copy train +10k) |
-| `atom_native_3_498M_hard.pt` | 3,498,000 | Hard + multi-atom ring tip |
+## Missing (not recoverable)
 
-Load with `tools/chat_atom_native.py --checkpoint checkpoints/RELEASE/<file>`.
-Not fluent — research snapshot only.
+`3,425,000` (linguistic spans) and `3,458,000` (field_next) were trained into the same
+`checkpoints/atom_native_obligatory_hard/atom_native.pt` path and **overwritten** by later
+runs. Only metrics/docs remain under `docs/artifacts/`. Those weights are **gone**.
+
+## Removed from RELEASE
+
+Post-collapse tips (`3.498M`, `3.508M`, logits ≈0.999) — do not use for speech tests.
+
+## Available now
+
+| File | Step | Notes |
+|------|------|-------|
+| `atom_native_2_925M_hard25k.pt` | 2,925,000 | Hard obligatory +25k (pre long hard-v2 cascade); probe logits were **0.861** |
+| `atom_native_2_900M_stream.pt` | 2,900,000 | Stream dialogue tip before hard-v2 |
+
+Not fluent — research snapshots only.
