@@ -1,0 +1,441 @@
+{
+  "timestamp_local": "2026-09-18 16:39:57 PDT",
+  "timestamp_utc": "2026-09-18T23:39:57.123000+00:00",
+  "meta": {
+    "config": {
+      "d_model": 64,
+      "n_modes": 64,
+      "n_atoms_max": 512,
+      "max_payload_bytes": 32,
+      "atomizer_version": "atomizer-v1-byte-span",
+      "field_max_rms": 3.0,
+      "energy_decay_bounds": [
+        0.3,
+        0.95
+      ],
+      "enable_merge": true,
+      "slow_every": 1,
+      "field_loss_weight": 0.05,
+      "field_contrast_weight": 0.1,
+      "field_contrast_margin": 0.55,
+      "field_ignorance_weight": 0.0,
+      "field_ignorance_margin": 0.85,
+      "field_ignorance_ablate_shared": false,
+      "field_ignorance_prompt_bank": false,
+      "field_obligatory_readout": true,
+      "field_obligatory_hard": true,
+      "printable_aux_weight": 0.0,
+      "merge_count_total": 0
+    },
+    "training_meta": {
+      "step": 3375000,
+      "run_steps": 50000,
+      "seed": 20260913,
+      "episode_reset": false,
+      "atom_flush_every": 256,
+      "dynamics_on_load": {
+        "coupling_scale": 2.0,
+        "energy_decay": 0.30000001192092896,
+        "phase_sync": 0.5484083294868469,
+        "energy_decay_before": 0.30000001192092896,
+        "energy_decay_repaired": false,
+        "energy_decay_bounds": [
+          0.3,
+          0.95
+        ]
+      }
+    },
+    "checkpoint": "/workspace/exports/atom-ai/checkpoints/atom_native_obligatory_hard/atom_native.pt",
+    "checkpoint_bytes": 47380837
+  },
+  "n_gen": 20,
+  "prompts": [
+    "Bonjour",
+    "Qui es-tu ?",
+    "Il \u00e9tait une fois",
+    "Utilisateur: Bonjour\nAssistant:"
+  ],
+  "per_prompt": [
+    {
+      "prompt": "Bonjour",
+      "primed_text": "Utilisateur: Bonjour\nAssistant:",
+      "n_prompt_packets": 2,
+      "packet_payloads": [
+        "Utilisateur: Bonjour\n",
+        "Assistant:"
+      ],
+      "stats_after_prompt": {
+        "field_rms": 0.002575422404333949,
+        "field_norm": 0.16482703387737274,
+        "field_mean_abs": 0.0018891594372689724,
+        "field_max_abs": 0.021730387583374977,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 2,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.019999999552965164
+      },
+      "stats_after_gen": {
+        "field_rms": 0.030461745336651802,
+        "field_norm": 1.9495519399642944,
+        "field_mean_abs": 0.019823584705591202,
+        "field_max_abs": 0.17880390584468842,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 21,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.21000002324581146
+      },
+      "generated_preview": "Apa\ufffd as ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e",
+      "generated_bytes": 115,
+      "surface_byte_logits_norm": 125.34232330322266
+    },
+    {
+      "prompt": "Qui es-tu ?",
+      "primed_text": "Utilisateur: Qui es-tu ?\nAssistant:",
+      "n_prompt_packets": 3,
+      "packet_payloads": [
+        "Utilisateur: Qui es-tu ?",
+        "\n",
+        "Assistant:"
+      ],
+      "stats_after_prompt": {
+        "field_rms": 0.00450554583221674,
+        "field_norm": 0.28835490345954895,
+        "field_mean_abs": 0.0031115259043872356,
+        "field_max_abs": 0.03162336349487305,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 3,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.029999999329447746
+      },
+      "stats_after_gen": {
+        "field_rms": 0.02340536192059517,
+        "field_norm": 1.4979432821273804,
+        "field_mean_abs": 0.017407096922397614,
+        "field_max_abs": 0.13813002407550812,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 22,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.2200000286102295
+      },
+      "generated_preview": "\n\n\n\n\nsOiqe g us:\ufffdd\ufffd\ufffd\ufffdC\ufffdj\ufffd!\ufffdp=r\nsOiqe g\ufffdus:\ufffdd\ufffd\ufffd\ufffdC\ufffdrAu\u05ectr\n\nsOiqe g us\ufffd&d\ufffd\ufffd\ufffdC\ufffd\ufffdAu\u05ec\ufffdr\ns\ufffdsge g us\ufffd&d\ufffd\ufffd\ufffdC\u06e2Au\ufffd\ufffd\ufffdr\n\ns\ufffd ge g us\ufffd&de\ufffdpC\ufffd\ufffdAu\ufffd\ufffd\ufffd\ufffd\n\ns\ufffd ge g us\ufffd&de\ufffdpC\ufffd\ufffdAu\ufffd",
+      "generated_bytes": 294,
+      "surface_byte_logits_norm": 124.97484588623047
+    },
+    {
+      "prompt": "Il \u00e9tait une fois",
+      "primed_text": "Utilisateur: Il \u00e9tait une fois\nAssistant:",
+      "n_prompt_packets": 3,
+      "packet_payloads": [
+        "Utilisateur: Il \u00e9tait une ",
+        "fois\n",
+        "Assistant:"
+      ],
+      "stats_after_prompt": {
+        "field_rms": 0.0037958628963679075,
+        "field_norm": 0.24293522536754608,
+        "field_mean_abs": 0.0028677149675786495,
+        "field_max_abs": 0.028762931004166603,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 3,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.029999999329447746
+      },
+      "stats_after_gen": {
+        "field_rms": 0.023401813581585884,
+        "field_norm": 1.4977160692214966,
+        "field_mean_abs": 0.0172744020819664,
+        "field_max_abs": 0.13804784417152405,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 22,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.2200000286102295
+      },
+      "generated_preview": "\n\n\n\nsOiJe\ufffdg\ufffdus:\ufffdd,\ufffd)C\ufffdLAp\ufffdd\ufffde\ns\ufffdiJe g\ufffdus:\ufffdde\ufffd\ufffdC\ufffdLAp\ufffd\ufffd\ufffde\ns\ufffdige g\ufffdus:&de\ufffd\ufffdC\ufffdLAu\ufffd\ufffd\ufffd\ufffd\ufffd\t\ufffd\n\ns\ufffdige g\ufffdus:&de\ufffd\ufffdC\u06e2Au\ufffd\ufffd\ufffde\ufffd\t\ufffd\n\n\ns\ufffdige g\ufffdus:&de\ufffd\ufffdC\u06e2Au\ufffd\ufffd\ufffde\ufffd\t\ufffd\ns\ufffdige g\ufffdus:&de",
+      "generated_bytes": 322,
+      "surface_byte_logits_norm": 125.71207427978516
+    },
+    {
+      "prompt": "Utilisateur: Bonjour\nAssistant:",
+      "primed_text": "Utilisateur: Bonjour\nAssistant:",
+      "n_prompt_packets": 2,
+      "packet_payloads": [
+        "Utilisateur: Bonjour\n",
+        "Assistant:"
+      ],
+      "stats_after_prompt": {
+        "field_rms": 0.002575422404333949,
+        "field_norm": 0.16482703387737274,
+        "field_mean_abs": 0.0018891594372689724,
+        "field_max_abs": 0.021730387583374977,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 2,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.019999999552965164
+      },
+      "stats_after_gen": {
+        "field_rms": 0.030461745336651802,
+        "field_norm": 1.9495519399642944,
+        "field_mean_abs": 0.019823584705591202,
+        "field_max_abs": 0.17880390584468842,
+        "alpha_numel": 4096,
+        "persistence_norm": 0.0,
+        "persistence_mean_abs": 0.0,
+        "persistence_strength": 0.0,
+        "n_atoms": 21,
+        "consolidation_count": 0,
+        "abstraction_count": 0,
+        "t": 0.21000002324581146
+      },
+      "generated_preview": "Apa\ufffd as ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e ae  e",
+      "generated_bytes": 115,
+      "surface_byte_logits_norm": 125.34232330322266
+    }
+  ],
+  "prompt_sensitivity": {
+    "prompts": [
+      "Bonjour",
+      "Qui es-tu ?",
+      "Il \u00e9tait une fois",
+      "Utilisateur: Bonjour\nAssistant:"
+    ],
+    "cosine_alpha": [
+      [
+        1.0000000217667446,
+        0.6944012760637956,
+        0.669534167858365,
+        1.0000000217667446
+      ],
+      [
+        0.6944012760637956,
+        1.0000000435162137,
+        0.6913045865620868,
+        0.6944012760637956
+      ],
+      [
+        0.669534167858365,
+        0.6913045865620868,
+        0.9999999436357431,
+        0.669534167858365
+      ],
+      [
+        1.0000000217667446,
+        0.6944012760637956,
+        0.669534167858365,
+        1.0000000217667446
+      ]
+    ],
+    "cosine_output_state": [
+      [
+        0.9999999527697081,
+        0.8044588382003146,
+        0.9096363481835081,
+        0.9999999527697081
+      ],
+      [
+        0.8044588382003146,
+        0.9999998405358232,
+        0.8020669891981551,
+        0.8044588382003146
+      ],
+      [
+        0.9096363481835081,
+        0.8020669891981551,
+        0.9999999454284457,
+        0.9096363481835081
+      ],
+      [
+        0.9999999527697081,
+        0.8044588382003146,
+        0.9096363481835081,
+        0.9999999527697081
+      ]
+    ],
+    "cosine_surface_logits": [
+      [
+        0.9999998643559591,
+        0.8463830431275975,
+        0.865974308542433,
+        0.9999998643559591
+      ],
+      [
+        0.8463830431275975,
+        0.9999999475742297,
+        0.8663951814851142,
+        0.8463830431275975
+      ],
+      [
+        0.865974308542433,
+        0.8663951814851142,
+        1.0000003595435258,
+        0.865974308542433
+      ],
+      [
+        0.9999998643559591,
+        0.8463830431275975,
+        0.865974308542433,
+        0.9999998643559591
+      ]
+    ],
+    "cosine_persistence": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "l2_alpha": [
+      [
+        0.0,
+        0.21049602329730988,
+        0.1804608255624771,
+        0.0
+      ],
+      [
+        0.21049602329730988,
+        0.0,
+        0.21286651492118835,
+        0.21049602329730988
+      ],
+      [
+        0.1804608255624771,
+        0.21286651492118835,
+        0.0,
+        0.1804608255624771
+      ],
+      [
+        0.0,
+        0.21049602329730988,
+        0.1804608255624771,
+        0.0
+      ]
+    ],
+    "mean_offdiag_cosine_alpha": 0.7365292493621921,
+    "mean_offdiag_cosine_output_state": 0.8717095524559181,
+    "mean_offdiag_cosine_surface_logits": 0.8818516248635224,
+    "mean_offdiag_cosine_persistence": null,
+    "interpretation": "If inter-prompt cosine of surface logits / output_state \u2248 1.0, the surface largely ignores prompt-conditioned field differences. Meaningfully < 1 suggests prompt-sensitive state."
+  },
+  "reconstruction": {
+    "last_k": 4,
+    "notes": [
+      "No MERGE/SPLIT in this architecture yet.",
+      "No dedicated field\u2192past-packet decoder exists.",
+      "Consolidation is a single EMA persistence vector, not a packet stack.",
+      "Linear probe below is few-shot diagnostic on the probe prompts only."
+    ],
+    "not_possible_yet": [
+      "MERGE of packets into durable field structures",
+      "SPLIT / dual-clock span control",
+      "Dedicated field \u2192 past-packet decoder",
+      "Retrieving arbitrary past payloads from alpha alone as text"
+    ],
+    "field_differs_across_prompts": true,
+    "persistence_differs_across_prompts": false,
+    "pairwise_alpha_l2": [
+      0.21049602329730988,
+      0.1804608255624771,
+      0.0,
+      0.21286651492118835,
+      0.21049602329730988,
+      0.1804608255624771
+    ],
+    "pairwise_persistence_l2": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean_pairwise_alpha_l2": 0.16579670210679373,
+    "linear_probe": {
+      "status": "ok",
+      "method": "dual_ridge_least_squares",
+      "lambda": 0.01,
+      "n_prompts": 4,
+      "field_dim": 4224,
+      "feature_dim": 320,
+      "train_mse": 5.0965936679858714e-05,
+      "baseline_mean_mse": 0.000621866318397224,
+      "mse_improvement_vs_mean": 0.0005709003817173652,
+      "pred_target_cosine_per_prompt": [
+        0.9994367539083037,
+        0.9968598360703447,
+        0.9969921213349268,
+        0.9994367539083037
+      ],
+      "mean_pred_target_cosine": 0.9981813663054697,
+      "note": "In-sample fit only (P prompts). Success means field features linearly span last-k packet features on this set \u2014 not a general decoder."
+    },
+    "alpha_reprime_1nn_accuracy": 0.75,
+    "atom_collection_probe": {
+      "status": "ok",
+      "mean_last_k_compiled_vs_stored_r_cosine": 1.0000000099341104,
+      "per_prompt": [
+        1.0,
+        0.9999999602635748,
+        1.0000000794728667,
+        1.0
+      ],
+      "note": "Atom collection stores detached compiled atoms from this episode; high cosine is expected (same episode write). This is NOT recovery from field alone \u2014 it shows structural memory buffer retention."
+    },
+    "reconstruction_succeeds": true,
+    "reconstruction_summary": "partial/diagnostic linear map from field features to last-k packet features works in-sample"
+  },
+  "verdict": {
+    "label": "field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)",
+    "mean_offdiag_cosine_surface_logits": 0.8818516248635224,
+    "mean_offdiag_cosine_alpha": 0.7365292493621921,
+    "mean_field_rms_after_prompt": 0.0033630633843131363,
+    "mean_field_rms_after_20_gen": 0.026932666543871164,
+    "reconstruction_succeeds": true,
+    "regime_note": "CE down + gen still noise without field reconstruction = still Transformer regime without the farm."
+  }
+}

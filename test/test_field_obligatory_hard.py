@@ -234,5 +234,64 @@ class FieldObligatoryHardTests(unittest.TestCase):
         self.assertIsInstance(out, (bytes, bytearray))
 
 
+    def test_span_head_pad_migrate_keeps_prefix_and_field(self) -> None:
+        """16→32 max_payload: pad-copy span heads; core/field tensors unchanged."""
+        import tempfile
+        from pathlib import Path as P
+
+        torch.manual_seed(9)
+        small = AtomNativeModel(
+            d_model=16,
+            n_modes=16,
+            n_atoms_max=64,
+            max_payload_bytes=8,
+            atomizer=Atomizer(max_span_bytes=8, pack_mode="linguistic"),
+            field_max_rms=3.0,
+            field_obligatory_hard=True,
+        )
+        with torch.no_grad():
+            small.surface.alpha_byte_frozen.fill_(0.123)
+            small.surface.alpha_length_frozen.fill_(0.456)
+            small.surface.alpha_byte_proj.fc2.weight.fill_(0.01)
+            small.core.state.alpha.fill_(0.77)
+        with tempfile.TemporaryDirectory() as tmp:
+            ckpt = P(tmp) / "small.pt"
+            small.save(ckpt)
+            big = AtomNativeModel(
+                d_model=16,
+                n_modes=16,
+                n_atoms_max=64,
+                max_payload_bytes=16,
+                atomizer=Atomizer(max_span_bytes=16, pack_mode="linguistic"),
+                field_max_rms=3.0,
+                field_obligatory_hard=True,
+            )
+            training = big.load(ckpt)
+            self.assertTrue(training.get("span_head_migrated"))
+            # Prefix rows preserved.
+            self.assertTrue(
+                torch.allclose(
+                    big.surface.alpha_byte_frozen[: 8 * 256],
+                    torch.full_like(big.surface.alpha_byte_frozen[: 8 * 256], 0.123),
+                )
+            )
+            self.assertTrue(
+                torch.allclose(
+                    big.surface.alpha_length_frozen[:8],
+                    torch.full_like(big.surface.alpha_length_frozen[:8], 0.456),
+                )
+            )
+            self.assertTrue(
+                torch.allclose(
+                    big.surface.alpha_byte_proj.fc2.weight[: 8 * 256],
+                    torch.full_like(big.surface.alpha_byte_proj.fc2.weight[: 8 * 256], 0.01),
+                )
+            )
+            # Field/core not wiped.
+            self.assertTrue(torch.allclose(big.core.state.alpha, torch.full_like(big.core.state.alpha, 0.77)))
+            self.assertEqual(big.max_payload_bytes, 16)
+            self.assertTrue(big.surface.field_obligatory_hard)
+
+
 if __name__ == "__main__":
     unittest.main()

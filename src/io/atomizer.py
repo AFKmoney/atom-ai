@@ -75,6 +75,16 @@ class Atomizer:
     ``max_span_bytes`` is a safety bound, not a vocabulary merge size.  The
     boundary is always emitted at the end of the stream, so every byte is
     represented exactly once.
+
+    Pack modes
+    ----------
+    ``eager``
+        Flush on every whitespace / punctuation / newline (legacy word-ish packs).
+    ``linguistic``
+        Prefer longer dialogue-aligned spans: accumulate toward ``max_span_bytes``,
+        flush on newlines (Utilisateur:/Assistant: lines), and cut at the last
+        whitespace/punctuation when the bound is hit — still pure byte-span,
+        no BPE / HF.
     """
 
     VERSION = "atomizer-v1-byte-span"
@@ -89,14 +99,27 @@ class Atomizer:
         "eos": 6,
         "generated": 7,
     }
+    _PACK_MODES = ("eager", "linguistic")
 
-    def __init__(self, max_span_bytes: int = 32, phase_period: float = 256.0) -> None:
+    def __init__(
+        self,
+        max_span_bytes: int = 32,
+        phase_period: float = 256.0,
+        pack_mode: str = "linguistic",
+    ) -> None:
         if max_span_bytes < 2:
             raise ValueError("max_span_bytes must be at least 2")
         if phase_period <= 0:
             raise ValueError("phase_period must be positive")
+        mode = str(pack_mode).strip().lower()
+        if mode not in self._PACK_MODES:
+            raise ValueError(f"pack_mode must be one of {self._PACK_MODES}, got {pack_mode!r}")
         self.max_span_bytes = int(max_span_bytes)
         self.phase_period = float(phase_period)
+        self.pack_mode = mode
+        # Soft flush threshold for linguistic mode (~3/4 of max): pack longer
+        # spans that still end on whitespace/punctuation when nearly full.
+        self._soft_flush_bytes = max(2, (self.max_span_bytes * 3) // 4)
         self.reset()
 
     @property
@@ -111,6 +134,7 @@ class Atomizer:
         self.packet_count = 0
         self._buffer = bytearray()
         self._buffer_start = 0
+        self._last_soft_cut = 0  # exclusive end index inside buffer
 
     @staticmethod
     def _is_continuation_byte(value: int) -> bool:
@@ -180,6 +204,29 @@ class Atomizer:
             current_class = cls._class(current)
             if previous_class != current_class and {previous_class, current_class} <= {"alpha", "digit"}:
                 return "class_transition"
+        return None
+
+    @classmethod
+    def _is_soft_boundary(cls, reason: str | None) -> bool:
+        return reason in {"whitespace", "punctuation", "class_transition"}
+
+    def _best_linguistic_cut(self, buffer: bytearray) -> int | None:
+        """Exclusive end index of preferred WS/punct cut inside buffer, or None."""
+        if len(buffer) < 2:
+            return None
+        # Prefer an already-tracked soft cut if valid.
+        if 2 <= self._last_soft_cut < len(buffer):
+            prefix = bytearray(buffer[: self._last_soft_cut])
+            if self._ends_at_utf8_boundary(prefix):
+                return self._last_soft_cut
+        # Search backward for whitespace / punctuation (keep ≥1 byte after cut).
+        for i in range(len(buffer) - 2, 0, -1):
+            value = buffer[i]
+            if value in (9, 10, 13, 32) or value in self._PUNCTUATION:
+                cut = i + 1
+                prefix = bytearray(buffer[:cut])
+                if cut >= 2 and self._ends_at_utf8_boundary(prefix):
+                    return cut
         return None
 
     @staticmethod
@@ -281,6 +328,19 @@ class Atomizer:
         packet = self._emit(bytes(self._buffer), self._buffer_start, boundary)
         self._buffer.clear()
         self._buffer_start = self.position
+        self._last_soft_cut = 0
+        return [packet]
+
+    def _flush_prefix(self, cut: int, boundary: str) -> list[AtomPacket]:
+        """Emit buffer[:cut]; keep the remainder in the pending buffer."""
+        if cut <= 0 or cut > len(self._buffer):
+            raise ValueError("invalid linguistic cut")
+        payload = bytes(self._buffer[:cut])
+        remainder = bytearray(self._buffer[cut:])
+        packet = self._emit(payload, self._buffer_start, boundary)
+        self._buffer = remainder
+        self._buffer_start = self.position
+        self._last_soft_cut = 0
         return [packet]
 
     def encode_bytes(
@@ -297,11 +357,38 @@ class Atomizer:
         if reset:
             self.reset()
         packets: list[AtomPacket] = []
+        linguistic = self.pack_mode == "linguistic"
         for value in raw:
             if not self._buffer:
                 self._buffer_start = self.position
             self._buffer.append(value)
             reason = self._boundary_reason(self._buffer)
+            if linguistic:
+                if reason == "newline":
+                    packets.extend(self._flush_pending(reason))
+                    continue
+                if self._is_soft_boundary(reason):
+                    self._last_soft_cut = len(self._buffer)
+                    # Near-full soft flush: end a long span on WS/punct (FR dialogue).
+                    if len(self._buffer) >= self._soft_flush_bytes:
+                        packets.extend(self._flush_pending(reason))
+                        continue
+                if len(self._buffer) >= self.max_span_bytes and self._ends_at_utf8_boundary(self._buffer):
+                    cut = self._best_linguistic_cut(self._buffer)
+                    if cut is not None and 2 <= cut < len(self._buffer):
+                        # Prefer WS/punct cut; label by the byte that ended the prefix.
+                        cut_byte = self._buffer[cut - 1]
+                        if cut_byte in (9, 10, 13, 32):
+                            label = "whitespace"
+                        elif cut_byte in self._PUNCTUATION:
+                            label = "punctuation"
+                        else:
+                            label = "max_span"
+                        packets.extend(self._flush_prefix(cut, label))
+                    else:
+                        packets.extend(self._flush_pending("max_span"))
+                continue
+            # Eager (legacy): flush on every structural boundary.
             if reason is not None:
                 packets.extend(self._flush_pending(reason))
             elif len(self._buffer) >= self.max_span_bytes and self._ends_at_utf8_boundary(self._buffer):
@@ -326,12 +413,14 @@ class Atomizer:
             "version": self.VERSION,
             "max_span_bytes": self.max_span_bytes,
             "phase_period": self.phase_period,
+            "pack_mode": self.pack_mode,
             "position": self.position,
             "previous_length": self.previous_length,
             "context_group": self.context_group.clone(),
             "packet_count": self.packet_count,
             "buffer": bytes(self._buffer),
             "buffer_start": self._buffer_start,
+            "last_soft_cut": self._last_soft_cut,
         }
 
     def load_state_dict(self, state: dict) -> None:
@@ -343,6 +432,8 @@ class Atomizer:
         self.packet_count = int(state.get("packet_count", 0))
         self._buffer = bytearray(state.get("buffer", b""))
         self._buffer_start = int(state.get("buffer_start", self.position))
+        self._last_soft_cut = int(state.get("last_soft_cut", 0))
+        # pack_mode / max_span_bytes stay as constructed (CLI wins on resume).
 
     def __call__(self, text: str) -> list[AtomPacket]:
         return self.encode(text)

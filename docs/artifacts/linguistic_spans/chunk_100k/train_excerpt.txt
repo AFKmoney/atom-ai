@@ -1,0 +1,46 @@
+train lock skipped (--allow-parallel-train)
+resumed weights from checkpoints/atom_native_obligatory_hard/atom_native.pt (recorded step=3375000, legacy_surface_migrated=False, span_head_migrated=False)
+atomizer pack_mode=linguistic max_span_bytes=32
+dynamics on load: energy_decay=0.30000001192092896 -> 0.30000001192092896 (repaired=False, bounds=(0.3, 0.95))
+field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*scale*alpha_MLP)
+optimizer groups: field/other lr=0.0001 (11 tensors), surface lr=0.0003 (11 tensors); energy_decay_bounds=(0.3, 0.95); field_max_rms=3.0
+stream mode: 10 shard(s), chunk_bytes=1048576, loop_shards=True, stream_buffer=2048, stream_prefetch=True
+optimizer restore skipped: surface LR param groups differ from checkpoint
+step=3375001 (run 1/50000) loss=9.83900 byte_ppl=254.370 atoms=1 merges=0 field=0.1128 rms=0.0020 scale=1.0000 fcos=0.692 ign=0.0000 prn=nan mph=0.000 bytes=524288 pkts=27462 shard=0
+step=3375050 (run 50/50000) loss=4.15503 byte_ppl=3.868 atoms=50 merges=0 field=2.3375 rms=0.0365 scale=1.0000 fcos=0.615 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375100 (run 100/50000) loss=7.75727 byte_ppl=85.828 atoms=100 merges=0 field=4.2996 rms=0.0672 scale=1.0000 fcos=0.602 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375150 (run 150/50000) loss=3.36688 byte_ppl=2.845 atoms=150 merges=0 field=5.9228 rms=0.0925 scale=1.0000 fcos=0.590 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375200 (run 200/50000) loss=7.76101 byte_ppl=116.858 atoms=200 merges=0 field=7.5974 rms=0.1187 scale=1.0000 fcos=0.580 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375250 (run 250/50000) loss=3.60576 byte_ppl=3.277 atoms=250 merges=0 field=9.1384 rms=0.1428 scale=1.0000 fcos=0.573 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375300 (run 300/50000) loss=7.30132 byte_ppl=121.229 atoms=44 merges=0 field=10.9591 rms=0.1712 scale=1.0000 fcos=0.569 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375350 (run 350/50000) loss=7.20671 byte_ppl=121.377 atoms=94 merges=0 field=12.8018 rms=0.2000 scale=1.0000 fcos=0.565 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375400 (run 400/50000) loss=8.22015 byte_ppl=167.070 atoms=144 merges=0 field=14.7994 rms=0.2312 scale=1.0000 fcos=0.561 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375450 (run 450/50000) loss=7.20289 byte_ppl=53.864 atoms=194 merges=0 field=16.9471 rms=0.2648 scale=1.0000 fcos=0.559 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375500 (run 500/50000) loss=4.89892 byte_ppl=6.670 atoms=244 merges=0 field=19.2339 rms=0.3005 scale=1.0000 fcos=0.558 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3375550 (run 550/50000) loss=7.76190 byte_ppl=125.050 atoms=38 merges=0 field=21.6217 rms=0.3378 scale=1.0000 fcos=0.556 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+...
+      "bytes_hex": "2021277527766e712769a9cd656cc36f3a737774",
+      "text": " !'u'vnq'i\ufffd\ufffdel\ufffdo:swt",
+      "reload_text": " !'u'vnq'i\ufffd\ufffdel\ufffdo:swt",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "7361652072c3626f686c206c276173eb64a079ae",
+      "text": "sae r\ufffdbohl l'as\ufffdd\ufffdy\ufffd",
+      "reload_text": "sae r\ufffdbohl l'as\ufffdd\ufffdy\ufffd",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "0a746e0a6f546973782e555674732073ae0a0a",
+      "text": "\ntn\noTisx.UVts s\ufffd\n\n",
+      "reload_text": "\ntn\noTisx.UVts s\ufffd\n\n",
+      "reload_match": true
+    }
+  }
+}

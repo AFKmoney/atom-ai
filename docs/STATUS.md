@@ -44,8 +44,8 @@ See `docs/STREAM_2_9M_PROBE.md`. Do **not** restart stream.
 
 ## Next (scientific, one at a time)
 
-1. Printable aux +50k: probe OK (logits 0.912), prn +0.018, chat still noise — **STOP**; do not burn another chunk on printable alone.
-2. Next single hypothesis: **Atomizer longer linguistic spans** (dialogue-aligned) *or* MERGE densify after mph evidence — pick one.
+1. Printable aux — **STOP** (falsified). Linguistic spans — **STOP** (falsified @ +100k).
+2. Next single hypothesis: **MERGE densify** (mph≈0.5, merges=0 on linguistic runs) — threshold/schedule only; no stack with spans/printable.
 3. Do not stack attention / HF / MERGE retune / field wipe with a new lever.
 4. Do not stack L_ign + obligatory without a new single hypothesis.
 
@@ -102,4 +102,18 @@ See `docs/HARD_V2_DEEPER.md`. Do not claim fluency.
 | verdict | **STOP** — aux alone did not unlock multi-word FR |
 
 See `docs/PRINTABLE_AUX.md`. Do not claim fluency.
+
+## Linguistic spans under hard α-MLP (2026-09-18)
+
+| Metric | Value |
+|--------|-------|
+| start → end step | 3,325,000 → **3,425,000** (+100k) |
+| final logits cos | **0.866** (≪0.99) |
+| final α cos | **0.713** |
+| max_span / pack | **32** / `linguistic` |
+| chat | **not coherent FR** (noise / empty) |
+| mechanism | longer WS/punct-aligned byte spans; span-head pad-migrate 16→32 |
+| verdict | **STOP** — spans alone did not unlock multi-word FR |
+
+See `docs/LINGUISTIC_SPANS.md`. Do not claim fluency. Next: MERGE densify.
 

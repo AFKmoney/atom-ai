@@ -15,7 +15,7 @@ from src.io.atomizer import Atomizer
 class AtomizerTests(unittest.TestCase):
     def test_round_trip_is_exact_for_utf8(self) -> None:
         text = "ATOM: déjà vu — 42\nfluide."
-        atomizer = Atomizer(max_span_bytes=16)
+        atomizer = Atomizer(max_span_bytes=16, pack_mode="linguistic")
         packets = atomizer.encode(text)
         reconstructed = b"".join(packet.payload for packet in packets).decode("utf-8")
         self.assertEqual(reconstructed, text)
@@ -23,26 +23,27 @@ class AtomizerTests(unittest.TestCase):
         self.assertTrue(all(packet.features.shape == (320,) for packet in packets))
 
     def test_same_surface_span_can_depend_on_context(self) -> None:
-        first = Atomizer(max_span_bytes=16).encode("a world ")
-        second = Atomizer(max_span_bytes=16).encode("b world ")
+        # Eager mode yields word-level "world " packets for this invariant.
+        first = Atomizer(max_span_bytes=16, pack_mode="eager").encode("a world ")
+        second = Atomizer(max_span_bytes=16, pack_mode="eager").encode("b world ")
         first_world = next(packet for packet in first if packet.payload == b"world ")
         second_world = next(packet for packet in second if packet.payload == b"world ")
         self.assertFalse(torch.allclose(first_world.features, second_world.features))
 
     def test_chunked_stream_is_equivalent_and_lossless(self) -> None:
         text = "alpha beta — gamma\n delta"
-        one_shot = Atomizer(max_span_bytes=8).encode(text)
-        chunked = list(Atomizer(max_span_bytes=8).stream(["alpha ", "beta ", "— ", "gamma\n", " delta"]))
+        one_shot = Atomizer(max_span_bytes=8, pack_mode="linguistic").encode(text)
+        chunked = list(Atomizer(max_span_bytes=8, pack_mode="linguistic").stream(["alpha ", "beta ", "— ", "gamma\n", " delta"]))
         self.assertEqual(b"".join(packet.payload for packet in one_shot), text.encode("utf-8"))
         self.assertEqual(b"".join(packet.payload for packet in chunked), text.encode("utf-8"))
 
     def test_state_restore_preserves_next_packet_features(self) -> None:
-        source = Atomizer(max_span_bytes=16)
+        source = Atomizer(max_span_bytes=16, pack_mode="eager")
         source.encode("prefix ")
         saved = source.state_dict()
         expected = source.packet_from_payload(b"next ")
 
-        restored = Atomizer(max_span_bytes=16)
+        restored = Atomizer(max_span_bytes=16, pack_mode="eager")
         restored.load_state_dict(saved)
         actual = restored.packet_from_payload(b"next ")
         torch.testing.assert_close(expected.features, actual.features)
@@ -50,15 +51,42 @@ class AtomizerTests(unittest.TestCase):
         self.assertEqual(expected.end, actual.end)
 
     def test_pending_buffer_is_checkpointable(self) -> None:
-        source = Atomizer(max_span_bytes=16)
+        source = Atomizer(max_span_bytes=16, pack_mode="eager")
         source.encode_bytes(b"partial", reset=True, flush=False)
         saved = source.state_dict()
         expected = source.encode_bytes(b" end ", reset=False, flush=True)
 
-        restored = Atomizer(max_span_bytes=16)
+        restored = Atomizer(max_span_bytes=16, pack_mode="eager")
         restored.load_state_dict(saved)
         actual = restored.encode_bytes(b" end ", reset=False, flush=True)
         self.assertEqual([packet.payload for packet in expected], [packet.payload for packet in actual])
+
+
+
+    def test_linguistic_spans_are_longer_and_lossless(self) -> None:
+        text = "Utilisateur: Bonjour\nAssistant: Salut mon ami, comment vas-tu ?\n"
+        eager = Atomizer(max_span_bytes=32, pack_mode="eager").encode(text)
+        ling = Atomizer(max_span_bytes=32, pack_mode="linguistic").encode(text)
+        self.assertEqual(b"".join(p.payload for p in ling).decode("utf-8"), text)
+        self.assertGreater(sum(len(p.payload) for p in ling) / len(ling),
+                           sum(len(p.payload) for p in eager) / len(eager))
+        self.assertLess(len(ling), len(eager))
+        # Prefer multi-byte spans (not only 1–3 byte scraps)
+        self.assertGreater(max(len(p.payload) for p in ling), 8)
+        # Newlines still bound dialogue lines
+        self.assertTrue(any(p.boundary == "newline" for p in ling))
+
+    def test_linguistic_cuts_prefer_whitespace(self) -> None:
+        # Long alpha run with spaces: cuts should land on spaces, not mid-word.
+        text = "alpha beta gamma delta epsilon zeta eta theta "
+        packets = Atomizer(max_span_bytes=16, pack_mode="linguistic").encode(text)
+        self.assertEqual(b"".join(p.payload for p in packets).decode("utf-8"), text)
+        for packet in packets[:-1]:
+            if packet.boundary in {"whitespace", "punctuation"}:
+                self.assertTrue(
+                    packet.payload.endswith(b" ") or packet.payload[-1:] in b".,!?;:",
+                    msg=repr(packet.payload),
+                )
 
 
 class AtomNativeModelTests(unittest.TestCase):

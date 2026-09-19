@@ -1,0 +1,21 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_obligatory_hard/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=3425000
+[probe] prompt='Bonjour'
+        RMS 0.002521 -> 0.022426 (norm 0.1613 -> 1.4353) atoms 2 -> 21
+        gen_preview='AAa.M\nl,,�<s:icdL�h�v-pÉAAae�\nl�,�<s:iddpah��-p��AAae�\nl�,�<s:id�pahy�epp�AdoM\nl�,�<s:id�pph �-pp��.�r���6AAAAdc�\n.aa�<s5id�pphy�ep��AAAdc�o.oa�<s5id�pphy��pu�'
+[probe] prompt='Qui es-tu ?'
+        RMS 0.004604 -> 0.022737 (norm 0.2946 -> 1.4551) atoms 3 -> 22
+        gen_preview='\n\n\n\n\neOiie g�us�ed��:C�r�u�pte\neOiqe g�us:ed��gC�r�uìte\n\neOiqe glus:ede�gC�r�u �te\n\nsOiqe glus�ede�pC�rAup te\nsclqe glus�ede�gC,rAup te�\t�!9�\n\n\nsclqe glus�ede�'
+[probe] prompt='Il était une fois'
+        RMS 0.003697 -> 0.023243 (norm 0.2366 -> 1.4876) atoms 3 -> 22
+        gen_preview='\n\n\n\ns.iJe:g�us: de-)C�L�p�d�e\ns.iJe:g�us:edesgC�LAuì�e\n\ns�igeag�us:ede�gC�rAup��e�#�\n\n\nsOigeag�us:ede�gC�rfup��e\nscigeag�us:ede�gC�rfup �e�\t�\nscigh glus:ede�gC'
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.002521 -> 0.022426 (norm 0.1613 -> 1.4353) atoms 2 -> 21
+        gen_preview='AAa.M\nl,,�<s:icdL�h�v-pÉAAae�\nl�,�<s:iddpah��-p��AAae�\nl�,�<s:id�pahy�epp�AdoM\nl�,�<s:id�pph �-pp��.�r���6AAAAdc�\n.aa�<s5id�pphy�ep��AAAdc�o.oa�<s5id�pphy��pu�'
+[probe] mean off-diag cosine logits=0.866300 alpha=0.713154
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/logs/field_probe_report.json
+[probe] wrote /workspace/exports/atom-ai/docs/FIELD_PROBE.md
+[probe] wrote /workspace/exports/atom-ai/docs/PERSISTENCE_TEST.md
+[probe] updated /workspace/exports/atom-ai/docs/SCALE.md
+[probe] VERDICT: field is carrying structure (prompt-sensitive; diagnostic reconstruction partial)

@@ -1,0 +1,56 @@
+train lock skipped (--allow-parallel-train)
+resumed weights from checkpoints/atom_native_obligatory_hard/atom_native.pt (recorded step=3325000, legacy_surface_migrated=True, span_head_migrated=True)
+span-head pad-migrate: old_max=16 -> new_max=32 padded=10 tensors (field/core kept; new rows only)
+atomizer pack_mode=linguistic max_span_bytes=32
+dynamics on load: energy_decay=0.30000001192092896 -> 0.30000001192092896 (repaired=False, bounds=(0.3, 0.95))
+field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*scale*alpha_MLP)
+optimizer groups: field/other lr=0.0001 (11 tensors), surface lr=0.0003 (11 tensors); energy_decay_bounds=(0.3, 0.95); field_max_rms=3.0
+stream mode: 10 shard(s), chunk_bytes=1048576, loop_shards=True, stream_buffer=2048, stream_prefetch=True
+optimizer restore skipped: surface LayerNorm migration changed bias scale
+step=3325001 (run 1/50000) loss=10.40978 byte_ppl=358.524 atoms=1 merges=0 field=0.1158 rms=0.0021 scale=1.0000 fcos=0.695 ign=0.0000 prn=nan mph=0.000 bytes=524288 pkts=27462 shard=0
+step=3325050 (run 50/50000) loss=5.15741 byte_ppl=5.132 atoms=50 merges=0 field=2.4749 rms=0.0387 scale=1.0000 fcos=0.652 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325100 (run 100/50000) loss=7.93792 byte_ppl=71.663 atoms=100 merges=0 field=4.4329 rms=0.0693 scale=1.0000 fcos=0.643 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325150 (run 150/50000) loss=4.87981 byte_ppl=3.844 atoms=150 merges=0 field=6.2729 rms=0.0980 scale=1.0000 fcos=0.638 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325200 (run 200/50000) loss=9.67721 byte_ppl=201.796 atoms=200 merges=0 field=7.8901 rms=0.1233 scale=1.0000 fcos=0.631 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325250 (run 250/50000) loss=4.50899 byte_ppl=3.253 atoms=250 merges=0 field=9.8786 rms=0.1544 scale=1.0000 fcos=0.627 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325300 (run 300/50000) loss=9.92596 byte_ppl=207.108 atoms=44 merges=0 field=11.9672 rms=0.1870 scale=1.0000 fcos=0.624 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325350 (run 350/50000) loss=9.74259 byte_ppl=173.364 atoms=94 merges=0 field=14.1936 rms=0.2218 scale=1.0000 fcos=0.621 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325400 (run 400/50000) loss=8.17101 byte_ppl=209.395 atoms=144 merges=0 field=16.5543 rms=0.2587 scale=1.0000 fcos=0.618 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325450 (run 450/50000) loss=8.10495 byte_ppl=82.901 atoms=194 merges=0 field=19.2532 rms=0.3008 scale=1.0000 fcos=0.618 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325500 (run 500/50000) loss=4.70964 byte_ppl=4.614 atoms=244 merges=0 field=22.0822 rms=0.3450 scale=1.0000 fcos=0.616 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325550 (run 550/50000) loss=7.79491 byte_ppl=190.972 atoms=38 merges=0 field=25.1497 rms=0.3930 scale=1.0000 fcos=0.615 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325600 (run 600/50000) loss=4.77624 byte_ppl=5.303 atoms=88 merges=0 field=28.5828 rms=0.4466 scale=1.0000 fcos=0.614 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325650 (run 650/50000) loss=8.39410 byte_ppl=156.294 atoms=138 merges=0 field=32.2896 rms=0.5045 scale=1.0000 fcos=0.613 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325700 (run 700/50000) loss=7.00639 byte_ppl=140.715 atoms=188 merges=0 field=36.3047 rms=0.5673 scale=1.0000 fcos=0.613 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+step=3325750 (run 750/50000) loss=6.94402 byte_ppl=122.347 atoms=238 merges=0 field=40.6975 rms=0.6359 scale=1.0000 fcos=0.612 ign=0.0000 prn=nan mph=0.500 bytes=524288 pkts=27462 shard=0
+...
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "2027610a206520385f716c927444a09573eb20e5",
+      "text": " 'a\n e 8_ql\ufffdtD\ufffd\ufffds\ufffd \ufffd",
+      "reload_text": " 'a\n e 8_ql\ufffdtD\ufffd\ufffds\ufffd \ufffd",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "4161656465652c2c69637392a9832c0ae369497d",
+      "text": "Aaedee,,ics\ufffd\ufffd\ufffd,\n\ufffdiI}",
+      "reload_text": "Aaedee,,ics\ufffd\ufffd\ufffd,\n\ufffdiI}",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "0a272061206c206e203a2bd574c68d73aa0a0a",
+      "text": "\n' a l n :+\ufffdt\u018ds\ufffd\n\n",
+      "reload_text": "\n' a l n :+\ufffdt\u018ds\ufffd\n\n",
+      "reload_match": true
+    }
+  }
+}

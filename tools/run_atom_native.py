@@ -212,7 +212,14 @@ def main() -> None:
     parser.add_argument("--d-model", type=int, default=8)
     parser.add_argument("--n-modes", type=int, default=8)
     parser.add_argument("--n-atoms-max", type=int, default=128)
-    parser.add_argument("--max-span-bytes", type=int, default=16)
+    parser.add_argument("--max-span-bytes", type=int, default=32,
+                        help="Atomizer/surface max span bytes (default 32; was 16)")
+    parser.add_argument(
+        "--atomizer-pack",
+        choices=("linguistic", "eager"),
+        default="linguistic",
+        help="Atomizer packing: linguistic=longer WS/punct-aligned spans (FR dialogue); eager=flush every boundary (legacy)",
+    )
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument(
         "--surface-learning-rate",
@@ -364,7 +371,7 @@ def main() -> None:
     raw = b""
     text = ""
     stream_source: StreamingPacketSource | None = None
-    atomizer = Atomizer(max_span_bytes=args.max_span_bytes)
+    atomizer = Atomizer(max_span_bytes=args.max_span_bytes, pack_mode=args.atomizer_pack)
 
     if stream_mode:
         stream_source = StreamingPacketSource(
@@ -383,7 +390,7 @@ def main() -> None:
             raise ValueError("stream source produced no packet transitions") from exc
         # Re-create source so training sees a clean continuum from the start.
         stream_source = StreamingPacketSource(
-            Atomizer(max_span_bytes=args.max_span_bytes),
+            Atomizer(max_span_bytes=args.max_span_bytes, pack_mode=args.atomizer_pack),
             shard_paths,
             chunk_bytes=args.chunk_bytes,
             loop=args.loop_shards,
@@ -418,7 +425,7 @@ def main() -> None:
         n_modes=args.n_modes,
         n_atoms_max=args.n_atoms_max,
         max_payload_bytes=args.max_span_bytes,
-        atomizer=Atomizer(max_span_bytes=args.max_span_bytes),
+        atomizer=Atomizer(max_span_bytes=args.max_span_bytes, pack_mode=args.atomizer_pack),
         field_max_rms=args.field_max_rms,
         energy_decay_bounds=energy_decay_bounds,
         enable_merge=bool(args.enable_merge),
@@ -441,10 +448,23 @@ def main() -> None:
         training_state = model.load(args.resume)
         start_step = int((training_state or {}).get("step", 0) or 0)
         migrated = (training_state or {}).get("legacy_surface_migrated", False)
+        span_mig = (training_state or {}).get("span_head_migrated", False)
+        span_info = (training_state or {}).get("span_head_migrate_info") or {}
         dyn_load = (training_state or {}).get("dynamics_on_load") or {}
         print(
             f"resumed weights from {args.resume} "
-            f"(recorded step={start_step}, legacy_surface_migrated={migrated})"
+            f"(recorded step={start_step}, legacy_surface_migrated={migrated}, "
+            f"span_head_migrated={span_mig})"
+        )
+        if span_mig:
+            print(
+                f"span-head pad-migrate: old_max={span_info.get('old_max_payload')} -> "
+                f"new_max={span_info.get('new_max_payload')} "
+                f"padded={len(span_info.get('padded_keys') or [])} tensors "
+                f"(field/core kept; new rows only)"
+            )
+        print(
+            f"atomizer pack_mode={args.atomizer_pack} max_span_bytes={args.max_span_bytes}"
         )
         if dyn_load:
             print(
@@ -796,7 +816,7 @@ def main() -> None:
         n_modes=args.n_modes,
         n_atoms_max=args.n_atoms_max,
         max_payload_bytes=args.max_span_bytes,
-        atomizer=Atomizer(max_span_bytes=args.max_span_bytes),
+        atomizer=Atomizer(max_span_bytes=args.max_span_bytes, pack_mode=args.atomizer_pack),
         field_max_rms=args.field_max_rms,
         energy_decay_bounds=energy_decay_bounds,
         enable_merge=bool(args.enable_merge),

@@ -646,7 +646,7 @@ class AtomNativeModel(nn.Module):
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
-        self.atomizer = atomizer or Atomizer(max_span_bytes=max_payload_bytes)
+        self.atomizer = atomizer or Atomizer(max_span_bytes=max_payload_bytes, pack_mode="linguistic")
         self.core = ToroidalFractalIntelligence(
             vocab_size=256,
             d_model=d_model,
@@ -1361,6 +1361,83 @@ class AtomNativeModel(nn.Module):
         torch.save(checkpoint, path)
         return path
 
+
+    @staticmethod
+    def _pad_copy_leading(dst: torch.Tensor, src: torch.Tensor) -> int:
+        """Copy leading rows/elems from src into dst; return rows copied on dim0."""
+        if dst.ndim == 0 or src.ndim == 0:
+            return 0
+        n = min(int(dst.shape[0]), int(src.shape[0]))
+        if n <= 0:
+            return 0
+        if dst.ndim == 1:
+            dst[:n].copy_(src[:n].to(device=dst.device, dtype=dst.dtype))
+        else:
+            # Match trailing dims; truncate if src wider (should not happen on grow).
+            if dst.shape[1:] != src.shape[1:]:
+                # Best-effort: copy overlapping trailing slice.
+                slices = [slice(0, n)]
+                for d_dim, s_dim in zip(dst.shape[1:], src.shape[1:]):
+                    slices.append(slice(0, min(d_dim, s_dim)))
+                dst[tuple(slices)].copy_(src[tuple(slices)].to(device=dst.device, dtype=dst.dtype))
+            else:
+                dst[:n].copy_(src[:n].to(device=dst.device, dtype=dst.dtype))
+        return n
+
+    def _migrate_span_head_weights(self, surface_state: dict) -> dict:
+        """Grow max_payload surface heads: keep prefix weights; init only new rows.
+
+        Does **not** touch field/core. Used when resuming 16-byte hard ckpt into
+        a larger max_payload (e.g. 32) under hard-v2 α-MLP.
+        """
+        info = {
+            "span_head_migrated": False,
+            "padded_keys": [],
+            "old_max_payload": None,
+            "new_max_payload": int(self.max_payload_bytes),
+        }
+        new_max = int(self.max_payload_bytes)
+        # Infer old max from length_decoder bias/weight if present.
+        old_len = surface_state.get("length_decoder.bias")
+        if old_len is None:
+            old_len = surface_state.get("length_decoder.weight")
+        if old_len is None:
+            old_len = surface_state.get("alpha_length_frozen")
+        if old_len is None or not hasattr(old_len, "shape"):
+            return info
+        old_max = int(old_len.shape[0])
+        info["old_max_payload"] = old_max
+        if old_max >= new_max:
+            return info  # shrink or equal — filtered load handles equal; shrink rare
+
+        current = self.surface.state_dict()
+        padded = []
+        with torch.no_grad():
+            for key, dst in current.items():
+                if key not in surface_state:
+                    continue
+                src = surface_state[key]
+                if not hasattr(src, "shape") or not hasattr(dst, "shape"):
+                    continue
+                if tuple(src.shape) == tuple(dst.shape):
+                    continue
+                # Only pad along output (dim0) growth for known span heads.
+                if src.shape[0] >= dst.shape[0]:
+                    continue
+                if key.endswith(".fc1.weight") or key.endswith(".fc1.bias"):
+                    continue  # MLP input layer not payload-sized
+                n = self._pad_copy_leading(dst, src)
+                if n > 0:
+                    padded.append(key)
+            # Re-apply padded tensors onto the module.
+            if padded:
+                patch = {k: current[k] for k in padded}
+                self.surface.load_state_dict(patch, strict=False)
+        info["span_head_migrated"] = bool(padded)
+        info["padded_keys"] = padded
+        return info
+
+
     def load(self, path: str | Path) -> dict | None:
         checkpoint = torch.load(path, map_location="cpu", weights_only=False)
         self.compiler.load_state_dict(checkpoint["compiler"])
@@ -1377,6 +1454,13 @@ class AtomNativeModel(nn.Module):
         filtered = {key: value for key, value in surface_state.items() if key in current and current[key].shape == value.shape}
         missing = [key for key in current if key not in filtered]
         self.surface.load_state_dict(filtered, strict=False)
+        # If max_payload grew (e.g. 16→32), pad-copy span heads before any reinit wipe.
+        span_migrate = self._migrate_span_head_weights(surface_state)
+        if span_migrate.get("span_head_migrated"):
+            # Recompute missing after pad: only truly-absent keys remain "missing".
+            current = self.surface.state_dict()
+            filtered_keys = set(filtered) | set(span_migrate.get("padded_keys") or [])
+            missing = [key for key in current if key not in filtered_keys]
         mlp_missing = any(
             key.startswith("alpha_byte_proj") or key.startswith("alpha_length_proj")
             for key in missing
@@ -1485,9 +1569,14 @@ class AtomNativeModel(nn.Module):
         if training is None:
             training = {}
         training = dict(training)
-        training["legacy_surface_migrated"] = bool(legacy_surface or bool(non_mlp_missing) or field_readout_missing)
+        training["legacy_surface_migrated"] = bool(
+            legacy_surface or bool(non_mlp_missing) or field_readout_missing
+            or bool(span_migrate.get("span_head_migrated"))
+        )
         training["alpha_mlp_migrated"] = bool(mlp_missing and not obligatory_missing)
         training["field_readout_migrated"] = bool(field_readout_missing)
         training["field_obligatory_migrated"] = bool(obligatory_missing)
+        training["span_head_migrated"] = bool(span_migrate.get("span_head_migrated"))
+        training["span_head_migrate_info"] = span_migrate
         training["dynamics_on_load"] = dynamics_state
         return training
