@@ -56,6 +56,56 @@ class MergeTests(unittest.TestCase):
         self.assertEqual(tuple(coll.r.shape), (5, d))
 
 
+    def test_default_thresholds_merge_synthetic_coherent(self) -> None:
+        """New defaults (coherence 0.45) must merge synthetic coherent atoms."""
+        eng = AggregationEngine(d_model=8)  # defaults: thr=0.45, floor=0.08
+        self.assertAlmostEqual(eng.phase_coherence_threshold, 0.45, places=5)
+        self.assertAlmostEqual(eng.merge_energy_floor, 0.08, places=5)
+        torch.manual_seed(1)
+        n, d = 6, 8
+        base_phi = torch.zeros(1, d)
+        phi = base_phi.expand(n, d).clone() + 0.01 * torch.randn(n, d)
+        r = F.normalize(torch.randn(n, d), dim=-1)
+        omega = torch.rand(n, d) + 0.1
+        E = torch.ones(n, d) * 0.6
+        kappa = torch.ones(n, d) * 0.4
+        M = F.normalize(torch.randn(n, d), dim=-1)
+        tau = torch.ones(n, d)
+        rho = torch.zeros(n, 1)
+        merged, remove, count, diag = eng.merge_coherent(r, phi, omega, E, kappa, M, tau, rho)
+        self.assertGreater(count, 0, f"expected merges under defaults; diag={diag}")
+        self.assertGreaterEqual(diag["max_phase_coherence"], eng.phase_coherence_threshold)
+        self.assertGreater(diag["n_pairs_above_energy_floor"], 0)
+
+    def test_mph_half_regime_merges_under_operational_threshold(self) -> None:
+        """Logged regime: E=0.5, φ≈0 → mph=0.5; thr=0.45 merges, thr=0.55 does not."""
+        torch.manual_seed(2)
+        n, d = 8, 8
+        phi = torch.zeros(n, d)
+        r = F.normalize(torch.randn(n, d), dim=-1)
+        omega = torch.ones(n, d)
+        E = torch.ones(n, d) * 0.5
+        kappa = torch.ones(n, d) * 0.4
+        M = F.normalize(torch.randn(n, d), dim=-1)
+        tau = torch.ones(n, d)
+        rho = torch.zeros(n, 1)
+        blocked = AggregationEngine(d_model=d, phase_coherence_threshold=0.55, merge_energy_floor=0.08)
+        _, _, c_block, diag_b = blocked.merge_coherent(r, phi, omega, E, kappa, M, tau, rho)
+        self.assertEqual(c_block, 0)
+        self.assertAlmostEqual(diag_b["max_phase_coherence"], 0.5, places=4)
+        operational = AggregationEngine(d_model=d)  # 0.45 default
+        _, _, c_ok, diag_o = operational.merge_coherent(r, phi, omega, E, kappa, M, tau, rho)
+        self.assertGreater(c_ok, 0, f"mph~0.5 must merge under thr=0.45; diag={diag_o}")
+        self.assertAlmostEqual(diag_o["max_phase_coherence"], 0.5, places=4)
+
+    def test_model_set_merge_thresholds_propagates(self) -> None:
+        model = AtomNativeModel(d_model=8, n_modes=8, n_atoms_max=32, max_payload_bytes=8)
+        model.set_merge_thresholds(coherence_threshold=0.42, energy_floor=0.05)
+        self.assertAlmostEqual(model.merge_coherence_threshold, 0.42, places=5)
+        self.assertAlmostEqual(model.core.aggregation.phase_coherence_threshold, 0.42, places=5)
+        self.assertAlmostEqual(model.core.aggregation.merge_energy_floor, 0.05, places=5)
+
+
 class FieldLossTests(unittest.TestCase):
     def test_contrast_penalty_when_surface_ignores_alpha(self) -> None:
         model = AtomNativeModel(

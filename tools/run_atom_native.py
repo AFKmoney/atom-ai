@@ -268,6 +268,18 @@ def main() -> None:
         help="MERGE phase-coherent energetic atoms into heavier structure (default: on)",
     )
     parser.add_argument(
+        "--merge-coherence-threshold",
+        type=float,
+        default=0.45,
+        help="phase*energy coherence gate for MERGE (default 0.45; mph~0.5 regime)",
+    )
+    parser.add_argument(
+        "--merge-energy-floor",
+        type=float,
+        default=0.08,
+        help="min mean-E / geo-mean energy floor for MERGE pairs (default 0.08)",
+    )
+    parser.add_argument(
         "--field-loss-weight",
         type=float,
         default=0.05,
@@ -429,6 +441,8 @@ def main() -> None:
         field_max_rms=args.field_max_rms,
         energy_decay_bounds=energy_decay_bounds,
         enable_merge=bool(args.enable_merge),
+        merge_coherence_threshold=float(args.merge_coherence_threshold),
+        merge_energy_floor=float(args.merge_energy_floor),
         slow_every=int(args.slow_every),
         field_loss_weight=float(args.field_loss_weight),
         field_contrast_weight=float(args.field_contrast_weight),
@@ -478,6 +492,17 @@ def main() -> None:
         model.surface.field_obligatory_readout = bool(args.field_obligatory_readout)
         # CLI wins for printable aux (mechanism under test).
         model.printable_aux_weight = float(args.printable_aux_weight)
+        # CLI wins for MERGE gates (operational threshold fix under hard-v2+).
+        model.enable_merge = bool(args.enable_merge)
+        model.set_merge_thresholds(
+            coherence_threshold=float(args.merge_coherence_threshold),
+            energy_floor=float(args.merge_energy_floor),
+        )
+        print(
+            f"MERGE gates: enable={bool(args.enable_merge)} "
+            f"coherence_thr={float(args.merge_coherence_threshold):.3f} "
+            f"energy_floor={float(args.merge_energy_floor):.3f}"
+        )
         if getattr(args, "field_obligatory_hard", False):
             model.field_obligatory_hard = True
             model.field_obligatory_readout = True
@@ -571,6 +596,8 @@ def main() -> None:
                 "stream_buffer": args.stream_buffer,
                 "stream_prefetch": bool(args.stream_prefetch),
                 "enable_merge": bool(args.enable_merge),
+                "merge_coherence_threshold": float(args.merge_coherence_threshold),
+                "merge_energy_floor": float(args.merge_energy_floor),
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
                 "field_ignorance_weight": float(args.field_ignorance_weight),
@@ -617,6 +644,8 @@ def main() -> None:
                 "energy_decay_bounds": energy_decay_bounds,
                 "stream": False,
                 "enable_merge": bool(args.enable_merge),
+                "merge_coherence_threshold": float(args.merge_coherence_threshold),
+                "merge_energy_floor": float(args.merge_energy_floor),
                 "field_loss_weight": float(args.field_loss_weight),
                 "field_contrast_weight": float(args.field_contrast_weight),
                 "field_ignorance_weight": float(args.field_ignorance_weight),

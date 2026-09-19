@@ -5,6 +5,10 @@ English docs only. No fluency claim.
 
 ## main (this push)
 
+**MERGE operational** (`docs/MERGE_OPERATIONAL.md`): thr **0.55→0.45**; smoke +8k
+@ 3.425M→**3.433M**; **merges=7968** (was 0); mph ~0.69; chat still noise.
+logits cos **0.860**, α **0.705**. No fluency claim.
+
 Science on tree:
 
 - Field intel / contrast / MERGE MVP / dual clock

@@ -632,6 +632,8 @@ class AtomNativeModel(nn.Module):
         field_max_rms: float | None = None,
         energy_decay_bounds: tuple[float, float] | None = None,
         enable_merge: bool = True,
+        merge_coherence_threshold: float = 0.45,
+        merge_energy_floor: float = 0.08,
         slow_every: int = 1,
         field_loss_weight: float = 0.0,
         field_contrast_weight: float = 0.0,
@@ -665,6 +667,10 @@ class AtomNativeModel(nn.Module):
         self.energy_decay_bounds = energy_decay_bounds
         # Continuum intelligence knobs (structure + field dependence, not Θ growth).
         self.enable_merge = bool(enable_merge)
+        self.merge_coherence_threshold = float(merge_coherence_threshold)
+        self.merge_energy_floor = float(merge_energy_floor)
+        self.core.aggregation.phase_coherence_threshold = self.merge_coherence_threshold
+        self.core.aggregation.merge_energy_floor = self.merge_energy_floor
         self.slow_every = max(1, int(slow_every))
         self.field_loss_weight = float(field_loss_weight)
         self.field_contrast_weight = float(field_contrast_weight)
@@ -799,6 +805,27 @@ class AtomNativeModel(nn.Module):
             legacy_state=legacy,
         )
 
+    def set_merge_thresholds(
+        self,
+        coherence_threshold: float | None = None,
+        energy_floor: float | None = None,
+    ) -> None:
+        """Apply MERGE gates onto AggregationEngine (CLI / resume overrides)."""
+        if coherence_threshold is not None:
+            self.merge_coherence_threshold = float(coherence_threshold)
+            self.core.aggregation.phase_coherence_threshold = self.merge_coherence_threshold
+        if energy_floor is not None:
+            self.merge_energy_floor = float(energy_floor)
+            self.core.aggregation.merge_energy_floor = self.merge_energy_floor
+
+    @staticmethod
+    def _atom_prop_batch1(t: torch.Tensor, *, is_rho: bool = False) -> torch.Tensor:
+        """Normalize MERGE outputs to AtomCompiler shapes: (1, d) / rho (1, 1)."""
+        x = t.detach().clone().reshape(-1)
+        if is_rho:
+            return x[:1].reshape(1, 1)
+        return x.reshape(1, -1)
+
     def _maybe_merge_atoms(self) -> tuple[int, dict]:
         """MERGE coherent structural atoms into heavier ones (detached memory)."""
         empty_diag = {"max_phase_coherence": 0.0, "n_pairs_above_energy_floor": 0}
@@ -818,16 +845,18 @@ class AtomNativeModel(nn.Module):
         if merge_count <= 0 or not remove_idx:
             return 0, diag
         atoms.remove(remove_idx)
+        # Aggregation squeezes the compiler's leading batch-1 dim for math; restore
+        # (1, d) / (1, 1) so ToroidalAtomCollection can stack with live atoms.
         new_atoms = [
             ToroidalAtom(
-                r=item["r"].detach().clone(),
-                phi=item["phi"].detach().clone(),
-                omega=item["omega"].detach().clone(),
-                E=item["E"].detach().clone(),
-                kappa=item["kappa"].detach().clone(),
-                M=item["M"].detach().clone(),
-                tau=item["tau"].detach().clone(),
-                rho=item["rho"].detach().clone(),
+                r=self._atom_prop_batch1(item["r"]),
+                phi=self._atom_prop_batch1(item["phi"]),
+                omega=self._atom_prop_batch1(item["omega"]),
+                E=self._atom_prop_batch1(item["E"]),
+                kappa=self._atom_prop_batch1(item["kappa"]),
+                M=self._atom_prop_batch1(item["M"]),
+                tau=self._atom_prop_batch1(item["tau"]),
+                rho=self._atom_prop_batch1(item["rho"], is_rho=True),
             )
             for item in merged
         ]
@@ -1336,6 +1365,8 @@ class AtomNativeModel(nn.Module):
                 "field_max_rms": self.field_max_rms,
                 "energy_decay_bounds": self.energy_decay_bounds,
                 "enable_merge": self.enable_merge,
+                "merge_coherence_threshold": float(self.merge_coherence_threshold),
+                "merge_energy_floor": float(self.merge_energy_floor),
                 "slow_every": self.slow_every,
                 "field_loss_weight": self.field_loss_weight,
                 "field_contrast_weight": self.field_contrast_weight,
@@ -1533,6 +1564,12 @@ class AtomNativeModel(nn.Module):
         cfg = checkpoint.get("config") or {}
         if "enable_merge" in cfg:
             self.enable_merge = bool(cfg["enable_merge"])
+        if "merge_coherence_threshold" in cfg:
+            self.merge_coherence_threshold = float(cfg["merge_coherence_threshold"])
+            self.core.aggregation.phase_coherence_threshold = self.merge_coherence_threshold
+        if "merge_energy_floor" in cfg:
+            self.merge_energy_floor = float(cfg["merge_energy_floor"])
+            self.core.aggregation.merge_energy_floor = self.merge_energy_floor
         if "slow_every" in cfg:
             self.slow_every = max(1, int(cfg["slow_every"]))
         if "field_loss_weight" in cfg:

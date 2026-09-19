@@ -10,7 +10,7 @@ class AggregationEngine(nn.Module):
     def __init__(
         self,
         d_model: int = 256,
-        phase_coherence_threshold: float = 0.55,
+        phase_coherence_threshold: float = 0.45,
         energy_threshold: float = 0.3,
         max_depth: int = 5,
         merge_energy_floor: float = 0.08,
@@ -132,8 +132,8 @@ class AggregationEngine(nn.Module):
         merge_count = 0
 
         tri = torch.triu(coherence, diagonal=1)
-        # Read-only merge diagnostics (thresholds unchanged): max coherence among
-        # candidate pairs BEFORE the phase_coherence_threshold filter.
+        # Read-only merge diagnostics: max coherence among candidate pairs
+        # BEFORE the phase_coherence_threshold filter (default 0.45 so mph~0.5 fires).
         max_phase_coherence = float(tri.max().item()) if tri.numel() else 0.0
         geo = torch.sqrt((mean_E[:, None] * mean_E[None, :]).clamp_min(0.0))
         both_low = (mean_E[:, None] < self.merge_energy_floor) & (mean_E[None, :] < self.merge_energy_floor)

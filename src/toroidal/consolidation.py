@@ -32,6 +32,13 @@ class ConsolidationEngine(nn.Module):
         alpha_flat = alpha.reshape(-1, self.d_model)
         E_flat = E.reshape(-1, self.d_model).clamp(0, 1)
         stability_flat = stability.reshape(-1, self.d_model).clamp(0, 1)
+        # Call sites pass atom-mean E/stability as a singleton (1, d). Expand to
+        # n_modes so the boolean mask matches alpha rows (needed once MERGE densifies).
+        if E_flat.shape[0] == 1 and alpha_flat.shape[0] > 1:
+            E_flat = E_flat.expand(alpha_flat.shape[0], -1)
+            stability_flat = stability_flat.expand(alpha_flat.shape[0], -1)
+        elif stability_flat.shape[0] == 1 and alpha_flat.shape[0] > 1:
+            stability_flat = stability_flat.expand(alpha_flat.shape[0], -1)
         mask = self.select_for_consolidation(E_flat, stability_flat)
 
         if mask.any():
