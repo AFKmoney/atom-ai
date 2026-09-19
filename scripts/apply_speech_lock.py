@@ -2,15 +2,79 @@
 """Idempotent speech-lock patcher for src/atom_native.py.
 
     python3 scripts/apply_speech_lock.py
+    python3 -m pytest test/test_speech_lock.py -q
     python3 scripts/speech_chat.py --prompt Bonjour
 """
 from __future__ import annotations
+
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "src" / "atom_native.py"
 
 IMPORT = "from .speech_lock import format_dialogue_prompt, speech_ok\n"
+
+GENERATE = '''    def generate_packets(
+        self,
+        prompt: str,
+        max_packets: int = 8,
+        temperature: float = 1.0,
+        top_k: int | None = None,
+        deterministic: bool = True,
+        max_length: int | None = None,
+        prefer_printable: bool = True,
+        reset: bool = True,
+        merge_enabled: bool = False,
+        payload_copy: bool = False,
+        dialogue_wrap: bool = True,
+        speech_gate: bool = True,
+    ) -> bytes:
+        """Prime on a prompt and generate bounded atom surface packets."""
+        self.eval()
+        if self.field_obligatory_hard:
+            self.surface.set_obligatory_hard(True)
+            prefer_printable = True
+        prev_payload_flag = bool(getattr(self.surface, "payload_enabled", True))
+        self.surface.payload_enabled = bool(payload_copy)
+        try:
+            if reset:
+                self.reset_state(reset_atomizer=True)
+            if dialogue_wrap:
+                prompt = format_dialogue_prompt(prompt)
+            prompt_packets = self.atomizer.encode(prompt, reset=reset)
+            if not prompt_packets:
+                raise ValueError("prompt must produce at least one atom packet")
+            for packet in prompt_packets[:-1]:
+                self.forward_packet(packet, merge_enabled=merge_enabled)
+            current = prompt_packets[-1]
+            generated = bytearray()
+            for _ in range(max_packets):
+                payload = self.predict_packet(
+                    current,
+                    temperature=temperature,
+                    top_k=top_k,
+                    deterministic=deterministic,
+                    prefer_printable=prefer_printable,
+                    merge_enabled=merge_enabled,
+                )
+                if not payload:
+                    break
+                if speech_gate and not speech_ok(payload):
+                    break
+                generated.extend(payload)
+                current = self.atomizer.packet_from_payload(payload)
+                if max_length is not None and len(generated) >= max_length:
+                    break
+                if generated.endswith(b"\\n\\n") and len(generated) > 2:
+                    break
+            if max_length is not None:
+                return bytes(generated[:max_length])
+            return bytes(generated)
+        finally:
+            self.surface.payload_enabled = prev_payload_flag
+
+'''
 
 
 def main() -> None:
@@ -48,8 +112,6 @@ def main() -> None:
         print("[apply] position-aligned copy")
     elif "No unigram broadcast" in text:
         print("[apply] copy already aligned")
-    else:
-        print("[apply] WARN copy block not found")
 
     if "self.payload_enabled = True" not in text:
         old_init = (
@@ -91,78 +153,16 @@ def main() -> None:
         changed = True
         print("[apply] gated payload_produce")
 
-    if "payload_copy: bool = False" not in text:
-        old_sig = (
-            "        reset: bool = True,\n"
-            "        merge_enabled: bool = False,\n"
-            "    ) -> bytes:\n"
-        )
-        new_sig = (
-            "        reset: bool = True,\n"
-            "        merge_enabled: bool = False,\n"
-            "        payload_copy: bool = False,\n"
-            "        dialogue_wrap: bool = True,\n"
-            "        speech_gate: bool = True,\n"
-            "    ) -> bytes:\n"
-        )
-        if old_sig not in text:
-            raise SystemExit("generate_packets signature not found")
-        text = text.replace(old_sig, new_sig, 1)
+    start = text.find("    def generate_packets(")
+    end = text.find("    def _checkpoint(self)")
+    if start < 0 or end < 0:
+        raise SystemExit("generate_packets / _checkpoint anchors not found")
+    if text[start:end] != GENERATE:
+        text = text[:start] + GENERATE + "\n" + text[end:]
         changed = True
-        print("[apply] generate_packets kwargs")
+        print("[apply] generate_packets rewritten")
 
-    if "speech_gate and not speech_ok" not in text:
-        old_loop = (
-            "        if reset:\n"
-            "            self.reset_state(reset_atomizer=True)\n"
-            "        prompt_packets = self.atomizer.encode(prompt, reset=reset)\n"
-        )
-        new_loop = (
-            "        prev_payload_flag = bool(getattr(self.surface, \"payload_enabled\", True))\n"
-            "        self.surface.payload_enabled = bool(payload_copy)\n"
-            "        try:\n"
-            "            if reset:\n"
-            "                self.reset_state(reset_atomizer=True)\n"
-            "            if dialogue_wrap:\n"
-            "                prompt = format_dialogue_prompt(prompt)\n"
-            "            prompt_packets = self.atomizer.encode(prompt, reset=reset)\n"
-        )
-        if old_loop not in text:
-            raise SystemExit("generate reset/encode block not found")
-        text = text.replace(old_loop, new_loop, 1)
-        old_ok = (
-            "            if not payload:\n"
-            "                break\n"
-            "            generated.extend(payload)\n"
-        )
-        new_ok = (
-            "            if not payload:\n"
-            "                break\n"
-            "            if speech_gate and not speech_ok(payload):\n"
-            "                break\n"
-            "            generated.extend(payload)\n"
-        )
-        if old_ok not in text:
-            raise SystemExit("payload extend block not found")
-        text = text.replace(old_ok, new_ok, 1)
-        closer = (
-            "        if max_length is not None:\n"
-            "            return bytes(generated[:max_length])\n"
-            "        return bytes(generated)\n"
-        )
-        closed = (
-            "            if max_length is not None:\n"
-            "                return bytes(generated[:max_length])\n"
-            "            return bytes(generated)\n"
-            "        finally:\n"
-            "            self.surface.payload_enabled = prev_payload_flag\n"
-        )
-        if closer not in text:
-            raise SystemExit("generate return block not found")
-        text = text.replace(closer, closed, 1)
-        changed = True
-        print("[apply] soup-gate + dialogue wrap")
-
+    ast.parse(text)
     if changed:
         TARGET.write_text(text, encoding="utf-8")
         print(f"[apply] wrote {TARGET}")
