@@ -1,242 +1,160 @@
-# Toroidal Fractal Intelligence — Architecture Documentation
+# ATOM architecture
 
-## Overview
+A tick-based toroidal field. **Not a Transformer.**
+No softmax attention, no BPE, no KV-cache, no HF tokenizer on the live path.
 
-This document describes the complete architecture of the Toroidal Fractal Intelligence system, a novel AI architecture based on continuous structured learning rather than traditional neural network paradigms.
+## One sentence
 
-## Core Philosophy
+A UTF-8 byte becomes an atom; atoms live in a field α that RK4 advances;
+the surface reads **the last atom + α** and emits the next byte.
 
-**Traditional AI**: `neurones → couches → matrices de poids → backpropagation massive → entraînement fini`
-
-**Toroidal Fractal AI**: `TOKEN → ATOME TOROÏDAL → SUPERPOSITION FRACTALE → DYNAMIQUE → AGGRÉGATION → ABSTRACTION → CONSOLIDATION → SORTIE`
-
-The key insight: intelligence emerges from the *dynamics and organization of structures*, not just from static weights.
-
-The non-negotiable implementation rules are in [`ATOM_RULES.md`](ATOM_RULES.md). In particular, ATOM is stateful and tick-based; it is not a Transformer and its token stream must never be flattened into one model call.
-
-## Mathematical Foundation
-
-### Toroidal Atom
-
-The fundamental building block is the **toroidal atom**:
+## Tick graph
 
 ```
-A_i = (r_i, φ_i, ω_i, E_i, κ_i, M_i, τ_i, ρ_i)
+UTF-8 stream
+    |
+    v
+Atomizer          1 byte → AtomPacket {payload, features, boundary, phase}
+    |
+    v
+Compiler          packet features → ToroidalAtom {r, φ, ω, E, payload}
+    |
+    v
+Field core        α ∈ R^{n_modes × d}   RK4 + interaction + optional MERGE
+    |
+    v
+Surface           logits[256] = α-MLP(α) + 0.3·JL(α) + last_atom(byte, prev, φ)
+    |
+    v
+decode            argmax / sample one byte → commit as next atom
 ```
 
-Where:
-- `r_i` = position/rayon in latent space
-- `φ_i` = phase
-- `ω_i` = natural frequency
-- `E_i` = energy/activation/importance
-- `κ_i` = coupling strength
-- `M_i` = local memory
-- `τ_i` = time scale
-- `ρ_i` = hierarchical level
+Train and generate **share this graph**. That is the speech contract
+(`docs/BYTE_TICK.md`). Linguistic spans (5–32 bytes) broke it: train
+saw a whole span, generate decoded slots independently.
 
-### Token → Atom Conversion
+## Pieces
 
-The central function:
+### Atomizer (`src/io/atomizer.py`)
 
-```
-T(x, c, S) → A
-```
+Cuts the byte stream into packets. Speech line: `max_span_bytes=1`.
+Features are a fixed local observation (histogram, first/last nibble,
+whitespace/alpha rates) — not a learned vocab.
 
-Where:
-- `x` = token
-- `c` = context
-- `S` = current state of computational matter
-- `A` = toroidal atom or structural modification
+`packet_from_payload` (generate commit) infers a train-like boundary
+(`newline|punct|whitespace|max_span`). Tag `"generated"` is OOD and
+must not be written.
 
-The encoder returns an operation label, but the current forward path creates one new atom per tick. `MODIFY`, `MERGE`, `REINFORCE`, `SPLIT`, `ABSTRACT`, and `CONSOLIDATE` are not active structural mutations and must not be documented as implemented mechanisms.
+### Toroidal atom (`src/toroidal/atom.py`)
 
-### Fractal Superposition
+One living unit:
 
-```
-S = Σ_i α_i A_i
-```
+| field | meaning |
+|-------|---------|
+| `r` | content vector |
+| `φ` | phase (oscillatory binding) |
+| `ω` | frequency |
+| `E` | energy |
+| `payload` | exact bytes this atom carries |
 
-The spectral field is the compact operational state with `O(n_modes)` size. The model also keeps an explicit atom collection as structural memory, so total memory is not purely `O(n_modes)` in the current implementation.
+The collection is a list + stacked tensors. MERGE can fuse two atoms
+when phase coherence is high. Speech line keeps MERGE **off**.
 
-### RK4 Dynamics
+### Field α (`src/toroidal/state.py`, `dynamics.py`)
 
-The superposition evolves via differential equation:
+α is the persistent field, shape `(n_modes, d_model)`.
+Dynamics integrate with RK4. Energy decay is bounded.
+`field_max_rms` clips amplitude (sandbox: 3.0).
 
-```
-dS/dt = F(S, x, C, Θ)
-```
+α is **not** a residual stream of a Transformer block. It is the
+state that survives ticks, flushes, and (when you allow it) sessions.
 
-Integrated with Runge-Kutta 4th order:
-```
-k1 = F(S_t)
-k2 = F(S_t + dt/2 * k1)
-k3 = F(S_t + dt/2 * k2)
-k4 = F(S_t + dt * k3)
-S_{t+dt} = S_t + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
-```
+### Interaction / aggregation / abstraction / consolidation
 
-## Module Architecture
+Still in the core. They are the structural story (atoms → aggregates
+→ abstractions → persistent buffer). They are **not** the speech
+readout. Speech is the surface.
+
+### Surface / hard readout (`AtomSurfaceHead` in `src/atom_native.py`)
+
+Under `--field-obligatory-hard`:
 
 ```
-toroidal_fractal_intelligence/
-├── src/
-│   ├── toroidal/
-│   │   ├── encoder.py       # Token → Atom conversion
-│   │   ├── atom.py          # Atom data structures
-│   │   ├── state.py         # Fractal superposition state
-│   │   ├── dynamics.py      # RK4 integration engine
-│   │   ├── interaction.py   # Pairwise interactions
-│   │   ├── aggregation.py   # Structure aggregation
-│   │   ├── abstraction.py   # Pattern abstraction
-│   │   ├── consolidation.py # Persistent memory
-│   │   ├── production.py    # Output generation
-│   │   └── model.py         # Complete model integration
-│   ├── io/
-│   │   ├── tokenizer.py     # Text tokenization
-│   │   └── data.py          # Data loading utilities
-│   ├── evaluation/
-│   │   └── metrics.py       # Performance metrics
-│   ├── training/
-│   │   └── trainer.py       # Training loop
-│   └── main.py              # Entry point
-├── checkpoints/             # Model checkpoints (.pt)
-├── logs/                    # Training logs
-└── results/                 # Evaluation results
+a_hat        = JL flatten(α)
+train_logits = α-MLP(a_hat)          # trainable
+frozen       = 0.3 · frozen_JL(a_hat) # buffer, not trained
+last         = last_atom_readout(payloads, φ)
+logits       = train + frozen + last
 ```
 
-## Design Decisions
+No RMS cap on the trainable branch (the cap re-collapsed CE).
 
-### 1. Spectral Field Representation (state.py)
+**Last-atom readout** (corpus bridge #20 + #1):
 
-**Decision**: Use a fixed number of spectral modes (256) for the operational field while retaining explicit atoms as structural memory.
+1. embed last committed byte
+2. embed previous byte (2-gram)
+3. dentate: expand concat → ReLU → keep top 25% → project back
+4. add `cos φ, sin φ` of the last atom
+5. linear to 256 logits
 
-**Rationale**: 
-- O(modes) storage vs O(N * d_model) for explicit atoms
-- Natural frequency/phase separation
-- Efficient RK4 integration on the field
-- Capacity grows with structure composition, not parameter count
+This is **not** payload-copy (global hist / winner copy). Copy is off.
 
-**Trade-off**: Some information loss in projection, but regained through hierarchy.
+### Generate (`generate_packets`)
 
-### 2. Shared Parameters Theta (dynamics.py)
+1. wrap prompt as `Utilisateur: …\nAssistant: ` (`src/speech_lock.py`)
+2. ingest wrap packets into the live field
+3. loop: predict one byte, commit `packet_from_payload`, append
+4. n-gram anti-repeat: if the last 2–6 bytes already cycled, forbid
+   that byte and draw once more
+5. stop on empty, hard cycle, or `max_packets`
 
-**Decision**: A small set of shared parameters controls interactions for all atoms.
+`speech_ok` is a phrase gate, not a language model. Leave
+`speech_gate=False` while measuring.
 
-**Rationale**:
-- Decouples capacity from training cost
-- Enables billions of potential states with modest parameter count
-- Follows the principle: `capacity >> independent parameters`
+### Train (`tools/run_atom_native.py`)
 
-**Implementation**: `coupling_scale`, `energy_decay`, and `phase_sync` in the toroidal dynamics. These are shared rules, not per-token or per-atom attention parameters.
+For each step: take packets `(current, target)`, `transition_loss` =
+CE(next byte) + optional tiny aux, clip grad 1.0, step.
 
-### 3. Sparse Interaction (interaction.py)
+Optional **efference** (bridge #9): every 10 steps, commit the model's
+own predicted byte, then CE on the gold target from that state.
 
-**Decision**: Use local toroidal neighbour interactions over the spectral field. The interaction uses periodic rolls, distance/phase coupling and field gradients; it has no Q/K/V projections or attention softmax.
+Optional **replay** exists and is **off**. It drove CE to 0.008 by
+reciting a ring.
 
-**Rationale**:
-- Computational efficiency for large N
-- Biological plausibility (local connectivity)
-- Still captures global structure through field
+Stream mode (`--stream`) reads shards online. Use it above ~200 kB
+when `max_span_bytes=1` (otherwise encode holds one packet per byte).
 
-### 4. Hierarchical Aggregation (aggregation.py)
+## What ATOM is not
 
-**Decision**: Allow recursive aggregation up to depth 5.
+| banned | why |
+|--------|-----|
+| softmax attention / Flash / GQA | different machine |
+| HF / GPT-2 tokenizer | Atomizer is the tokenizer |
+| payload-copy attractor | surface copies instead of predicting |
+| `"generated"` boundary | train/generate mismatch |
+| field wipe to drop CE | destroys the thesis |
+| stacking 4 new levers in one run | unreadable science |
 
-**Rationale**:
-- Enables `atom → motif → structure → meta-structure → abstraction`
-- Capacity grows recursively
-- Mirrors biological hierarchy (neuron → column → cortex)
+## Neuro map (own corpus, not papers)
 
-### 5. Dynamic Consolidation (consolidation.py)
+`docs/NEURO_BRIDGES_ATOM.md`. Wired: φ multiplex, dentate 2-gram,
+efference. Replay implemented and gated off.
 
-**Decision**: Only consolidate stable, useful structures.
-
-**Rationale**:
-- Saves computation on transient structures
-- Creates persistent memory for important patterns
-- Enables infinite learning without unbounded growth
-
-### 6. Continuous Training Loop (trainer.py)
-
-**Decision**: No training/inference boundary; infinite data stream. The canonical trainer processes one token transition per tick and preserves the model state between ticks.
-
-**Rationale**:
-- True continuous learning
-- No catastrophic forgetting (structures consolidate)
-- Real-time adaptation
-
-## Key Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `d_model` | 256 | Hidden dimension |
-| `n_modes` | 256 | Number of spectral modes |
-| `n_atoms_max` | 1024 | Maximum concurrent atoms |
-| `dt` | 0.01 | RK4 time step |
-| `n_steps` | 4 | RK4 integration steps |
-| `phase_coherence_threshold` | 0.7 | Aggregation threshold |
-| `energy_threshold` | 0.3 | Minimum energy for consolidation |
-| `consolidation_threshold` | 0.7 | Stability threshold |
-
-## Learning Efficiency Metric
-
-The fundamental metric:
+## Files that matter
 
 ```
-Learning Efficiency = Information Acquired / Computational Cost
+src/atom_native.py          field + surface + generate
+src/io/atomizer.py          packets
+src/io/stream_corpus.py     online shards
+src/speech_lock.py          wrap + gate
+src/toroidal/*              atoms, RK4, MERGE, persist
+tools/run_atom_native.py    trainer
+tools/chat_atom_native.py   interactive
+TRAIN.md                    how to run
+docs/MEASURE_LOG.md         numbers
+docs/STATUS.md              what is live
 ```
 
-Measures:
-- `atoms_per_parameter`: Structural capacity per trainable parameter
-- `information_per_flop`: Bits of structure per FLOP
-- `loss_per_parameter`: Learning signal per parameter
-
-## Usage
-
-### Training
-```python
-from toroidal_fractal_intelligence import create_model, train
-from toroidal_fractal_intelligence.io.tokenizer import ToroidalTokenizer
-
-model = create_model(d_model=256, n_modes=256)
-tokenizer = ToroidalTokenizer("gpt2")
-
-result = train(
-    model=model,
-    dataset_name="wikitext",
-    max_steps=10000,
-    learning_rate=3e-4
-)
-```
-
-### Chat
-```python
-from toroidal_fractal_intelligence import chat
-
-response = chat(model, tokenizer, "Once upon a time")
-print(response)
-```
-
-### Interactive Mode
-```bash
-python -m toroidal_fractal_intelligence.main --mode interactive
-```
-
-## Experimental Parameters
-
-Parameters to explore:
-- `dimension de l'état` (d_model): 128, 256, 512
-- `nombre de phases` (n_modes): 128, 256, 512
-- `force de couplage` (coupling_scale): 0.5, 1.0, 2.0
-- `pas temporel` (dt): 0.01, 0.1, 0.5
-- `mécanisme d'agrégation` (phase_coherence_threshold): 0.5, 0.7, 0.9
-- `seuil de consolidation`: 0.5, 0.7, 0.9
-- `profondeur hiérarchique`: 3, 5, 7
-
-## Next Steps
-
-1. Implement GPU acceleration for RK4 dynamics
-2. Add visualization tools for atom state
-3. Experiment with different interaction kernels
-4. Test on larger datasets (Common Crawl, Wikipedia)
-5. Implement multi-agent collaboration
+Legacy GPT-era: `src/main.py`, `src/training/trainer.py`, `legacy/`.
+Do not start those for speech.
