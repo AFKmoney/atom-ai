@@ -335,6 +335,12 @@ def main() -> None:
         help="aux weight rewarding printable UTF-8 mass on hard logits (0 disables; try ~0.08)",
     )
     parser.add_argument(
+        "--field-next-packet-weight",
+        type=float,
+        default=0.0,
+        help="aux weight: predict next packet features from α+atoms (0 disables; try ~0.05)",
+    )
+    parser.add_argument(
         "--field-obligatory-readout",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -454,6 +460,7 @@ def main() -> None:
         field_obligatory_readout=bool(args.field_obligatory_readout) or bool(args.field_obligatory_hard),
         field_obligatory_hard=bool(args.field_obligatory_hard),
         printable_aux_weight=float(args.printable_aux_weight),
+        field_next_packet_weight=float(args.field_next_packet_weight),
         slow_rms_rel_tol=float(args.slow_rms_rel_tol),
     )
     training_state = None
@@ -492,6 +499,12 @@ def main() -> None:
         model.surface.field_obligatory_readout = bool(args.field_obligatory_readout)
         # CLI wins for printable aux (mechanism under test).
         model.printable_aux_weight = float(args.printable_aux_weight)
+        model.field_next_packet_weight = float(args.field_next_packet_weight)
+        if float(args.field_next_packet_weight) > 0:
+            print(
+                f"field_next_packet_weight={float(args.field_next_packet_weight)} "
+                "(predict next packet features from α+atoms)"
+            )
         # CLI wins for MERGE gates (operational threshold fix under hard-v2+).
         model.enable_merge = bool(args.enable_merge)
         model.set_merge_thresholds(
@@ -606,6 +619,7 @@ def main() -> None:
                 "field_obligatory_readout": bool(args.field_obligatory_readout) or bool(getattr(args, "field_obligatory_hard", False)),
                 "field_obligatory_hard": bool(getattr(args, "field_obligatory_hard", False)),
                 "printable_aux_weight": float(args.printable_aux_weight),
+                "field_next_packet_weight": float(args.field_next_packet_weight),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -654,6 +668,7 @@ def main() -> None:
                 "field_obligatory_readout": bool(args.field_obligatory_readout) or bool(getattr(args, "field_obligatory_hard", False)),
                 "field_obligatory_hard": bool(getattr(args, "field_obligatory_hard", False)),
                 "printable_aux_weight": float(args.printable_aux_weight),
+                "field_next_packet_weight": float(args.field_next_packet_weight),
                 "slow_every": int(args.slow_every),
             },
         }
@@ -755,6 +770,7 @@ def main() -> None:
                 "field_ignorance_loss": info.get("field_ignorance_loss", 0.0),
                 "printable_aux_loss": info.get("printable_aux_loss", 0.0),
                 "printable_mass_mean": info.get("printable_mass_mean", float("nan")),
+                "field_next_packet_loss": info.get("field_next_packet_loss", 0.0),
                 "max_phase_coherence": info.get("max_phase_coherence", 0.0),
                 "n_pairs_above_energy_floor": info.get("n_pairs_above_energy_floor", 0),
                 "energy_decay": dynamics_state["energy_decay"],
@@ -783,6 +799,7 @@ def main() -> None:
                 f"fcos={info.get('field_logit_cos_zero', float('nan')):.3f} "
                 f"ign={info.get('field_ignorance_loss', 0.0):.4f} "
                 f"prn={info.get('printable_mass_mean', float('nan')):.3f} "
+                f"nxp={info.get('field_next_packet_loss', 0.0):.3f} "
                 f"mph={info.get('max_phase_coherence', 0.0):.3f}"
                 f"{extra}"
             )

@@ -5,6 +5,10 @@ English docs only. No fluency claim.
 
 ## main (this push)
 
+**Field→next-packet** (`docs/FIELD_NEXT_PACKET.md`): w=0.05 under hard+MERGE;
++25k @ 3.433M→**3.458M**; nxp 0.95→**0.03**; merges keep firing; logits **0.838**,
+α **0.676**; chat still noise.
+
 **MERGE operational** (`docs/MERGE_OPERATIONAL.md`): thr **0.55→0.45**; smoke +8k
 @ 3.425M→**3.433M**; **merges=7968** (was 0); mph ~0.69; chat still noise.
 logits cos **0.860**, α **0.705**. No fluency claim.

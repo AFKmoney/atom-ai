@@ -293,3 +293,32 @@ class FieldIgnoranceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FieldNextPacketTests(unittest.TestCase):
+    def test_next_packet_loss_backward_under_hard(self) -> None:
+        model = AtomNativeModel(
+            d_model=8,
+            n_modes=8,
+            n_atoms_max=32,
+            max_payload_bytes=8,
+            enable_merge=False,
+            field_contrast_weight=0.0,
+            field_loss_weight=0.0,
+            field_ignorance_weight=0.0,
+            field_next_packet_weight=0.05,
+            field_obligatory_hard=True,
+        )
+        packets = Atomizer(max_span_bytes=8).encode("next packet alpha beta gamma ")
+        model.train()
+        loss, info = model.transition_loss(packets[0], packets[1])
+        self.assertTrue(torch.isfinite(loss))
+        self.assertIn("field_next_packet_loss", info)
+        self.assertGreaterEqual(info["field_next_packet_loss"], 0.0)
+        loss.backward()
+        grad_hit = any(
+            p.grad is not None and float(p.grad.abs().sum()) > 0
+            for p in model.field_next_probe.parameters()
+        )
+        self.assertTrue(grad_hit, "next-packet probe should receive gradients")
+

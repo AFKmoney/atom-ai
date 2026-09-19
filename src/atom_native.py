@@ -645,6 +645,7 @@ class AtomNativeModel(nn.Module):
         field_obligatory_readout: bool = False,
         field_obligatory_hard: bool = False,
         printable_aux_weight: float = 0.0,
+        field_next_packet_weight: float = 0.0,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -683,6 +684,8 @@ class AtomNativeModel(nn.Module):
         self.field_obligatory_readout = bool(field_obligatory_readout) or self.field_obligatory_hard
         # Light aux: push hard α-MLP logits toward printable UTF-8 mass (no decoder bypass).
         self.printable_aux_weight = float(printable_aux_weight)
+        # Predict *next* packet features from α (+ atom_r in field_features).
+        self.field_next_packet_weight = float(field_next_packet_weight)
         self.surface.field_obligatory_readout = self.field_obligatory_readout
         if self.field_obligatory_hard:
             self.surface.set_obligatory_hard(True)
@@ -690,6 +693,7 @@ class AtomNativeModel(nn.Module):
             self.surface.field_obligatory_hard = False
         self.slow_rms_rel_tol = float(slow_rms_rel_tol)
         self.field_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
+        self.field_next_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
         self.merge_count_total = 0
         self._tick = 0
         self._prev_field_rms: float | None = None
@@ -1063,20 +1067,23 @@ class AtomNativeModel(nn.Module):
         self,
         output: dict,
         current: AtomPacket,
+        target: AtomPacket | None = None,
     ) -> tuple[torch.Tensor, dict[str, float]]:
-        """Keep surface conditioned on α; probe persistence from field features.
+        """Keep surface conditioned on α; probe persistence + next-packet from field.
 
         Contrastive hinge: logits from true α must differ from zeroed / shuffled α
         (cosine below margin). Field-ignorance hinge: logits from true α must differ
         from logits under stopgrad mean/bank of *other* prompts' α (not zero).
-        Persistence probe: reconstruct current packet features from spectral field
-        feats. Weighted small vs CE so bytes still learn.
+        Persistence probe: reconstruct *current* packet features from spectral field
+        feats. Next-packet production: predict *target* packet features from the same
+        α (+ atom_r) features — small weight under hard. Weighted small vs CE.
         """
         device = output["field"].device
         zero = torch.zeros((), device=device)
         info: dict[str, float] = {
             "field_contrast_loss": 0.0,
             "field_persist_loss": 0.0,
+            "field_next_packet_loss": 0.0,
             "field_ignorance_loss": 0.0,
             "printable_aux_loss": 0.0,
             "printable_mass_mean": float("nan"),
@@ -1086,6 +1093,7 @@ class AtomNativeModel(nn.Module):
         }
         contrast = zero
         persist = zero
+        next_pkt = zero
         ignorance = zero
         printable = zero
         alpha = output["field"]
@@ -1142,15 +1150,25 @@ class AtomNativeModel(nn.Module):
             info["field_logit_cos_bank"] = float(cos_b.detach().item()) if cos_b.ndim == 0 or cos_b.numel()==1 else float("nan")
             info["field_contrast_loss"] = float(contrast.detach().item())
 
-        if self.field_loss_weight > 0:
+        feats = None
+        if self.field_loss_weight > 0 or self.field_next_packet_weight > 0:
             feats = self.surface.field_feat_norm(
                 self.surface.field_features(alpha, persist_state, atom_r)
             )
+        if self.field_loss_weight > 0:
             pred = self.field_probe(feats)
-            target_feat = current.features.to(device=pred.device, dtype=pred.dtype)
-            cos = F.cosine_similarity(pred.unsqueeze(0), target_feat.unsqueeze(0)).squeeze()
+            cur_feat = current.features.to(device=pred.device, dtype=pred.dtype)
+            cos = F.cosine_similarity(pred.unsqueeze(0), cur_feat.unsqueeze(0)).squeeze()
             persist = 1.0 - cos
             info["field_persist_loss"] = float(persist.detach().item())
+
+        # Field → next-packet production: predict *upcoming* packet features from α+atoms.
+        if self.field_next_packet_weight > 0 and target is not None:
+            pred_next = self.field_next_probe(feats)
+            next_feat = target.features.to(device=pred_next.device, dtype=pred_next.dtype)
+            cos_n = F.cosine_similarity(pred_next.unsqueeze(0), next_feat.unsqueeze(0)).squeeze()
+            next_pkt = 1.0 - cos_n
+            info["field_next_packet_loss"] = float(next_pkt.detach().item())
 
         # Field-ignorance: surface must not map any non-zero α to one shared
         # logit template. Compare ℓ(α) vs ℓ(sg[α_bar]) where α_bar is the
@@ -1206,6 +1224,7 @@ class AtomNativeModel(nn.Module):
         total_aux = (
             self.field_contrast_weight * contrast
             + self.field_loss_weight * persist
+            + self.field_next_packet_weight * next_pkt
             + self.field_ignorance_weight * ignorance
             + self.printable_aux_weight * printable
         )
@@ -1240,7 +1259,7 @@ class AtomNativeModel(nn.Module):
         byte_logits = surface["byte_logits"][: len(payload)]
         byte_loss = F.cross_entropy(byte_logits, target_bytes)
         ce_loss = length_loss + byte_loss
-        aux_loss, aux_info = self._field_auxiliary_losses(output, current)
+        aux_loss, aux_info = self._field_auxiliary_losses(output, current, target)
         loss = ce_loss + aux_loss
         return loss, {
             "loss": float(loss.detach().item()),
@@ -1378,9 +1397,11 @@ class AtomNativeModel(nn.Module):
                 "field_obligatory_readout": bool(self.field_obligatory_readout),
                 "field_obligatory_hard": bool(self.field_obligatory_hard),
                 "printable_aux_weight": float(self.printable_aux_weight),
+                "field_next_packet_weight": float(self.field_next_packet_weight),
                 "merge_count_total": self.merge_count_total,
             },
             "field_probe": self.field_probe.state_dict(),
+            "field_next_probe": self.field_next_probe.state_dict(),
         }
 
     def save(self, path: str | Path, extra_state: dict | None = None) -> str:
@@ -1561,6 +1582,11 @@ class AtomNativeModel(nn.Module):
                 self.field_probe.load_state_dict(checkpoint["field_probe"])
             except Exception:
                 pass  # feature_dim / d_model drift — keep fresh probe
+        if "field_next_probe" in checkpoint:
+            try:
+                self.field_next_probe.load_state_dict(checkpoint["field_next_probe"])
+            except Exception:
+                pass
         cfg = checkpoint.get("config") or {}
         if "enable_merge" in cfg:
             self.enable_merge = bool(cfg["enable_merge"])
@@ -1590,6 +1616,8 @@ class AtomNativeModel(nn.Module):
             self.field_obligatory_readout = bool(cfg["field_obligatory_readout"])
         if "printable_aux_weight" in cfg:
             self.printable_aux_weight = float(cfg["printable_aux_weight"])
+        if "field_next_packet_weight" in cfg:
+            self.field_next_packet_weight = float(cfg["field_next_packet_weight"])
         if "field_obligatory_hard" in cfg and bool(cfg["field_obligatory_hard"]):
             self.field_obligatory_hard = True
             self.field_obligatory_readout = True
