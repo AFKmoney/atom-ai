@@ -180,7 +180,7 @@ def prime_prompt(
     packet_features: list[torch.Tensor] = []
     packet_payloads: list[str] = []
     for packet in packets:
-        last_out = model.forward_packet(packet)
+        last_out = model.forward_packet(packet, merge_enabled=False)
         packet_features.append(packet.features.detach().cpu().float().clone())
         packet_payloads.append(packet.payload.decode("utf-8", errors="replace"))
 
@@ -253,6 +253,7 @@ def generate_after_prime(
             top_k=top_k,
             deterministic=deterministic,
             prefer_printable=True,
+            merge_enabled=False,
         )
         if not payload:
             break
@@ -288,7 +289,7 @@ def run_prompt_trial(
     packet_features: list[torch.Tensor] = []
     packet_payloads: list[str] = []
     for packet in packets:
-        last_out = model.forward_packet(packet)
+        last_out = model.forward_packet(packet, merge_enabled=False)
         packet_features.append(packet.features.detach().cpu().float().clone())
         packet_payloads.append(packet.payload.decode("utf-8", errors="replace"))
     assert last_out is not None
@@ -309,7 +310,7 @@ def run_prompt_trial(
     torch.manual_seed(seed)
     packets = model.atomizer.encode(primed, reset=True)
     for packet in packets[:-1]:
-        model.forward_packet(packet)
+        model.forward_packet(packet, merge_enabled=False)
     current = packets[-1]
     generated = bytearray()
     for _ in range(n_gen):
@@ -319,6 +320,7 @@ def run_prompt_trial(
             top_k=8,
             deterministic=True,
             prefer_printable=True,
+            merge_enabled=False,
         )
         if not payload:
             break
@@ -528,7 +530,7 @@ def reconstruction_probe(
         primed = t["primed_text"]
         packets = model.atomizer.encode(primed, reset=True)
         for packet in packets:
-            model.forward_packet(packet)
+            model.forward_packet(packet, merge_enabled=False)
         query = model.core.state.alpha.detach().cpu().reshape(-1)
         dists = [float(torch.norm(query - g).item()) for g in gallery_alpha]
         pred = int(min(range(len(dists)), key=lambda j: dists[j]))
@@ -550,7 +552,7 @@ def reconstruction_probe(
                 feats = packet.features.to(model.core.state.alpha.device)
                 atom, _, _ = model.compiler(feats, atom_count=len(compiled_r))
                 compiled_r.append(atom.r.detach().cpu().float().reshape(-1))
-                model.forward_packet(packet)
+                model.forward_packet(packet, merge_enabled=False)
             if not compiled_r or len(model.core.atoms) == 0:
                 atom_match_scores.append(float("nan"))
                 continue
@@ -784,7 +786,7 @@ def write_markdown(report: dict, path: Path) -> None:
         "## Method notes",
         "",
         "- Read-only: `model.eval()`, all `requires_grad=False`, no optimizer.",
-        "- Priming path matches chat: Atomizer encode → `forward_packet` per packet.",
+        "- Priming path matches chat: Atomizer encode → `forward_packet(..., merge_enabled=False)` per packet.",
         "- Generation: 20 deterministic packets after prompt (temperature 0.7 path with deterministic=True).",
         "- Did not stop or modify any running training process.",
         "",

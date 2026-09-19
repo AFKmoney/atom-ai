@@ -1,0 +1,16 @@
+{
+  "timestamp_local": "2026-09-18 18:15:37 PT",
+  "mechanism": "chat_probe_merge_off_ingest",
+  "fix": "generate/chat/probe merge_enabled=False; train MERGE thr=0.45 unchanged",
+  "train_steps": 0,
+  "checkpoint_step": 3498000,
+  "logits_cos": 0.998723,
+  "alpha_cos": 0.615816,
+  "atoms_chat_bonjour": 6,
+  "atoms_probe_bonjour_prompt": 2,
+  "atoms_probe_bonjour_after_gen": 21,
+  "chat_coherent_fr": false,
+  "verdict": "STOP — distinct atoms yes; logits still ~0.999; chat still noise; no train",
+  "next_hypothesis": "Replace mean-pool / global-hist payload copy with per-atom α-local copy-bias so distinct living prompt atoms can diversify surface logits below ~0.999.",
+  "checkpoint": "checkpoints/atom_native_chat/atom_native.pt"
+}

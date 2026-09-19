@@ -72,3 +72,6 @@ operational MERGE (atoms=1 throughout).
 Do **not** auto-stack another +15k/25k. Next single hypothesis (one sentence):
 **Disable MERGE on chat/probe ingest (train MERGE stays at thr=0.45) so prompt
 packets remain distinct living atoms for α-gated payload copy-bias.**
+
+→ Tested @ chat_merge_off (no train): atoms restored (chat 6 / probe 2–3) but
+logits still ~0.999 and chat still noise. See `docs/CHAT_MERGE_OFF.md`.

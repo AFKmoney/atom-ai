@@ -5,13 +5,18 @@ English docs only. No fluency claim.
 
 ## main (this push)
 
+**Chat/probe MERGE-off ingest** (`docs/CHAT_MERGE_OFF.md`): `generate_packets` /
+probe use `merge_enabled=False`; train MERGE thr=**0.45** unchanged; **no train**.
+Chat atoms **6** (was 1); probe atoms **2–3→21**; logits still **0.999**; chat
+still noise. **STOP** — next: per-atom α-local copy-bias (no mean-pool).
+
 **Multi-atom payload ring** (`docs/MULTI_ATOM_RING.md`): `atom_flush_every`
 **256→0**; +15k @ 3.483M→**3.498M**; atoms still **1** (MERGE); logits **0.999**,
-α **0.616**; chat still noise. **STOP** — next: MERGE off on chat/probe ingest.
+α **0.616**; chat still noise — falsified; MERGE-off ingest above.
 
 **Atom-payload production** (`docs/ATOM_PAYLOAD_PROD.md`): living atom payloads + α
 (pool/copy-bias) under hard+MERGE; +25k @ 3.458M→**3.483M**; logits **0.999**;
-chat still noise — falsified flush homogenization; ring test above.
+chat still noise — falsified flush homogenization; ring + MERGE-off tests above.
 
 **MERGE operational** (`docs/MERGE_OPERATIONAL.md`): thr **0.55→0.45**; smoke +8k
 @ 3.425M→**3.433M**; **merges=7968** (was 0); mph ~0.69; chat still noise.

@@ -52,8 +52,8 @@ persistent structured matter in the toroidal field, not parameter count alone.
 
 Latest probe (`tools/probe_field_persistence.py`):
 
-- Mean RMS after prompt / after 20 gen: 0.003273 / 0.021432
-- Off-diag cosine surface logits / alpha: 0.998685 / 0.615816
+- Mean RMS after prompt / after 20 gen: 0.003273 / 0.021483
+- Off-diag cosine surface logits / alpha: 0.998723 / 0.615816
 - Verdict: field differs across prompts but surface logits nearly identical — field not reliably read by surface (Transformer-regime risk / surface-only byte-LM behavior at decode)
 
 See `docs/PERSISTENCE_TEST.md` and `docs/FIELD_PROBE.md`.

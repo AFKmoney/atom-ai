@@ -1,0 +1,21 @@
+[probe] loading /workspace/exports/atom-ai/checkpoints/atom_native_chat/atom_native.pt (read-only, eval, no optimizer)
+[probe] d_model=64 n_modes=64 step=3498000
+[probe] prompt='Bonjour'
+        RMS 0.002555 -> 0.021147 (norm 0.1635 -> 1.3534) atoms 2 -> 21
+        gen_preview='\n\n\nauiseatiu :  rernup e  \n\n\n\n\n\nauiseateu : erernup e  i \n\nauiseateu : erernup e  \n\nauiseateu : erernup e  \nauiseateu : erernup e  \n\n\nauiseateu : erernup e  \n\na'
+[probe] prompt='Qui es-tu ?'
+        RMS 0.004479 -> 0.022155 (norm 0.2866 -> 1.4179) atoms 3 -> 22
+        gen_preview='\n\n\n\n\n\n\n\n\nauiseateu : eaei up e  i \n\nauiseateu : eaei up e  \nauiseateu : eaei up e  \n\nauiseateu : eaei up e  \n\nauiseateu : eaei up e  \n\nauiseateu : eaei up e  \n\n'
+[probe] prompt='Il était une fois'
+        RMS 0.003504 -> 0.021481 (norm 0.2243 -> 1.3748) atoms 3 -> 22
+        gen_preview='\n\n\n\nauiseateu : eaernup e  i \n\n\n\n\nauiseateu : eaernup e  i \n\nauiseateu : eaernup e  \n\nauiseateu : eaernup e  \n\nauiseateu : eaernup e  \n\nauiseateu : eaernup e  \n'
+[probe] prompt='Utilisateur: Bonjour\nAssistant:'
+        RMS 0.002555 -> 0.021147 (norm 0.1635 -> 1.3534) atoms 2 -> 21
+        gen_preview='\n\n\nauiseatiu :  rernup e  \n\n\n\n\n\nauiseateu : erernup e  i \n\nauiseateu : erernup e  \n\nauiseateu : erernup e  \nauiseateu : erernup e  \n\n\nauiseateu : erernup e  \n\na'
+[probe] mean off-diag cosine logits=0.998723 alpha=0.615816
+[probe] reconstruction_succeeds=True field_differs=True
+[probe] wrote /workspace/exports/atom-ai/logs/field_probe_report.json
+[probe] wrote /workspace/exports/atom-ai/docs/FIELD_PROBE.md
+[probe] wrote /workspace/exports/atom-ai/docs/PERSISTENCE_TEST.md
+[probe] updated /workspace/exports/atom-ai/docs/SCALE.md
+[probe] VERDICT: field differs across prompts but surface logits nearly identical — field not reliably read by surface (Transformer-regime risk / surface-only byte-LM behavior at decode)

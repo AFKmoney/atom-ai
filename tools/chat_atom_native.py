@@ -71,9 +71,11 @@ def generate_reply(
     max_length: int | None = 256,
     deterministic: bool = False,
     role_prime: bool = True,
+    merge_enabled: bool = False,
 ) -> str:
     # Dialogue-style priming: if the user did not already include a role tag,
     # wrap as Utilisateur/Assistant so the field sees the training pattern.
+    # MERGE stays off on chat ingest (train still uses enable_merge thr=0.45).
     primed = prompt
     if role_prime and "Assistant:" not in prompt and "Utilisateur:" not in prompt:
         primed = f"Utilisateur: {prompt}\nAssistant:"
@@ -86,6 +88,7 @@ def generate_reply(
         max_length=max_length,
         prefer_printable=True,
         reset=True,
+        merge_enabled=merge_enabled,
     )
     text = raw.decode("utf-8", errors="replace")
     # Drop leading whitespace-only noise common before content stabilizes.
@@ -127,6 +130,7 @@ def interactive_loop(model: AtomNativeModel, args: argparse.Namespace) -> None:
             max_length=args.max_length,
             deterministic=args.deterministic,
             role_prime=not args.no_role_prime,
+            merge_enabled=bool(args.merge_ingest),
         )
         print(f"ATOM: {reply}")
 
@@ -142,6 +146,11 @@ def main() -> None:
     parser.add_argument("--deterministic", action="store_true")
     parser.add_argument("--no-role-prime", action="store_true",
                         help="do not wrap prompt as Utilisateur/Assistant")
+    parser.add_argument(
+        "--merge-ingest",
+        action="store_true",
+        help="enable MERGE during chat priming (default: off; train MERGE unchanged)",
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--interactive", action="store_true")
     args = parser.parse_args()
@@ -160,9 +169,14 @@ def main() -> None:
         max_length=args.max_length,
         deterministic=args.deterministic,
         role_prime=not args.no_role_prime,
+        merge_enabled=bool(args.merge_ingest),
     )
     print(f"Prompt: {args.prompt}")
     print(f"Response: {reply}")
+    print(
+        f"[ingest] merge_enabled={bool(args.merge_ingest)} "
+        f"atoms={len(model.core.atoms)} train_enable_merge={model.enable_merge}"
+    )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # FIELD_PROBE — persistence vs surface-only byte-LM
 
-_Generated: 2026-09-18 18:05:33 PDT_
+_Generated: 2026-09-18 18:15:24 PDT_
 
 ## Thesis
 
@@ -19,19 +19,19 @@ This probe judges the **field** (alpha / consolidation / atoms), not only CE/gen
 
 | Prompt | RMS after prompt | RMS after 20 gen | Δ RMS | n_atoms after prompt |
 |--------|------------------|------------------|-------|----------------------|
-| 'Bonjour' | 0.002555 | 0.021276 | +0.018721 | 1 |
-| 'Qui es-tu ?' | 0.004479 | 0.022017 | +0.017538 | 1 |
-| 'Il était une fois' | 0.003504 | 0.021159 | +0.017655 | 1 |
-| 'Utilisateur: Bonjour\nAssistant:' | 0.002555 | 0.021276 | +0.018721 | 1 |
+| 'Bonjour' | 0.002555 | 0.021147 | +0.018592 | 2 |
+| 'Qui es-tu ?' | 0.004479 | 0.022155 | +0.017676 | 3 |
+| 'Il était une fois' | 0.003504 | 0.021481 | +0.017977 | 3 |
+| 'Utilisateur: Bonjour\nAssistant:' | 0.002555 | 0.021147 | +0.018592 | 2 |
 
 - Mean RMS after prompt: **0.003273**
-- Mean RMS after 20 gens: **0.021432**
+- Mean RMS after 20 gens: **0.021483**
 
 ### Prompt sensitivity (off-diagonal mean cosine)
 
 - Alpha (field): **0.615816**
 - Output state: **0.845381**
-- Surface logits: **0.998685**
+- Surface logits: **0.998723**
 - Persistence: **nan**
 
 Interpretation: cosine ≈ 1.0 ⇒ surface/field ignore prompt differences; meaningfully < 1 ⇒ prompt-sensitive state.
@@ -41,28 +41,28 @@ Interpretation: cosine ≈ 1.0 ⇒ surface/field ignore prompt differences; mean
 ```
 [
   [
-    0.9999999275888765,
-    0.9983408628178381,
-    0.9984243081442599,
-    0.9999999275888765
+    1.000000009913145,
+    0.9984032067933447,
+    0.9983348678994186,
+    1.000000009913145
   ],
   [
-    0.9983408628178381,
-    0.9999998733360834,
-    0.9985799400534325,
-    0.9983408628178381
+    0.9984032067933447,
+    1.0000000285965762,
+    0.9988613897381321,
+    0.9984032067933447
   ],
   [
-    0.9984243081442599,
-    0.9985799400534325,
-    0.9999999216576336,
-    0.9984243081442599
+    0.9983348678994186,
+    0.9988613897381321,
+    0.9999999027368777,
+    0.9983348678994186
   ],
   [
-    0.9999999275888765,
-    0.9983408628178381,
-    0.9984243081442599,
-    0.9999999275888765
+    1.000000009913145,
+    0.9984032067933447,
+    0.9983348678994186,
+    1.000000009913145
   ]
 ]
 ```
@@ -134,12 +134,12 @@ Atom collection probe:
 ```json
 {
   "status": "ok",
-  "mean_last_k_compiled_vs_stored_r_cosine": 0.7915157649440582,
+  "mean_last_k_compiled_vs_stored_r_cosine": 1.0000000149011594,
   "per_prompt": [
-    0.7680577955314842,
-    0.8786917924880981,
-    0.7512556762251661,
-    0.7680577955314842
+    0.9999999999999982,
+    1.00000003973643,
+    1.0000000198682113,
+    0.9999999999999982
   ],
   "note": "Atom collection stores detached compiled atoms from this episode; high cosine is expected (same episode write). This is NOT recovery from field alone \u2014 it shows structural memory buffer retention."
 }

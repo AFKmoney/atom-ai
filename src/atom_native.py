@@ -919,10 +919,16 @@ class AtomNativeModel(nn.Module):
             return x[:1].reshape(1, 1)
         return x.reshape(1, -1)
 
-    def _maybe_merge_atoms(self) -> tuple[int, dict]:
-        """MERGE coherent structural atoms into heavier ones (detached memory)."""
+    def _maybe_merge_atoms(self, *, enabled: bool | None = None) -> tuple[int, dict]:
+        """MERGE coherent structural atoms into heavier ones (detached memory).
+
+        ``enabled`` overrides ``self.enable_merge`` for one call. Chat/probe ingest
+        passes ``enabled=False`` so prompt packets stay distinct living atoms;
+        training leaves it ``None`` and keeps MERGE thr=0.45.
+        """
         empty_diag = {"max_phase_coherence": 0.0, "n_pairs_above_energy_floor": 0}
-        if not self.enable_merge or len(self.core.atoms) < 2:
+        use_merge = self.enable_merge if enabled is None else bool(enabled)
+        if not use_merge or len(self.core.atoms) < 2:
             return 0, empty_diag
         atoms = self.core.atoms
         merged, remove_idx, merge_count, diag = self.core.aggregation.merge_coherent(
@@ -975,12 +981,20 @@ class AtomNativeModel(nn.Module):
             return False
         return abs(rms - prev) / (abs(prev) + 1e-6) <= self.slow_rms_rel_tol
 
-    def _advance(self, atom: ToroidalAtom, operation: torch.Tensor, confidence: torch.Tensor) -> dict:
+    def _advance(
+        self,
+        atom: ToroidalAtom,
+        operation: torch.Tensor,
+        confidence: torch.Tensor,
+        *,
+        merge_enabled: bool | None = None,
+    ) -> dict:
         """Advance the unchanged toroidal core by one compiled atom.
 
         Fast path (every tick): inject + evolve + surface.
         Slow path (``slow_every`` + RMS-stable): abstraction + consolidation.
         Optional MERGE densifies coherent structural memory without GPU farms.
+        ``merge_enabled`` overrides training MERGE for chat/probe ingest only.
         """
         self._tick += 1
         self.core.state.add_atom_contribution(atom.r, atom.phi, atom.omega, atom.E, atom.kappa)
@@ -999,7 +1013,7 @@ class AtomNativeModel(nn.Module):
             payload=bytes(getattr(atom, "payload", b"") or b""),
         )
         self.core.atoms.add(memory_atom)
-        merge_count, merge_diag = self._maybe_merge_atoms()
+        merge_count, merge_diag = self._maybe_merge_atoms(enabled=merge_enabled)
 
         alpha = self.core.state.get_field().detach().clone()
         alpha_new = self.core.dynamics.evolve(alpha, input_token=atom.r)
@@ -1099,12 +1113,14 @@ class AtomNativeModel(nn.Module):
             **amplitude,
         }
 
-    def forward_packet(self, packet: AtomPacket) -> dict:
+    def forward_packet(
+        self, packet: AtomPacket, *, merge_enabled: bool | None = None
+    ) -> dict:
         features = packet.features.to(self.core.state.alpha.device)
         atom, operation, confidence = self.compiler(features, atom_count=len(self.core.atoms))
         # Living atom carries the packet's surface bytes for payload production.
         atom.payload = bytes(packet.payload or b"")
-        return self._advance(atom, operation, confidence)
+        return self._advance(atom, operation, confidence, merge_enabled=merge_enabled)
 
     @torch.no_grad()
     def _refresh_prompt_alpha_bank(self) -> None:
@@ -1395,8 +1411,10 @@ class AtomNativeModel(nn.Module):
         top_k: int | None = None,
         deterministic: bool = True,
         prefer_printable: bool = True,
+        *,
+        merge_enabled: bool | None = None,
     ) -> bytes:
-        output = self.forward_packet(packet)
+        output = self.forward_packet(packet, merge_enabled=merge_enabled)
         return self.surface.decode(
             output["surface"],
             temperature=temperature,
@@ -1415,6 +1433,7 @@ class AtomNativeModel(nn.Module):
         max_length: int | None = None,
         prefer_printable: bool = True,
         reset: bool = True,
+        merge_enabled: bool = False,
     ) -> bytes:
         """Prime on a prompt and generate bounded atom surface packets.
 
@@ -1423,6 +1442,10 @@ class AtomNativeModel(nn.Module):
         span.  Each generated payload is committed back into the atomizer with
         an inferred structural boundary (not a fixed ``generated`` tag) so
         feature context stays closer to the training distribution.
+
+        ``merge_enabled`` defaults to False: chat/probe ingest keeps prompt
+        packets as distinct living atoms for α-gated payload copy-bias.
+        Training still uses ``forward_packet`` with model ``enable_merge`` (thr=0.45).
         """
         self.eval()
         # Chat / generation stays on hard α-MLP when flag is set (no soft fallback).
@@ -1437,7 +1460,7 @@ class AtomNativeModel(nn.Module):
         # Consume the full prompt into the field; the last packet is the
         # transition source for the first generated surface packet.
         for packet in prompt_packets[:-1]:
-            self.forward_packet(packet)
+            self.forward_packet(packet, merge_enabled=merge_enabled)
         current = prompt_packets[-1]
         generated = bytearray()
         for _ in range(max_packets):
@@ -1447,6 +1470,7 @@ class AtomNativeModel(nn.Module):
                 top_k=top_k,
                 deterministic=deterministic,
                 prefer_printable=prefer_printable,
+                merge_enabled=merge_enabled,
             )
             if not payload:
                 break
