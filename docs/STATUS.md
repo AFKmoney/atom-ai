@@ -23,11 +23,14 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 48k | 1.523 (4.59) | **67.5%** | val↑ but teacher record, free-run spaces det / `Pe que vec toi.` sampled |
 | 56k ep8000 | 1.479 (4.39) | 64.5% | **both regimes FR** `Tu ?\nAssistant: Tu ?\nAs` primed, cold `Peeur: ?\nAssistant: Pe` — dosage test |
 | 64k ep8000 | 1.432 (4.19) | 66.5% | **cold best** `Tu ?\nAssistant: Tu ?\nAs` = d16 112k, primed `plais` loop but FR |
+| 72k ep8000 | 1.889 (6.61) | 66.0% | `plaisateur` both regimes FR, val spike (2nd epoch) |
+| 80k ep8000 | 1.791 (6.00) | 65.5% | cold `?\nAssistant: Tu ?`, primed `d'acco` fragment (new word) |
 
 Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (val rec 1.417) + `atom_native_d32_32k_s21.pt`
-+ `checkpoints/byte_tick/atom_native_step_64000_d32.pt` (ep8000, cold best, val 1.432)
++ `checkpoints/byte_tick/atom_native_step_64000_d32.pt` (ep8000 cold best val 1.432)
++ `atom_native_step_80000_d32.pt` (ep8000 `d'acco` fragment)
 (previous: `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`,
-val 1.352 / teacher 63.2%). Recipe now: ep-8000 restores two-regime compromise, continue.
+val 1.352 / teacher 63.2%). Recipe: ep-8000 restores FR both regimes, val spike at 72k (data loop) but teacher stable, next ep-12000 dosage (75% saturated).
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.

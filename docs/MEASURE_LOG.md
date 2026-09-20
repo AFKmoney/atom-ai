@@ -205,6 +205,10 @@ Règle d'épisode d32 : ep-6000 (~2× temps de saturation).
 | 64k ep8000 | 1.432/4.19 | 66.5% (voy 70%, cons 62%, sp 83%, nl 93%, punct 53%) | ` Tu ?\nAssistant: Tu ?\nAs` **best cold = d16 112k** | ` Tu plaisateur: Tu plais` (boucle `plais` mais FR) |
 
 64k ep-8000 continu: val ↓ 1.479→1.432 (proche record 1.417), teacher ↑ 64.5→66.5%. Cold parfait `Tu ?\nAssistant: Tu ?\nAs` (même que 56k primed, best), primed `plaisateur` boucle mais FR. Chat det = cold parfait. Attracteur `pre`/`vec`/`espace` résorbé → `plais`/`Tu ?` phase. Savoir intact, free-run meilleur que 40k. Continue ep-8000.
+| 72k ep8000 | 1.889/6.61 | 66.0% (voy 68%, cons 61%, sp 81%, nl 93%, punct 58%) | ` Tu plaisateur: Tu  plai` (boucle `plais`) | ` Tu plaisateur: Tu plais` (idem) |
+| 80k ep8000 | 1.791/6.00 | 65.5% (voy 68%, cons 61%, sp 79%, nl 93%, punct 56%) | `  ?\nAssistant: Tu ?\nAssi` (`Tu ?` + rôles) | ` Tu pent: Tu  pes d'acco` (FR, `d'acco` = `d'accord` fragment) |
+
+72k: val ↑ 1.432→1.889 (spike, 2nd epoch data? skip 64k loops corpus 500k), teacher 66.5→66.0 stable, free-run `plaisateur` both regimes FR. Trainer smokes `Bonn es ` / `Tu ?\nAss` / `Disateur` (rôles). 80k: val ↓ 1.889→1.791, teacher 66.0→65.5 stable, cold `?\nAssistant: Tu ?`, primed `d'acco` fragment — nouveau mot `d'accord` émerge (jamais vu avant). Savoir intact (teacher stable), val spike probable bruit validation (stream_ring) + changement distribution 2nd epoch. Prochain: ep-12000 dosage (75% saturé) pour approcher 80% saturé d16 ep-4000, une seule variable.
 
 Le savoir transfère en 1 chunk (56% vs 63% d16) ; le free-run
 récapitule vite (rôles à 8k vs ~40k en d16). ~37 tps malgré 4× champ.
