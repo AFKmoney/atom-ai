@@ -61,9 +61,26 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 352k ep8000 | 0.837/2.31 | 69.3% punct 75% rec | spaces | `Je`/`Oui,` |
 | 360k ep8000 | 0.833/2.30 | 67.7% | spaces | `Peurrdi,` |
 | 368k ep8000 | 0.889/2.43 | 69.0% | spaces | `Peurr.\n\n` clean stop |
+| 376k ep8000 | 0.880/2.41 | **70.8% NEW REC** | `Je   toi`/`Avec  to` | teacher 70.8% NEW REC |
+| 384k ep8000 | 0.893/2.44 | 69.5% | `Je`/`Bon,` | spaces |
+| 392k ep8000 | 0.870/2.39 | 69.3% vow 73.6% | `Bon  es`/`Bon,` | Bon es |
+| 400k ep8000 | 1.480/4.39 | 70.5% tie rec | `Je tu`/`Peurr:::`/`Bonttteu` | val regression but teacher tie rec |
+| 408k ep8000 | 1.435/4.20 | 70.8% tie rec | `Peurre`/`Je`/`Bonne` | Bonne |
+| 416k ep8000 | 1.480/4.39 | 68.8% | `D'accord` x2 | **D'accord emergence** |
+| 424k ep8000 | 1.389/4.01 | 69.8% | `Peurr.\n\n`/`Je` | Peurr. clean stop |
+| 432k ep8000 | 1.427/4.17 | **71.0% NEW REC** | `Bonne` x2/`Je` | teacher 71% NEW REC |
+| 440k ep8000 | 1.437/4.21 | 71.0% tie rec vow 74.4% | `Je es`/`Peurr:::`/`Je` | |
+| 448k ep8000 | 1.514/4.55 | **71.3% NEW REC** | `Peurr:::` x2/`Peurr.` | teacher 71.3% NEW REC |
+| 456k ep8000 | 1.408/4.09 | 70.8% | `Peurrle`/`Je toi` | |
+| 464k ep8000 | **0.785/2.19** | 71.3% tie rec | `Ouis`/`Oui,`/`Bonne` | **val 0.785 HUGE ↓**, Oui, Bonne |
+| 472k ep8000 | **0.747/2.11 NEW REC** | **72.5% NEW REC** cons 69.3% NEW | `Peurréc`/`Peurr..` | val 0.747 NEW REC beats 0.753, teacher 72.5% NEW, cons 69.3% NEW |
+| 480k ep8000 | **0.721/2.06 NEW REC** | 71.3% | `Peurr`/`Je`/`D'accord` | val 0.721 NEW REC, D'accord returns |
+| 488k ep8000 | 0.721/2.06 tie | 71.3% | `Bon,`/`Je`/`Oui,` | Bon, Oui, |
+| 496k ep8000 | **0.689/1.99 NEW REC** | 72.5% tie rec vow 75.2% NEW | `Peurréc`/`Peurrle`/`Peurr:::` | **val 0.689 RECORD**, vow 75.2% NEW REC |
+| 504k ep8000 loop | 0.980/2.66 | 71.5% | `Je` x3 | looped corpus, val ↑ |
 
-Tips: `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, `Oui, Et toi ?` best FR), `..._208k_s21_ep8000.pt` (**1.055 NEW rec**), `..._232k_s21_ep8000.pt` (**1.027 NEW rec**), `..._248k_s21_ep8000.pt` (**1.025 NEW rec**), `..._264k_s21_ep8000.pt` (**teacher 70.5% NEW rec**), `..._328k_s21_ep8000.pt` (**val 0.753 HUGE NEW rec**, both perfect `suis d'accord ?`), `..._368k_s21_ep8000.pt` (latest, 0.889, `Peurr.\n\n`)
-(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.025 over 176k, teacher 63→70.5% record, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Bon, je`, `soir,`, `Oui, toi`, `Bonne`. Corpus s21 ~64% at 320k, runway remains. Next: continue ep-8000 identical 368k→376k, spaces attractor since 336k after record 0.753 but val <0.9 teacher stable → will self-resolve like d16 64k Ouisateur → 72k best.
+Tips: `..._472k_s21_ep8000.pt` (**val 0.747 NEW REC**, **teacher 72.5% NEW REC** cons 69.3% NEW), `..._496k_s21_ep8000.pt` (**val 0.689 RECORD**, **vow 75.2% NEW REC**), `..._504k_s21_ep8000.pt` (latest loop 0.98)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→0.689 over 432k, teacher 63→72.5% record, free-run FR with spaces attractor since 336k but teacher stable 69-72.5% → knowledge intact, readout attractor. Corpus s21 100% at 500k looped to 504k, next: multi-shard or LR decay or ep-10000 dosage if spaces persist.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
