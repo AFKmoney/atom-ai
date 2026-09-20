@@ -25,12 +25,19 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 64k ep8000 | 1.432 (4.19) | 66.5% | **cold best** `Tu ?\nAssistant: Tu ?\nAs` = d16 112k, primed `plais` loop but FR |
 | 72k ep8000 | 1.889 (6.61) | 66.0% | `plaisateur` both regimes FR, val spike (2nd epoch) |
 | 80k ep8000 | 1.791 (6.00) | 65.5% | cold `?\nAssistant: Tu ?`, primed `d'acco` fragment (new word) |
+| 88k ep12000 | 1.842 (6.31) | 64.0% | ep12000 worse: `pen pen` loop, val↑ teacher↓ — ep8000 sweet spot |
+| 96k ep8000 | 1.809 (6.11) | 66.0% | retour ep8000: `vec toi ?\nAssistant:` FR |
+| 104k ep8000 | 1.706 (5.51) | 67.0% | **both regimes perfect** `Tu ?\nAssistant: Tu ?\nAs` primed |
+| 112k ep8000 | 1.645 (5.18) | **69.0%** | teacher record, val ↓ trend, `plainuo`/`Pe ven` |
+| 120k ep8000 | 1.716 (5.56) | 66.5% | `Ouisateu`/`Je veur:`/` d'accor` (d'accord returns) |
 
 Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (val rec 1.417) + `atom_native_d32_32k_s21.pt`
 + `checkpoints/byte_tick/atom_native_step_64000_d32.pt` (ep8000 cold best val 1.432)
-+ `atom_native_step_80000_d32.pt` (ep8000 `d'acco` fragment)
++ `atom_native_step_104000_d32.pt` (ep8000 both regimes perfect, val 1.706, teacher 67%)
++ `atom_native_step_112000_d32.pt` (teacher 69% record, val 1.645)
++ `atom_native_step_120000_d32.pt` (latest, d'accord fragment)
 (previous: `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`,
-val 1.352 / teacher 63.2%). Recipe: ep-8000 restores FR both regimes, val spike at 72k (data loop) but teacher stable, next ep-12000 dosage (75% saturated).
+val 1.352 / teacher 63.2%). Recipe now: ep-8000 (62.5% saturated) is sweet spot for d32, restores two-regime FR, val spike at 72k then down 1.889→1.645 over 40k, teacher 63→69% monotonic overall. Next: continue ep-8000 or try LR decay single variable.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
