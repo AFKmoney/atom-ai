@@ -199,6 +199,9 @@ Règle d'épisode d32 : ep-6000 (~2× temps de saturation).
 | 48k | 1.523/4.59 | **67.5%** (voy 69%, cons 65%, sp 83%, nl 93%, punct 53%) | `                        ` (spaces) det + ` Pe ?\nAs` trainer smoke / `Tu ?\nAssistant:   ` chat det | `                        ` (spaces) / sampled `Pe que vec toi.` |
 
 48k: val ↑ 1.417→1.523 (régression), teacher ↑ 64.7→67.5% (record). Free-run déterministe tombe sur attracteur espace (probable effet `prefer_printable` qui choisit ` ` quand logits plats), mais sampling temp 0.8 donne `Pe que vec toi.` (français, rôles). Trainer smokes ` Pe ?\nAs` identiques → même régime que 40k. Savoir intact (teacher monte). Seuil 48k atteint → test ep-8000 prévu (une seule variable).
+| 56k ep8000 | 1.479/4.39 | 64.5% (voy 66%, cons 59%, sp 89%, nl 93%, punct 47%) | ` Peeur:  ?\nAssistant: Pe` (rôles, `peeur` boucle) | ` Tu ?\nAssistant: Tu ?\nAs` **FR both regimes, best d16 level** |
+
+56k ep-8000 (seule variable changée vs 48k): val ↓ 1.523→1.479, teacher ↓ 67.5→64.5%. **Free-run réparé**: cold `Peeur: ?\nAssistant: Pe` (français + rôles), primed `Tu ?\nAssistant: Tu ?\nAs` = compromis deux-régimes 112k d16 (record). Dosage: ep-6000 = 50% transitoire (3000 sat /6000), ep-8000 = 62.5% saturé (37.5% trans). Plus de saturé → free-run meilleur, teacher légèrement ↓. Prochain: ep-8000 continu ou ep-10000/12000 (~75% saturé) pour approcher 80% saturé de d16 ep-4000.
 
 Le savoir transfère en 1 chunk (56% vs 63% d16) ; le free-run
 récapitule vite (rôles à 8k vs ~40k en d16). ~37 tps malgré 4× champ.

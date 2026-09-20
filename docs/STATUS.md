@@ -20,11 +20,13 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 24k | 1.507 (4.51) | 61.3% | loop phase (attractor, not regression) |
 | 32k | 1.490 (4.44) | **63.0%** | ties d16 best |
 | 40k | 1.417 (4.13) | **64.7%** | record s21, loop `pre` persists but val↓ teacher↑ |
-| 48k | 1.523 (4.59) | **67.5%** | val↑ but teacher record, free-run spaces deterministic / `Pe que vec toi.` sampled |
+| 48k | 1.523 (4.59) | **67.5%** | val↑ but teacher record, free-run spaces det / `Pe que vec toi.` sampled |
+| 56k ep8000 | 1.479 (4.39) | 64.5% | **both regimes FR** `Tu ?\nAssistant: Tu ?\nAs` primed, cold `Peeur: ?\nAssistant: Pe` — dosage test |
 
-Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (new) + `atom_native_d32_32k_s21.pt`
+Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (val rec) + `atom_native_d32_32k_s21.pt`
++ `checkpoints/byte_tick/atom_native_step_56000_d32.pt` (ep8000, best free-run)
 (previous: `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`,
-val 1.352 / teacher 63.2%).
+val 1.352 / teacher 63.2%). Recipe now: ep-8000 tested, restores two-regime compromise.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
