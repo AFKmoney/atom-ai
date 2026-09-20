@@ -43,17 +43,16 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 208k ep8000 | **1.055 (2.87)** | 68.0% | **NEW rec** beats 1.063, cold `vec vais d'accord ?`, `Bon Qu'`/`Oui ?\nAs` |
 | 216k ep8000 | 1.086 (2.96) | **69.0%** | teacher tie rec, cold `toi ?\nAssistant: toi` perfect |
 | 224k ep8000 | 1.077 (2.94) | 66.5% | `Tu toi`, `Bonnt to`/`Peur: t`/`Bon moi` |
+| 232k ep8000 | **1.027 (2.79)** | 68.2% | **NEW rec** beats 1.055, cold ` toi.\n\n` clean stop, `Je s.\n\n` |
+| 240k ep8000 | 1.042 (2.84) | 67.7% | `?\nAssistant: Tu`, `Bon ?\nA`/`Bon Tu`/`sesta` |
 
 Tips: `..._40k_s21.pt` (val 1.417) + `..._32k_s21.pt`
-+ `..._64k_s21_ep8000.pt` (cold best 1.432)
-+ `..._136k_s21_ep8000.pt` (val 1.370)
-+ `..._144k_s21_ep8000.pt` (val 1.365 both perfect Parle)
 + `..._160k_s21_ep8000.pt` (**val 1.346 beats d16 1.352**)
 + `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, primed `Oui, Et toi ?` best FR, `Je vais`)
-+ `..._208k_s21_ep8000.pt` (**val 1.055 NEW rec** ppl 2.87, `vais d'accord`)
-+ `..._216k_s21_ep8000.pt` (teacher 69% tie)
-+ `..._224k_s21_ep8000.pt` (latest)
-(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.055 over 136k, teacher 63→69% stable, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Parle`. Corpus s21 ~45% at 224k, runway remains. Next: continue ep-8000 identical.
++ `..._208k_s21_ep8000.pt` (**val 1.055 NEW rec** ppl 2.87)
++ `..._232k_s21_ep8000.pt` (**val 1.027 NEW rec** ppl 2.79 beats all, `toi.\n\n` clean stop)
++ `..._240k_s21_ep8000.pt` (latest, 1.042)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.027 over 160k, teacher 63→69% stable, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Parle`, `Je s.\n\n`. Corpus s21 ~48% at 240k, runway remains. Next: continue ep-8000 identical 240k→248k.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
