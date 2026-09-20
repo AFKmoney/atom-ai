@@ -103,13 +103,18 @@ class FieldObligatoryHardTests(unittest.TestCase):
         self.assertFalse(isinstance(surf.alpha_length_frozen, torch.nn.Parameter))
 
 
-    def test_hard_v2_trainable_rms_capped(self) -> None:
-        """Trainable residual RMS must not exceed frozen RMS under hard-v2."""
+    def test_hard_v2_trainable_rms_uncapped(self) -> None:
+        """Speech hard mix (ARCHITECTURE.md): no RMS cap on trainable branch.
+
+        Replaces the old capped contract: the cap pinned cap≈0.01 and crushed
+        trainable gradients ~100x (measured on a speech ckpt), blocking
+        learning. Mix is now obl*train + 0.3*frozen (+ optional payload).
+        """
         torch.manual_seed(0)
         model = self._tiny(field_obligatory_hard=True)
         surf = model.surface
         with torch.no_grad():
-            # Inflate MLP so uncapped residual would dominate frozen.
+            # Inflate MLP: uncapped residual must be free to dominate frozen.
             surf.alpha_byte_proj.fc2.weight.mul_(50.0)
             surf.obl_gate.fill_(5.0)
         alpha = torch.randn(16, 16) * 0.5
@@ -120,10 +125,11 @@ class FieldObligatoryHardTests(unittest.TestCase):
         a_hat = a / a.pow(2).mean().sqrt().clamp_min(1e-8)
         frozen = (surf.alpha_byte_frozen @ a_hat).view(surf.max_payload_bytes, 256)
         out = surf(legacy, alpha=alpha, persistent_state=persist, atom_r=atom_r)
-        residual = out["byte_logits"] - frozen
+        # No payload atoms passed -> payload branch contributes zeros.
+        residual = out["byte_logits"] - 0.3 * frozen
         f_rms = float(frozen.pow(2).mean().sqrt().item())
         r_rms = float(residual.pow(2).mean().sqrt().item())
-        self.assertLessEqual(r_rms, f_rms * 1.01 + 1e-6, msg=f"r_rms={r_rms} f_rms={f_rms}")
+        self.assertGreater(r_rms, f_rms * 2.0, msg=f"r_rms={r_rms} f_rms={f_rms}")
 
     def test_hard_v2_alpha_proj_trainable(self) -> None:
         """Hard-v2+: α-only MLP (+ obl_gate) require grad; frozen maps stay buffers."""

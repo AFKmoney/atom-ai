@@ -99,11 +99,12 @@ class GenerationSmokeTests(unittest.TestCase):
         self.assertGreater(delta, 0.05, msg=f"state delta too small: {delta}")
 
     def test_infer_boundary_on_generated_payload(self) -> None:
-        # API default is boundary="generated"; explicit override still honored.
+        # Byte-tick contract (ARCHITECTURE.md): "generated" is OOD and never
+        # written; a train-like boundary is inferred; explicit override honored.
         az = Atomizer(max_span_bytes=8)
         az.encode("Hello ")
         packet = az.packet_from_payload(b"world ")
-        self.assertEqual(packet.boundary, "generated")
+        self.assertEqual(packet.boundary, "whitespace")
         packet2 = az.packet_from_payload(b"end.\n", boundary="newline")
         self.assertEqual(packet2.boundary, "newline")
 

@@ -1,43 +1,45 @@
-# ATOM status snapshot — 2026-09-19
+# ATOM status snapshot — 2026-09-20
 
 Repo: https://github.com/AFKmoney/atom-ai
 English docs only. **No fluency claim.**
 
-## main (this push) — speech contract, not 3.5M resume
+## Active line: d32 on s21 (this branch)
 
-The 3.4M–3.5M payload-copy line **stays archived below**. This push is a
-**separate d=16 byte-tick line** that repaired the generate contract.
+Grown from the d16 tip (`tools/grow_checkpoint.py`, Net2Net-style),
+training on `data/corpus_fr_medium_s21.txt` (seed 21, 500 kB fresh).
 
-What landed in code:
+Recipe per 8k chunk: byte-tick, last-atom readout, dentate, MERGE off,
+payload-copy off, hard obligatory readout, `--efference-every 10`,
+`--episode-reset --episode-length 6000`, `--field-contrast-weight 0`
+(dead hinge, cut), LR 5e-5/1.2e-4, `--atom-flush-every 64`.
 
-- Atomizer `max_span_bytes=1` (byte-tick)
-- Last-atom readout + last-atom **φ** (oscillatory binding, corpus bridge #20)
-- Dentate 2-gram sparse expand (bridge #1)
-- Efference copy every 10 train ticks (bridge #9), replay **gated off** by default
-- `packet_from_payload` infers train-like boundaries (never `"generated"`)
-- N-gram anti-repeat in `generate_packets`
-- Hard mix: `α-MLP + 0.3 frozen JL + last-atom` — **no RMS cap**
+| s21 step | val (ppl) | teacher | note |
+|----------|-----------|---------|------|
+| 8k | 1.765 (5.84) | 56.0% | knowledge transfers in 1 chunk |
+| 16k | 1.585 (4.88) | 61.3% | primed = d16 best |
+| 24k | 1.507 (4.51) | 61.3% | loop phase (attractor, not regression) |
+| 32k | 1.490 (4.44) | **63.0%** | ties d16 best |
 
-Measured log: `docs/MEASURE_LOG.md`.
-Bridges map: `docs/NEURO_BRIDGES_ATOM.md`.
-Byte-tick protocol: `docs/BYTE_TICK.md`.
+Tips: `checkpoints/RELEASE/atom_native_d32_32k_s21.pt`
+(previous: `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`,
+val 1.352 / teacher 63.2%).
 
-Honest chat @ 32k + anti-repeat: `Je Jestiste` / `Je pe te pe ?` — French
-debris, not sentences. Best CE @ 36k-big: **1.61**.
-
-`.pt` not in git.
+Full narrative: `docs/SESSION_2026-09-20.md`.
+Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
 
 ## Next (one at a time)
 
-1. Stream the 2.2 MB CATIE FR file on a real box from `36k-big` / `39.5k-hf`.
-2. Do **not** reopen payload-copy, MERGE retune, or 3.5M resume for speech.
-3. Do not declare fluent.
+1. Continue d32 32k → 40k+ identical (~6% of s21 seen).
+2. If saturated loops persist past ~48k: one-chunk ep-8000 dosage A/B.
+3. Corpus runway: s21 remainder, seed-7 tail, then multi-shard.
+4. Do **not** reopen payload-copy, MERGE retune, replay, contrast,
+   3.5M resume. Do not declare fluent. Do not stack mechanisms.
 
 ## Banned
 
 HF tokenizer on live path · attention/DDP/vocab farm · field wipe for CE ·
 stacking multiple new mechanisms in one train · declaring fluent ·
-force-push · `.pt` in git.
+force-push · stray `.pt` in git (release via `checkpoints/RELEASE/` only).
 
 ---
 

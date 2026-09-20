@@ -39,6 +39,7 @@ export OMP_NUM_THREADS=4
 
 python3 tools/run_atom_native.py \
   --stream --data data/corpus_fr_hf.txt --loop-shards \
+  --chunk-bytes 65536 \
   --output-dir checkpoints/byte_tick \
   --checkpoint-name atom_native.pt \
   --steps 20000 \
@@ -54,7 +55,7 @@ python3 tools/run_atom_native.py \
   --learning-rate 5e-5 \
   --surface-learning-rate 1.2e-4 \
   --log-every 1000 \
-  --no-enable-merge
+  --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10
 ```
 
 After each save, **copy** to a unique name. Never overwrite the only
@@ -70,17 +71,75 @@ cp checkpoints/byte_tick/atom_native.pt \
 ```bash
 python3 tools/run_atom_native.py \
   --stream --data data/corpus_fr_hf.txt --loop-shards \
+  --chunk-bytes 65536 \
   --resume checkpoints/byte_tick/atom_native_step_36000_big.pt \
   --output-dir checkpoints/byte_tick \
   --checkpoint-name atom_native.pt \
   --steps 20000 \
   --d-model 16 --n-modes 16 --n-atoms-max 64 \
   --max-span-bytes 1 \
-  --field-obligatory-hard --no-enable-merge \
+  --field-obligatory-hard --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10 \
+  --episode-reset --episode-length 2000 --field-contrast-weight 0 \
   --learning-rate 5e-5 --surface-learning-rate 1.2e-4
 ```
 
+`--episode-reset` (2000 > ~850 saturation steps) trains the readout on
+both transient and saturated field regimes — without it the α-MLP
+overfits saturated α and cold probes go flat (ligne B++ mirage).
+`--field-contrast-weight 0`: the contrast hinge sits satisfied at 0
+(bit-identical outputs with/without); dropping it saves 3 surface
+forwards per step.
+
 `--d-model` / `--max-span-bytes` must match the checkpoint.
+
+## Grow d16 → d32 (checkpoints are not frozen)
+
+```bash
+PYTHONPATH=. python tools/grow_checkpoint.py \
+  --src checkpoints/byte_tick/atom_native_step_120000_epr4.pt \
+  --dst checkpoints/byte_tick/atom_native_step_120000_d32.pt \
+  --d-new 32 --n-new 32
+```
+
+Net2Net-style and deterministic (`--seed`): doubled output rows are
+tiled+noise, doubled input cols zero-padded (old outputs exact),
+embeddings tiled+noise, JL interleaved. Expect garbage at init: field
+and readout are co-adapted and the d32 field saturates slower (~3000
+vs ~850 steps), so training re-adapts (~1 chunk). Then resume with
+`--d-model 32 --n-modes 32` on fresh data:
+
+```bash
+python3 tools/run_atom_native.py \
+  --stream --data data/corpus_fr_medium_s21.txt --loop-shards \
+  --chunk-bytes 65536 --stream-skip-packets 0 \
+  --resume checkpoints/byte_tick/atom_native_step_120000_d32.pt \
+  --output-dir checkpoints/byte_tick \
+  --checkpoint-name atom_native_step_8000_d32.pt \
+  --steps 8000 \
+  --d-model 32 --n-modes 32 --n-atoms-max 64 \
+  --max-span-bytes 1 \
+  --field-obligatory-hard --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10 \
+  --episode-reset --episode-length 6000 --field-contrast-weight 0 \
+  --learning-rate 5e-5 --surface-learning-rate 1.2e-4
+```
+
+Episode-length rule: ~2× the field saturation transient (d16: 4000;
+d32: 6000). Cold probes stay cold-probed; primed probes need a longer
+primer at d32 (~3.5k packets, flush atoms every 64).
+
+## Checkpoints: RELEASE + restore
+
+Stray `.pt` stays out of git. Line tips are released:
+
+- `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`
+- `checkpoints/RELEASE/atom_native_d32_32k_s21.pt`
+
+(+ `.run_metrics.json` each; see `checkpoints/RELEASE/README.md`).
+Older tips remain in branch history; restore any of them with:
+
+```bash
+git show <commit>:checkpoints/byte_tick/atom_native_step_<STEP>.pt > /tmp/tip.pt
+```
 
 ## Probe (honest)
 
@@ -90,7 +149,7 @@ from src.atom_native import AtomNativeModel
 m = AtomNativeModel(
     d_model=16, n_modes=16, n_atoms_max=64,
     max_payload_bytes=1, field_max_rms=3.0,
-    field_obligatory_hard=True, enable_merge=False,
+    field_obligatory_hard=True, enable_merge=False, last_atom_readout=True,
 )
 m.load("checkpoints/byte_tick/atom_native_step_32000_dentate.pt")
 m.eval()
@@ -118,15 +177,17 @@ letters **and** the strings are not copies.
 | HF tokenizer | banned |
 
 Efference (free-run every 10 ticks) is on in the sandbox trainer via
-`model._efference_every = 10`. Leave it if you want train≈generate.
+`--efference-every 10`. Leave it if you want train≈generate.
 
 ## Scale later
 
-d=16 is the sandbox. Same contract at d=256 / n_modes=64 is a **new
-run**, not a merge of the 3.5M payload-copy checkpoints. Those weights
-are a different graph.
+d=16 was the sandbox; the line now runs d=32 (grown, not fresh).
+Same contract at d=256 / n_modes=64 is still a **new run**, not a
+merge of the 3.5M payload-copy checkpoints. Those weights are a
+different graph.
 
 ## Measured so far
 
-`docs/MEASURE_LOG.md`. Best chat: 32k dentate + n-gram anti-repeat.
-Best CE: 36k-big (1.61). Not fluent.
+`docs/MEASURE_LOG.md` + `docs/SESSION_2026-09-20.md`.
+Best: d32 32k/s21 (val 1.490, teacher 63.0%) — both regimes French.
+Not fluent.

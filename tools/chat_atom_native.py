@@ -42,6 +42,7 @@ def load_model(checkpoint: str | Path, device: str = "cpu") -> AtomNativeModel:
         energy_decay_bounds=energy_decay_bounds,
         field_obligatory_hard=hard,
         field_obligatory_readout=bool(config.get("field_obligatory_readout", False)) or hard,
+        last_atom_readout=bool(config.get("last_atom_readout", False)),
     )
     training = model.load(path)
     if hard or bool(config.get("field_obligatory_hard", False)):
