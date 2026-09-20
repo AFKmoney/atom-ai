@@ -165,6 +165,36 @@ punct 36%). Cold : `Tu toi ?\nAssistant: Tu` ; primed :
 boucle**. d=16 suffit donc aux deux mappings avec le bon dosage ; pas
 besoin de d=32 pour ça. Tip de ligne : `atom_native_step_112000_epr4.pt`.
 
+## 120k : fin du d16 (2026-09-20)
+
+112k→120k à l'identique (ep-4000, contraste 0, eff 10). Val **1.352**/ppl
+3.65 (record), teacher span-1 **63.2%** (record). Cold :
+`toi ?\nAssistant: men` ; primed : `Je snsestant: plaistan` (latin,
+attracteur qui ondule — le savoir est intact). Corpus seed-7 vu à 24%.
+
+## d=32 par croissance (2026-09-20) : `tools/grow_checkpoint.py`
+
+Net2Net préservant : lignes doublées tuilées+bruit, colonnes doublées
+zéro-pad (sorties anciennes exactes), embeddings tuilés+bruit (briseurs
+de symétrie), JL entrelacé + frozen grown (branche α exacte sur α tuilé).
+3 itérations : tile+noise naïf (×2 magnitudes → soupe), preserve (primed
+latin `T T T`), +JL/frozen exact (paradoxalement pire : la trajectoire α
+d32 diffère — saturation à ~3000 pas au lieu de ~850 — donc fonction
+exacte ≠ même comportement : champ et readout sont co-adaptés).
+Leçon : pas de init miracle, le training ré-adapte (1 chunk suffit).
+Règle d'épisode d32 : ep-6000 (~2× temps de saturation).
+
+## d32 sur corpus s21 (seed 21, 500k frais, 2026-09-20)
+
+| step (s21) | val | teacher | cold | primed (3.5k) |
+|------------|-----|---------|------|---------------|
+| grown (init) | — | — | soupe | soupe (rms 0.8) |
+| 8k | 1.765/5.84 | **56.0%** (punct 47%) | espaces/`?` | `Distant: Distant:` rôles ! |
+| 16k | 1.585/4.88 | **61.3%** | `Ouistant: …` rôles à froid | `Tu ?\nAssistant: Tu ?` = best d16 |
+
+Le savoir transfère en 1 chunk (56% vs 63% d16) ; le free-run
+récapitule vite (rôles à 8k vs ~40k en d16). ~37 tps malgré 4× champ.
+
 ## Local artifacts (not in git)
 
 `.pt` stays out of git (repo ban). On the sandbox:
