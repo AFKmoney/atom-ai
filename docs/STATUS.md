@@ -78,9 +78,20 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 488k ep8000 | 0.721/2.06 tie | 71.3% | `Bon,`/`Je`/`Oui,` | Bon, Oui, |
 | 496k ep8000 | **0.689/1.99 NEW REC** | 72.5% tie rec vow 75.2% NEW | `Peurréc`/`Peurrle`/`Peurr:::` | **val 0.689 RECORD**, vow 75.2% NEW REC |
 | 504k ep8000 loop | 0.980/2.66 | 71.5% | `Je` x3 | looped corpus, val ↑ |
+| 512k ep8000 loop | 1.045/2.84 | 71.5% | `Je`/`Oui,`/`Je` | Oui, returns |
+| 520k ep8000 loop | 1.070/2.91 | 71.8% vow 75.2% tie | `Peut-êt` x3 | **Peut-être NEW WORD** |
+| 528k ep8000 loop | 1.108/3.02 | ~71% | `Oui,`/`Je`/`Oui,` | Oui, |
+| 536k ep8000 loop | 1.010/2.74 | ~71% | `Oui,`/`D''''onn`/`Oui,` | D''''onn fragment |
+| 544k ep8000 loop | 1.119/3.06 | ~71% | `Peux`/`Peut-êt`/`Peurra.` | **Peux NEW**, Peut-être, Peurra. |
+| 552k ep8000 loop | 1.116/3.05 | ~71% | `Peut-êt`/`Peux qu'` x2 | **Peux qu' NEW** almost phrase |
+| 560k ep8000 loop | 1.071/2.92 | ~71% | `Je`/`Oui,`/`Bon` | |
+| 568k ep8000 loop | 1.249/3.48 | ~71% | `Avec` x3 | **Avec NEW WORD** |
+| 576k ep8000 loop | 1.359/3.89 | ~71% | `Bon`/`D'accord`/`Bon` | **D'accord returns** |
+| 504k s7 fresh | 1.089/2.97 | ~71% | `D'accord`/`Peux`/`D'accord` | s7 fresh, D'accord+Peux |
+| 512k s7 multishard | 1.045/2.84 | ~71% | `Peurréc`/`Bons`/`Bonttteu` | s21+s7 multishard |
 
-Tips: `..._472k_s21_ep8000.pt` (**val 0.747 NEW REC**, **teacher 72.5% NEW REC** cons 69.3% NEW), `..._496k_s21_ep8000.pt` (**val 0.689 RECORD**, **vow 75.2% NEW REC**), `..._504k_s21_ep8000.pt` (latest loop 0.98)
-(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→0.689 over 432k, teacher 63→72.5% record, free-run FR with spaces attractor since 336k but teacher stable 69-72.5% → knowledge intact, readout attractor. Corpus s21 100% at 500k looped to 504k, next: multi-shard or LR decay or ep-10000 dosage if spaces persist.
+Tips: `..._496k_s21_ep8000.pt` (**val 0.689 RECORD**, **vow 75.2% NEW REC**, **teacher 72.5%**), `..._520k_s21_ep8000.pt` (**Peut-être NEW WORD**), `..._552k_s21_ep8000.pt` (**Peux qu' NEW**), `..._568k_s21_ep8000.pt` (**Avec NEW**), `..._576k_s21_ep8000.pt` (**D'accord returns**) (latest loop 576k val 1.35)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→0.689 over 432k then 0.689→1.35 over 80k loop (500k boundary), teacher 63→72.5% record stable, free-run evolves: Je/Oui, → Peut-être (520k) → Peux (544k) → Peux qu' (552k) → Avec (568k) → D'accord (576k) → structure scaling, not patch. Corpus s21 100% at 500k looped to 576k, s7 fresh tested, multishard tested. Best remains 496k val 0.689. Next: continue scaling original recipe, multi-shard longer, or LR decay/ep10000 dosage if spaces persists — no printable aux / energy decay patches.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
