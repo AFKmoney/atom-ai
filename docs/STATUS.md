@@ -96,7 +96,12 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 536k ms1M | 1.084/2.95 | ~71% | `Peut-`/`Peurris`/`Bon` | Peut- |
 | 544k ms1M | 1.018/2.76 | ~71% | `Avec` x3 | **Avec** |
 | 552k ms1M | 1.03/2.80 | ~71% | `Oui,` x3 | Oui, |
-| 560k ms1M | **0.997/2.71** | ~71% | `Oui,`/`Oui,`/`Avec` | **val <1.0**, Oui,/Avec |
+| 560k ms1M | **0.997/2.71** | **73.0% NEW REC** (vow 73.6% cons 66.9% sp 89.4% nl 92.9% punct 72.2% other 62.5%) | `Oui,`/`Oui,`/`Avec` | **val <1.0**, teacher 73% NEW REC, Oui,/Avec |
+| 568k ms1M | 1.055/2.87 | ~71% | `Peurréc`/`Peurra..`/`Peurréc` | |
+| 576k ms1M | 1.09/2.97 | ~71% | `Peurrle`/`Oui,`/`Avec` | Oui,/Avec |
+| 584k ms1M | 1.091/2.97 | ~71% | `Peut-`/`Peux`/`Peurr..` | Peut-, Peux |
+| 592k ms1M | 1.163/3.20 | ~71% | `Peurréc`/`Peut-être`/`Oui,` | **Peut-être returns** |
+| 600k ms1M | 1.099/3.00 | 70.5% | `Peut-`/`Peux`/`Peut-` | Peut-, Peux |
 
 Tips: `..._496k_s21_ep8000.pt` (**val 0.689 RECORD**, **vow 75.2% NEW REC**, **teacher 72.5%**), `..._520k_s21_ep8000.pt` (**Peut-être NEW WORD**), `..._552k_s21_ep8000.pt` (**Peux qu' NEW**), `..._568k_s21_ep8000.pt` (**Avec NEW**), `..._576k_s21_ep8000.pt` (**D'accord returns**), `..._560k_ms1M.pt` (**multi-shard 1M val 0.997**, Oui,/Avec) (latest ms1M 560k val 0.997 < loop 1.35)
 (previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 original, no patches, val 1.889→0.689 over 432k then 0.689→1.35 loop s21 (500k boundary) but 0.689→0.997 ms1M (1M corpus) → multi-shard scales better than loop, free-run evolves: Je/Oui, → Peut-être (520k) → Peux (544k) → Peux qu' (552k) → Avec (568k) → D'accord (576k) + ms1M: D'accord/Peux → Bonne → Avec → Oui, → structure scaling, not patch. Corpus s21 100% at 500k, s21+s7=1M, best remains 496k val 0.689. Next: continue ms1M long to 1M, or loop original, no printable aux / energy decay patches.
