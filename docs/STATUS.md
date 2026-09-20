@@ -45,14 +45,19 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 224k ep8000 | 1.077 (2.94) | 66.5% | `Tu toi`, `Bonnt to`/`Peur: t`/`Bon moi` |
 | 232k ep8000 | **1.027 (2.79)** | 68.2% | **NEW rec** beats 1.055, cold ` toi.\n\n` clean stop, `Je s.\n\n` |
 | 240k ep8000 | 1.042 (2.84) | 67.7% | `?\nAssistant: Tu`, `Bon ?\nA`/`Bon Tu`/`sesta` |
+| 248k ep8000 | **1.025/2.79** | 66.5% | **NEW rec** beats 1.027, `toi`/`Et toi`, `Je Qu'`/`suis d'` |
+| 256k ep8000 | 1.133/3.10 | 68.8% vow 72% rec | `Tu`, `Bon, je` |
+| 264k ep8000 | 1.188/3.28 | **70.5%** | **teacher NEW rec** vow 73%, `vais d'accord ?`/`Et toi,` |
+| 272k ep8000 | 1.256/3.51 | 69.8% punct 72% rec | `vais d'accord ?`, `Je s.\n\n` |
+| 280k ep8000 | 1.264/3.54 | 68.5% punct 72% tie | `Tu`, `: Tu`/`Peur::` |
+| 288k ep8000 | 1.112/3.04 | 70.3% | `Tu`, `Oui,\nAs`/`Je Tu` |
+| 296k ep8000 | 1.123/3.07 | 68.5% | `Tu`, `Bon vai`/`Bonne` **Bonne** |
+| 304k ep8000 | 1.105/3.02 | 69.3% | spaces (attractor returns) | `: toi`/`Je es` |
+| 312k ep8000 | 1.147/3.15 | 70.0% vow 74% rec | `soir,` **new word** | `Je saan`/`Oui, toi` **perfect** |
+| 320k ep8000 | 1.089/2.97 | 70.3% vow **75% NEW REC** | spaces | `Ouis to`/`Oui,`/`Bon,` |
 
-Tips: `..._40k_s21.pt` (val 1.417) + `..._32k_s21.pt`
-+ `..._160k_s21_ep8000.pt` (**val 1.346 beats d16 1.352**)
-+ `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, primed `Oui, Et toi ?` best FR, `Je vais`)
-+ `..._208k_s21_ep8000.pt` (**val 1.055 NEW rec** ppl 2.87)
-+ `..._232k_s21_ep8000.pt` (**val 1.027 NEW rec** ppl 2.79 beats all, `toi.\n\n` clean stop)
-+ `..._240k_s21_ep8000.pt` (latest, 1.042)
-(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.027 over 160k, teacher 63→69% stable, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Parle`, `Je s.\n\n`. Corpus s21 ~48% at 240k, runway remains. Next: continue ep-8000 identical 240k→248k.
+Tips: `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, `Oui, Et toi ?` best FR), `..._208k_s21_ep8000.pt` (**1.055 NEW rec**), `..._232k_s21_ep8000.pt` (**1.027 NEW rec**), `..._248k_s21_ep8000.pt` (**1.025 NEW rec**), `..._264k_s21_ep8000.pt` (**teacher 70.5% NEW rec**), `..._312k_s21_ep8000.pt` (`soir,` + `Oui, toi`), `..._320k_s21_ep8000.pt` (latest, vow 75% rec, val 1.089)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.025 over 176k, teacher 63→70.5% record, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Bon, je`, `soir,`, `Oui, toi`, `Bonne`. Corpus s21 ~64% at 320k, runway remains. Next: continue ep-8000 identical 320k→328k.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
