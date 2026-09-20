@@ -79,8 +79,16 @@ python3 tools/run_atom_native.py \
   --d-model 16 --n-modes 16 --n-atoms-max 64 \
   --max-span-bytes 1 \
   --field-obligatory-hard --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10 \
+  --episode-reset --episode-length 2000 --field-contrast-weight 0 \
   --learning-rate 5e-5 --surface-learning-rate 1.2e-4
 ```
+
+`--episode-reset` (2000 > ~850 saturation steps) trains the readout on
+both transient and saturated field regimes — without it the α-MLP
+overfits saturated α and cold probes go flat (ligne B++ mirage).
+`--field-contrast-weight 0`: the contrast hinge sits satisfied at 0
+(bit-identical outputs with/without); dropping it saves 3 surface
+forwards per step.
 
 `--d-model` / `--max-span-bytes` must match the checkpoint.
 

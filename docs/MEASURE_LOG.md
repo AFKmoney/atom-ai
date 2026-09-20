@@ -144,6 +144,27 @@ la ligne : 82k primé (`toi ?\nAssistant: toi `) ; tip : 96k primé
 octets, flush atoms/64 — sans flush, O(n²) atoms) ou `--episode-reset` en
 entraînement.
 
+## Cut episode-reset (2026-09-20) : 96k→104k, ep-2000 + contraste 0
+
+4 épisodes/chunk (~850 transitoire + ~1150 saturé). Smokes froides du
+trainer redevenues françaises (`on pars`, `stant:`). Val 1.54→**1.477**
+(ppl 4.13). Cold : `toi ?\nAssistant: toi` (magnifique, ex-record 82k
+primé) ; primed : `pen pen pen…` (boucle). Teacher span-1 intact :
+**59.8%** (punct 22→33%). Lecture : à d=16 le readout fait le grand écart
+entre régimes — la boucle saturée est un attracteur de free-run, pas une
+perte de savoir. Note méthodo : `diagnose_teacher` défaut span-4 donne
+~22% sur un modèle byte-tick (artefact) ; toujours `--max-span-bytes 1`.
+Vitesse : ~50 tps (contraste coupé, -3 forwards/step).
+
+## 112k ep-4000 : le compromis deux-régimes existe (2026-09-20)
+
+104k→112k, `--episode-length 4000` (~20% transitoire). Val **1.423**/ppl
+3.90 (record égalé), teacher span-1 **61.3%** (record : cons 56%,
+punct 36%). Cold : `Tu toi ?\nAssistant: Tu` ; primed :
+`Tu ?\nAssistant: Tu ?\nAs` — **français dans les deux régimes, sans
+boucle**. d=16 suffit donc aux deux mappings avec le bon dosage ; pas
+besoin de d=32 pour ça. Tip de ligne : `atom_native_step_112000_epr4.pt`.
+
 ## Local artifacts (not in git)
 
 `.pt` stays out of git (repo ban). On the sandbox:
