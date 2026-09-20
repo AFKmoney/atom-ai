@@ -191,6 +191,8 @@ Règle d'épisode d32 : ep-6000 (~2× temps de saturation).
 | grown (init) | — | — | soupe | soupe (rms 0.8) |
 | 8k | 1.765/5.84 | **56.0%** (punct 47%) | espaces/`?` | `Distant: Distant:` rôles ! |
 | 16k | 1.585/4.88 | **61.3%** | `Ouistant: …` rôles à froid | `Tu ?\nAssistant: Tu ?` = best d16 |
+| 24k | 1.507/4.51 | 61.3% (cons 60%, \n 93%) | `Oun plaistant:…` (boucle) | `Tu plaistant:…` (boucle) |
+| 32k | 1.490/4.44 | **63.0%** (voy 68%, punct 50%) | `?\nAssistant:…` (boucle motif) | `Oui, que pre pre…` (boucle) |
 
 Le savoir transfère en 1 chunk (56% vs 63% d16) ; le free-run
 récapitule vite (rôles à 8k vs ~40k en d16). ~37 tps malgré 4× champ.
