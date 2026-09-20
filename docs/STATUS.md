@@ -36,17 +36,24 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 152k ep8000 | 1.477 (4.38) | 67.5% | primed ` D'accord ?\nAssistant: D` full D'accord |
 | 160k ep8000 | **1.346 (3.84)** | 67.0% | **val rec beats d16 1.352**, d32 > d16, `Parle  q`/`Je ve` |
 | 168k ep8000 | 1.364 (3.91) | 68.0% | cold `Tu veur:`, `Parle  ?`/`Je qu'e` |
+| 176k ep8000 | 1.383 (3.99) | 68.0% | `Peur:`, `?\nAssistant: Tu` |
+| 184k ep8000 | 1.399 (4.05) | 67.0% | primed `D'accord ?` returns, `Je toi,` |
+| 192k ep8000 | 1.423 (4.15) | 67.7% | cold `vais d'accord ?`, primed `Ouis d'accord ?`, `Parle Q` |
+| 200k ep8000 | **1.063 (2.90)** | 67.2% | **HUGE rec**, primed ` Oui,  Et toi ?\nAssistan` best FR, `Je vais`/`Je vaiss` |
+| 208k ep8000 | **1.055 (2.87)** | 68.0% | **NEW rec** beats 1.063, cold `vec vais d'accord ?`, `Bon Qu'`/`Oui ?\nAs` |
+| 216k ep8000 | 1.086 (2.96) | **69.0%** | teacher tie rec, cold `toi ?\nAssistant: toi` perfect |
+| 224k ep8000 | 1.077 (2.94) | 66.5% | `Tu toi`, `Bonnt to`/`Peur: t`/`Bon moi` |
 
-Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (val 1.417) + `..._32k_s21.pt`
-+ `..._64k_s21_ep8000.pt` (cold best val 1.432)
-+ `..._104k_s21_ep8000.pt` (both perfect)
-+ `..._112k_s21_ep8000.pt` (teacher 69% rec)
-+ `..._136k_s21_ep8000.pt` (val 1.370 rec)
-+ `..._144k_s21_ep8000.pt` (val 1.365 rec, both perfect, Parle)
-+ `..._160k_s21_ep8000.pt` (**val 1.346 beats d16 1.352**, d32 > d16)
-+ `..._168k_s21_ep8000.pt` (latest, Tu veur)
-(previous: `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`,
-val 1.352 / teacher 63.2%). Recipe now: ep-8000 (62.5% saturated) sweet spot, val 1.889→1.346 over 88k, teacher 63→68-69% stable, free-run FR constant. Corpus s21 seen ~34% at 168k (168k/500k), runway remains. Next: continue ep-8000.
+Tips: `..._40k_s21.pt` (val 1.417) + `..._32k_s21.pt`
++ `..._64k_s21_ep8000.pt` (cold best 1.432)
++ `..._136k_s21_ep8000.pt` (val 1.370)
++ `..._144k_s21_ep8000.pt` (val 1.365 both perfect Parle)
++ `..._160k_s21_ep8000.pt` (**val 1.346 beats d16 1.352**)
++ `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, primed `Oui, Et toi ?` best FR, `Je vais`)
++ `..._208k_s21_ep8000.pt` (**val 1.055 NEW rec** ppl 2.87, `vais d'accord`)
++ `..._216k_s21_ep8000.pt` (teacher 69% tie)
++ `..._224k_s21_ep8000.pt` (latest)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.055 over 136k, teacher 63→69% stable, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Parle`. Corpus s21 ~45% at 224k, runway remains. Next: continue ep-8000 identical.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
