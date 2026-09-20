@@ -102,9 +102,15 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 584k ms1M | 1.091/2.97 | ~71% | `Peut-`/`Peux`/`Peurr..` | Peut-, Peux |
 | 592k ms1M | 1.163/3.20 | ~71% | `Peurréc`/`Peut-être`/`Oui,` | **Peut-être returns** |
 | 600k ms1M | 1.099/3.00 | 70.5% | `Peut-`/`Peux`/`Peut-` | Peut-, Peux |
+| 608k ms1M | 1.031/2.80 | ~71% | `Peut-être`/`Peux`/`Peurra.` | Peut-être/Peux/Peurra. |
+| 616k ms1M | 1.032/2.80 | ~71% | `Peux`/`Peut-`/`Peurra..` | Peux/Peut- |
+| 624k ms1M | 1.045/2.84 | ~71% | `Peuu`/`Peux qu'`/`Peuu` | **Peux qu' returns** |
+| 632k ms1M | 1.645/5.18 | ~71% | `Bonne`/`Oui,`/`Bonne` | Bonne/Oui, spike |
+| 640k ms1M | 1.45/4.26 | ~71% | `Oui,`/`Je`/`Je` | Oui,/Je |
+| 648k ms1M | 1.37/3.94 | ~71% | `Je`/`Avec`/`Je` | Avec |
 
-Tips: `..._496k_s21_ep8000.pt` (**val 0.689 RECORD**, **vow 75.2% NEW REC**, **teacher 72.5%**), `..._520k_s21_ep8000.pt` (**Peut-être NEW WORD**), `..._552k_s21_ep8000.pt` (**Peux qu' NEW**), `..._568k_s21_ep8000.pt` (**Avec NEW**), `..._576k_s21_ep8000.pt` (**D'accord returns**), `..._560k_ms1M.pt` (**multi-shard 1M val 0.997**, Oui,/Avec) (latest ms1M 560k val 0.997 < loop 1.35)
-(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 original, no patches, val 1.889→0.689 over 432k then 0.689→1.35 loop s21 (500k boundary) but 0.689→0.997 ms1M (1M corpus) → multi-shard scales better than loop, free-run evolves: Je/Oui, → Peut-être (520k) → Peux (544k) → Peux qu' (552k) → Avec (568k) → D'accord (576k) + ms1M: D'accord/Peux → Bonne → Avec → Oui, → structure scaling, not patch. Corpus s21 100% at 500k, s21+s7=1M, best remains 496k val 0.689. Next: continue ms1M long to 1M, or loop original, no printable aux / energy decay patches.
+Tips: `..._496k_s21_ep8000.pt` (**val 0.689 RECORD**, **vow 75.2% NEW REC**, **teacher 72.5%**), `..._560k_ms1M.pt` (**teacher 73.0% NEW REC**, val 0.997), `..._592k_ms1M.pt` (**Peut-être returns**), `..._624k_ms1M.pt` (**Peux qu' returns**), `..._648k_ms1M.pt` (latest ms1M 648k val 1.37 Avec) (loop latest 576k val 1.35 D'accord)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 original, no patches, val 1.889→0.689 over 432k then 0.689→0.997 ms1M then 0.997→1.37 ms1M 560k→648k (88k) — val up but structure: Peut-être/Peux → Peux qu' → Bonne/Oui, → Avec → scaling, not patch. Corpus 1M (s21+s7), 648k/1000k = 64.8% of 1M seen from 496k start. Best remains 496k val 0.689, teacher 73% @560k ms1M. Next: continue ms1M 648k→1M (352k restant) même recette.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
