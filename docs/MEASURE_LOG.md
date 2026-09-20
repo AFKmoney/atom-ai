@@ -193,6 +193,12 @@ Règle d'épisode d32 : ep-6000 (~2× temps de saturation).
 | 16k | 1.585/4.88 | **61.3%** | `Ouistant: …` rôles à froid | `Tu ?\nAssistant: Tu ?` = best d16 |
 | 24k | 1.507/4.51 | 61.3% (cons 60%, \n 93%) | `Oun plaistant:…` (boucle) | `Tu plaistant:…` (boucle) |
 | 32k | 1.490/4.44 | **63.0%** (voy 68%, punct 50%) | `?\nAssistant:…` (boucle motif) | `Oui, que pre pre…` (boucle) |
+| 40k | 1.417/4.13 | **64.7%** (voy 67%, cons 60%, sp 81%, nl 93%, punct 53%) | ` On pre ?\nAssistant: On ` (boucle `pre`) | ` On pre vec pre vec pre ` (boucle `pre vec`) |
+
+40k: val ↓ (1.490→1.417, record s21), teacher ↑ (63.0→64.7% record), tps 67.4. Free-run reste en phase boucle `pre`/`vec` mais cold montre `?` + rôles (`Assistant:`) — même pattern que 24-32k. Savoir intact (val/teacher montent). Continuation identique attendue.
+| 48k | 1.523/4.59 | **67.5%** (voy 69%, cons 65%, sp 83%, nl 93%, punct 53%) | `                        ` (spaces) det + ` Pe ?\nAs` trainer smoke / `Tu ?\nAssistant:   ` chat det | `                        ` (spaces) / sampled `Pe que vec toi.` |
+
+48k: val ↑ 1.417→1.523 (régression), teacher ↑ 64.7→67.5% (record). Free-run déterministe tombe sur attracteur espace (probable effet `prefer_printable` qui choisit ` ` quand logits plats), mais sampling temp 0.8 donne `Pe que vec toi.` (français, rôles). Trainer smokes ` Pe ?\nAs` identiques → même régime que 40k. Savoir intact (teacher monte). Seuil 48k atteint → test ep-8000 prévu (une seule variable).
 
 Le savoir transfère en 1 chunk (56% vs 63% d16) ; le free-run
 récapitule vite (rôles à 8k vs ~40k en d16). ~37 tps malgré 4× champ.
