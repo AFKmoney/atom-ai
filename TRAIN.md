@@ -39,6 +39,7 @@ export OMP_NUM_THREADS=4
 
 python3 tools/run_atom_native.py \
   --stream --data data/corpus_fr_hf.txt --loop-shards \
+  --chunk-bytes 65536 \
   --output-dir checkpoints/byte_tick \
   --checkpoint-name atom_native.pt \
   --steps 20000 \
@@ -54,7 +55,7 @@ python3 tools/run_atom_native.py \
   --learning-rate 5e-5 \
   --surface-learning-rate 1.2e-4 \
   --log-every 1000 \
-  --no-enable-merge
+  --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10
 ```
 
 After each save, **copy** to a unique name. Never overwrite the only
@@ -70,13 +71,14 @@ cp checkpoints/byte_tick/atom_native.pt \
 ```bash
 python3 tools/run_atom_native.py \
   --stream --data data/corpus_fr_hf.txt --loop-shards \
+  --chunk-bytes 65536 \
   --resume checkpoints/byte_tick/atom_native_step_36000_big.pt \
   --output-dir checkpoints/byte_tick \
   --checkpoint-name atom_native.pt \
   --steps 20000 \
   --d-model 16 --n-modes 16 --n-atoms-max 64 \
   --max-span-bytes 1 \
-  --field-obligatory-hard --no-enable-merge \
+  --field-obligatory-hard --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10 \
   --learning-rate 5e-5 --surface-learning-rate 1.2e-4
 ```
 
@@ -90,7 +92,7 @@ from src.atom_native import AtomNativeModel
 m = AtomNativeModel(
     d_model=16, n_modes=16, n_atoms_max=64,
     max_payload_bytes=1, field_max_rms=3.0,
-    field_obligatory_hard=True, enable_merge=False,
+    field_obligatory_hard=True, enable_merge=False, last_atom_readout=True,
 )
 m.load("checkpoints/byte_tick/atom_native_step_32000_dentate.pt")
 m.eval()
@@ -118,7 +120,7 @@ letters **and** the strings are not copies.
 | HF tokenizer | banned |
 
 Efference (free-run every 10 ticks) is on in the sandbox trainer via
-`model._efference_every = 10`. Leave it if you want train≈generate.
+`--efference-every 10`. Leave it if you want train≈generate.
 
 ## Scale later
 

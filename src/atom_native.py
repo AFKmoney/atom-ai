@@ -23,6 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .io.atomizer import AtomPacket, Atomizer
+from .speech_lock import format_dialogue_prompt, speech_ok
 from .toroidal.atom import ToroidalAtom
 from .toroidal.model import ToroidalFractalIntelligence
 
@@ -128,6 +129,74 @@ class AlphaOnlyMLP(nn.Module):
         return self.fc2(F.gelu(self.fc1(x)))
 
 
+class LastAtomReadout(nn.Module):
+    """Last-atom readout + dentate 2-gram (ARCHITECTURE.md, bridges #20/#1).
+
+    Next-byte logits from the last committed byte + previous byte + last atom
+    phase. NOT payload-copy (no hist/winner broadcast).
+
+    1. embed last byte, embed previous byte (2-gram)
+    2. dentate: expand 4x -> ReLU -> keep top 25% -> project back
+    3. add phase(cos phi, sin phi) projection, GELU
+    4. linear to 256 logits
+    """
+
+    def __init__(self, d_model: int, embed_dim: int | None = None, expand: int = 4) -> None:
+        super().__init__()
+        embed_dim = int(embed_dim or d_model)
+        self.embed_dim = embed_dim
+        self.d_model = int(d_model)
+        self.byte_embed = nn.Embedding(256, embed_dim)
+        hidden = expand * 2 * embed_dim
+        self.expand = nn.Linear(2 * embed_dim, hidden)
+        self.contract = nn.Linear(hidden, embed_dim)
+        self.phase_proj = nn.Linear(2 * d_model, embed_dim)
+        self.head = nn.Linear(embed_dim, 256)
+
+    def dentate_keep(self, hidden_dim: int) -> int:
+        return max(1, hidden_dim // 4)
+
+    def forward(self, last_byte: int, prev_byte: int, phi: torch.Tensor) -> torch.Tensor:
+        """Return 256 next-byte logits. ``phi`` is (d_model,) live phase."""
+        device = self.head.weight.device
+        last = torch.tensor([int(last_byte) % 256], dtype=torch.long, device=device)
+        prev = torch.tensor([int(prev_byte) % 256], dtype=torch.long, device=device)
+        pair = torch.cat([self.byte_embed(last), self.byte_embed(prev)], dim=-1)
+        h = F.relu(self.expand(pair))
+        keep = self.dentate_keep(h.shape[-1])
+        top_values, top_index = torch.topk(h, keep, dim=-1)
+        sparse = torch.zeros_like(h).scatter(-1, top_index, top_values)
+        z = self.contract(sparse)
+        flat = phi.reshape(-1).to(device=device, dtype=z.dtype)
+        if flat.numel() != self.d_model:
+            raise ValueError(f"last-atom phi needs {self.d_model} elems, got {flat.numel()}")
+        phase = torch.cat([torch.cos(flat), torch.sin(flat)], dim=-1)
+        out = F.gelu(z + self.phase_proj(phase).unsqueeze(0))
+        return self.head(out).reshape(256)
+
+
+def _byte_cycle(buf: bytearray | bytes) -> bool:
+    """True if the tail of ``buf`` closes a 2-8 byte repeat (anti-repeat).
+
+    ARCHITECTURE.md says 2-6; extended to 8 because byte-tick outputs loop
+    on 7-byte attractors (e.g. "Tu ont: "). Decode only, weights untouched.
+    """
+    n_buf = len(buf)
+    for n in (2, 3, 4, 5, 6, 7, 8):
+        if n_buf >= 2 * n and bytes(buf[-n:]) == bytes(buf[-2 * n : -n]):
+            return True
+    return False
+
+
+def _tail_bytes(atom_payloads: list[bytes] | None) -> tuple[int, int]:
+    """(last byte, previous byte) of living payloads; prev falls back to last."""
+    tails = [bytes(p or b"") for p in (atom_payloads or [])]
+    tails = [p for p in tails if p]
+    last = tails[-1][-1] if tails else 0
+    prev = tails[-2][-1] if len(tails) > 1 else last
+    return last, prev
+
+
 class AtomSurfaceHead(nn.Module):
 
     """Decode one variable-length surface packet from the living toroidal field.
@@ -153,6 +222,7 @@ class AtomSurfaceHead(nn.Module):
         d_model: int,
         max_payload_bytes: int = 32,
         n_modes: int | None = None,
+        last_atom_readout: bool = False,
     ) -> None:
         super().__init__()
         if max_payload_bytes < 1:
@@ -229,7 +299,14 @@ class AtomSurfaceHead(nn.Module):
         self.payload_to_byte = nn.Linear(d_model, max_payload_bytes * 256, bias=False)
         self.payload_to_length = nn.Linear(d_model, max_payload_bytes, bias=False)
         self.payload_copy_scale = nn.Parameter(torch.tensor(1.0))
+        self.payload_enabled = True
         self._init_payload_production()
+        self.last_atom_readout = bool(last_atom_readout)
+        self.last_atom = None
+        if self.last_atom_readout:
+            if max_payload_bytes != 1:
+                raise ValueError("last_atom_readout requires max_payload_bytes=1 (byte-tick)")
+            self.last_atom = LastAtomReadout(d_model)
 
     def _init_payload_production(self) -> None:
         """Small init so payload branch is audible but does not swamp frozen α."""
@@ -411,11 +488,9 @@ class AtomSurfaceHead(nn.Module):
 
         # Architectural gain: single-atom copy must stay audible vs frozen α RMS (~1).
         copy = F.softplus(self.payload_copy_scale) * 4.0
-        # Per-atom copy-bias: winner atom's own hist / positions only.
-        for i, (payload, hist_i) in enumerate(zip(kept_payloads, local_hists)):
+        # Position-aligned copy only. No unigram broadcast across span slots.
+        for i, payload in enumerate(kept_payloads):
             w = copy_w[i]
-            mass_i = hist_i.sum().clamp_min(1.0)
-            byte_logits = byte_logits + copy * w * (hist_i / mass_i).unsqueeze(0)
             for pos, b in enumerate(payload[:L]):
                 byte_logits[pos, int(b)] = byte_logits[pos, int(b)] + copy * w
         if lengths:
@@ -541,6 +616,7 @@ class AtomSurfaceHead(nn.Module):
         atom_r: torch.Tensor | None = None,
         atom_payloads: list[bytes] | None = None,
         atom_energies: list[float | torch.Tensor] | None = None,
+        last_phi: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
         """Decode from living field α when provided; else legacy mean-state path.
 
@@ -591,30 +667,41 @@ class AtomSurfaceHead(nn.Module):
                 )
                 frozen_len = self.alpha_length_frozen @ a_hat
                 if getattr(self, "field_obligatory_hard", False):
-                    # Hard-v2+: frozen α map + capped α-MLP + *uncapped* atom-payload
-                    # production (per-atom α-local embed + copy-bias). Payload stays
-                    # outside the RMS cap so living bytes are not crushed; α=0 still
-                    # zeros payload via unclamped a_scale. No decoder/skip reopen.
+                    # Hard speech mix (ARCHITECTURE.md): trainable α-MLP +
+                    # 0.3 frozen JL + optional payload branch. No RMS cap on
+                    # the trainable branch: the cap pinned cap≈0.01 and crushed
+                    # trainable gradients ~100x (measured), blocking learning.
+                    # Payload stays outside any cap; α=0 still zeros payload
+                    # via unclamped a_scale. No decoder/skip reopen.
                     train_byte = self.alpha_byte_proj(a_hat).view(
                         self.max_payload_bytes, 256
                     )
                     train_len = self.alpha_length_proj(a_hat)
-                    pay_byte, pay_len = self.payload_produce(
-                        atom_payloads,
-                        a_hat,
-                        a_only,
-                        atom_energies=atom_energies,
-                    )
+                    if getattr(self, "payload_enabled", True):
+                        pay_byte, pay_len = self.payload_produce(
+                            atom_payloads,
+                            a_hat,
+                            a_only,
+                            atom_energies=atom_energies,
+                        )
+                    else:
+                        pay_byte = torch.zeros_like(frozen_byte)
+                        pay_len = torch.zeros_like(frozen_len)
                     obl = self.obligatory_scale()
-                    tb = obl * train_byte
-                    tl = obl * train_len
-                    f_rms = frozen_byte.pow(2).mean().sqrt().clamp_min(1e-8)
-                    t_rms = tb.pow(2).mean().sqrt().clamp_min(1e-8)
-                    # stop-grad on cap — avoid unstable d(cap*tb)/d(tb) NaNs
-                    cap = (f_rms / t_rms).clamp(max=1.0).detach()
+                    la_byte = torch.zeros_like(frozen_byte)
+                    if getattr(self, "last_atom", None) is not None:
+                        last_b, prev_b = _tail_bytes(atom_payloads)
+                        phi_vec = last_phi
+                        if phi_vec is None:
+                            phi_vec = torch.zeros(
+                                self.d_model,
+                                device=frozen_byte.device,
+                                dtype=frozen_byte.dtype,
+                            )
+                        la_byte = self.last_atom(last_b, prev_b, phi_vec).unsqueeze(0)
                     return {
-                        "byte_logits": frozen_byte + cap * tb + pay_byte,
-                        "length_logits": frozen_len + cap * tl + pay_len,
+                        "byte_logits": obl * train_byte + 0.3 * frozen_byte + pay_byte + la_byte,
+                        "length_logits": obl * train_len + 0.3 * frozen_len + pay_len,
                     }
                 train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
                 train_len = self.alpha_length_proj(a_hat)
@@ -773,6 +860,7 @@ class AtomNativeModel(nn.Module):
         field_ignorance_prompt_bank: bool = False,
         field_obligatory_readout: bool = False,
         field_obligatory_hard: bool = False,
+        last_atom_readout: bool = False,
         printable_aux_weight: float = 0.0,
         field_next_packet_weight: float = 0.0,
         slow_rms_rel_tol: float = 0.15,
@@ -786,7 +874,12 @@ class AtomNativeModel(nn.Module):
             n_atoms_max=n_atoms_max,
         )
         self.compiler = AtomCompiler(self.atomizer.feature_dim, d_model)
-        self.surface = AtomSurfaceHead(d_model, max_payload_bytes=max_payload_bytes, n_modes=n_modes)
+        self.surface = AtomSurfaceHead(
+            d_model,
+            max_payload_bytes=max_payload_bytes,
+            n_modes=n_modes,
+            last_atom_readout=bool(last_atom_readout),
+        )
         self.max_payload_bytes = max_payload_bytes
         self.field_controller = FieldAmplitudeController(field_max_rms)
         self.field_max_rms = field_max_rms
@@ -810,6 +903,7 @@ class AtomNativeModel(nn.Module):
         self.field_ignorance_ablate_shared = bool(field_ignorance_ablate_shared)
         self.field_ignorance_prompt_bank = bool(field_ignorance_prompt_bank)
         self.field_obligatory_hard = bool(field_obligatory_hard)
+        self.last_atom_readout = bool(last_atom_readout)
         self.field_obligatory_readout = bool(field_obligatory_readout) or self.field_obligatory_hard
         # Light aux: push hard α-MLP logits toward printable UTF-8 mass (no decoder bypass).
         self.printable_aux_weight = float(printable_aux_weight)
@@ -825,6 +919,7 @@ class AtomNativeModel(nn.Module):
         self.field_next_probe = nn.Linear(self.surface.field_feat_dim, self.atomizer.feature_dim)
         self.merge_count_total = 0
         self._tick = 0
+        self._efference_every = 0  # set by trainer CLI (--efference-every)
         self._prev_field_rms: float | None = None
         # Detached rolling α snapshots for harder field-contrast negatives
         # (mode-shuffle alone is too weak vs CE; inter-prompt collapse returns).
@@ -1128,6 +1223,7 @@ class AtomNativeModel(nn.Module):
         living_energies = [
             a.E.detach().float().mean() for a in living_atoms
         ]
+        la_last_b, la_prev_b = _tail_bytes(living_payloads)
         surface = self.surface(
             output_state,
             alpha=alpha_new,
@@ -1135,6 +1231,7 @@ class AtomNativeModel(nn.Module):
             atom_r=atom.r,
             atom_payloads=living_payloads,
             atom_energies=living_energies,
+            last_phi=atom.phi.reshape(-1),
         )
         with torch.no_grad():
             self.core.state.alpha.copy_(alpha_new.detach())
@@ -1155,6 +1252,8 @@ class AtomNativeModel(nn.Module):
             "n_pairs_above_energy_floor": int(merge_diag.get("n_pairs_above_energy_floor", 0)),
             "slow_tick": do_slow,
             "atom_r": atom.r,
+            "la_bytes": (la_last_b, la_prev_b),
+            "la_phi": atom.phi.reshape(-1).detach(),
             **amplitude,
         }
 
@@ -1270,6 +1369,15 @@ class AtomNativeModel(nn.Module):
         if persist_state is None:
             persist_state = self.core.consolidation.persistence
         true_flat = output["surface"]["byte_logits"].reshape(-1)
+        # Last-atom readout: aux hinges compare same-bytes/different-alpha so
+        # they keep isolating alpha (bytes held constant, no shape change).
+        la_extra: dict = {}
+        if getattr(self.surface, "last_atom", None) is not None:
+            la_pair = output.get("la_bytes") or (0, 0)
+            la_extra = {
+                "atom_payloads": [bytes([la_pair[1]]), bytes([la_pair[0]])],
+                "last_phi": output.get("la_phi"),
+            }
 
         if self.field_contrast_weight > 0:
             surf_zero = self.surface(
@@ -1277,6 +1385,7 @@ class AtomNativeModel(nn.Module):
                 alpha=torch.zeros_like(alpha),
                 persistent_state=persist_state,
                 atom_r=atom_r,
+                **la_extra,
             )
             cos_z = F.cosine_similarity(
                 true_flat.unsqueeze(0),
@@ -1287,7 +1396,8 @@ class AtomNativeModel(nn.Module):
             else:
                 shuf_alpha = -alpha
             surf_shuf = self.surface(
-                None, alpha=shuf_alpha, persistent_state=persist_state, atom_r=atom_r
+                None, alpha=shuf_alpha, persistent_state=persist_state, atom_r=atom_r,
+                **la_extra,
             )
             cos_s = F.cosine_similarity(
                 true_flat.unsqueeze(0),
@@ -1300,7 +1410,8 @@ class AtomNativeModel(nn.Module):
                 bank_alpha = bank_alpha.to(device=alpha.device, dtype=alpha.dtype)
                 if bank_alpha.shape == alpha.shape and not torch.allclose(bank_alpha, alpha, atol=1e-5):
                     surf_bank = self.surface(
-                        None, alpha=bank_alpha, persistent_state=persist_state, atom_r=atom_r
+                        None, alpha=bank_alpha, persistent_state=persist_state, atom_r=atom_r,
+                        **la_extra,
                     )
                     cos_b = F.cosine_similarity(
                         true_flat.unsqueeze(0),
@@ -1368,7 +1479,8 @@ class AtomNativeModel(nn.Module):
                     bar_persist = persist_state
                     bar_atom_r = atom_r
                 surf_bar = self.surface(
-                    None, alpha=alpha_bar, persistent_state=bar_persist, atom_r=bar_atom_r
+                    None, alpha=alpha_bar, persistent_state=bar_persist, atom_r=bar_atom_r,
+                    **la_extra,
                 )
                 cos_ign = F.cosine_similarity(
                     true_flat.unsqueeze(0),
@@ -1448,6 +1560,21 @@ class AtomNativeModel(nn.Module):
             **aux_info,
         }
 
+    def efference_loss(self, current: AtomPacket, target: AtomPacket) -> tuple[torch.Tensor, dict]:
+        """One efference tick (bridge #9): predict from gold state, commit the
+        model's OWN byte (generate-like), then CE on the gold target from that
+        state. Trains recovery from free-run drift (train~=generate).
+
+        Falls back to a normal transition when the atomizer holds a pending
+        span (only possible off byte-tick; byte-tick buffer is always empty).
+        """
+        if len(self.atomizer._buffer) == 0:
+            with torch.no_grad():
+                pred_bytes = self.predict_packet(current, deterministic=True, merge_enabled=False)
+            pred_packet = self.atomizer.packet_from_payload(bytes(pred_bytes))
+            return self.transition_loss(pred_packet, target)
+        return self.transition_loss(current, target)
+
     @torch.no_grad()
     def predict_packet(
         self,
@@ -1479,56 +1606,79 @@ class AtomNativeModel(nn.Module):
         prefer_printable: bool = True,
         reset: bool = True,
         merge_enabled: bool = False,
+        payload_copy: bool = False,
+        dialogue_wrap: bool = True,
+        speech_gate: bool = True,
+        anti_repeat: bool = True,
     ) -> bytes:
-        """Prime on a prompt and generate bounded atom surface packets.
-
-        Priming forwards every prompt packet into the toroidal field so the
-        surface head is conditioned on the full prompt, not only the final
-        span.  Each generated payload is committed back into the atomizer with
-        an inferred structural boundary (not a fixed ``generated`` tag) so
-        feature context stays closer to the training distribution.
-
-        ``merge_enabled`` defaults to False: chat/probe ingest keeps prompt
-        packets as distinct living atoms for α-gated payload copy-bias.
-        Training still uses ``forward_packet`` with model ``enable_merge`` (thr=0.45).
-        """
+        """Prime on a prompt and generate bounded atom surface packets."""
         self.eval()
-        # Chat / generation stays on hard α-MLP when flag is set (no soft fallback).
         if self.field_obligatory_hard:
             self.surface.set_obligatory_hard(True)
             prefer_printable = True
-        if reset:
-            self.reset_state(reset_atomizer=True)
-        prompt_packets = self.atomizer.encode(prompt, reset=reset)
-        if not prompt_packets:
-            raise ValueError("prompt must produce at least one atom packet")
-        # Consume the full prompt into the field; the last packet is the
-        # transition source for the first generated surface packet.
-        for packet in prompt_packets[:-1]:
-            self.forward_packet(packet, merge_enabled=merge_enabled)
-        current = prompt_packets[-1]
-        generated = bytearray()
-        for _ in range(max_packets):
-            payload = self.predict_packet(
-                current,
-                temperature=temperature,
-                top_k=top_k,
-                deterministic=deterministic,
-                prefer_printable=prefer_printable,
-                merge_enabled=merge_enabled,
-            )
-            if not payload:
-                break
-            generated.extend(payload)
-            current = self.atomizer.packet_from_payload(payload)
-            if max_length is not None and len(generated) >= max_length:
-                break
-            # Soft stop on blank double-newline turns (dialogue corpora).
-            if generated.endswith(b"\n\n") and len(generated) > 2:
-                break
-        if max_length is not None:
-            return bytes(generated[:max_length])
-        return bytes(generated)
+        prev_payload_flag = bool(getattr(self.surface, "payload_enabled", True))
+        self.surface.payload_enabled = bool(payload_copy)
+        try:
+            if reset:
+                self.reset_state(reset_atomizer=True)
+            if dialogue_wrap:
+                prompt = format_dialogue_prompt(prompt)
+            prompt_packets = self.atomizer.encode(prompt, reset=reset)
+            if not prompt_packets:
+                raise ValueError("prompt must produce at least one atom packet")
+            for packet in prompt_packets[:-1]:
+                self.forward_packet(packet, merge_enabled=merge_enabled)
+            current = prompt_packets[-1]
+            generated = bytearray()
+            for _ in range(max_packets):
+                payload = self.predict_packet(
+                    current,
+                    temperature=temperature,
+                    top_k=top_k,
+                    deterministic=deterministic,
+                    prefer_printable=prefer_printable,
+                    merge_enabled=merge_enabled,
+                )
+                if anti_repeat and payload and _byte_cycle(generated + payload):
+                    # N-gram anti-repeat (ARCHITECTURE.md): the new bytes close
+                    # a 2-6 byte cycle -> draw once more. RNG state is
+                    # saved/restored and the redraw is seeded by position so
+                    # deterministic probes stay reproducible.
+                    rng_state = torch.get_rng_state()
+                    try:
+                        torch.manual_seed(0xA700 + len(generated))
+                        payload = self.predict_packet(
+                            current,
+                            temperature=0.7,
+                            top_k=8,
+                            deterministic=False,
+                            prefer_printable=prefer_printable,
+                            merge_enabled=merge_enabled,
+                        )
+                    finally:
+                        torch.set_rng_state(rng_state)
+                if not payload:
+                    break
+                # Byte-tick contract (ARCHITECTURE.md): the speech gate judges
+                # the accumulated phrase, never a single (1-byte) packet.
+                if (
+                    speech_gate
+                    and len(generated) >= 8
+                    and not speech_ok(bytes(generated))
+                ):
+                    break
+                generated.extend(payload)
+                current = self.atomizer.packet_from_payload(payload)
+                if max_length is not None and len(generated) >= max_length:
+                    break
+                if generated.endswith(b"\n\n") and len(generated) > 2:
+                    break
+            if max_length is not None:
+                return bytes(generated[:max_length])
+            return bytes(generated)
+        finally:
+            self.surface.payload_enabled = prev_payload_flag
+
 
     def _checkpoint(self) -> dict:
         core = self.core
@@ -1572,6 +1722,8 @@ class AtomNativeModel(nn.Module):
                 "field_ignorance_prompt_bank": self.field_ignorance_prompt_bank,
                 "field_obligatory_readout": bool(self.field_obligatory_readout),
                 "field_obligatory_hard": bool(self.field_obligatory_hard),
+                "payload_copy": bool(getattr(self.surface, "payload_enabled", True)),
+                "last_atom_readout": bool(self.last_atom_readout),
                 "printable_aux_weight": float(self.printable_aux_weight),
                 "field_next_packet_weight": float(self.field_next_packet_weight),
                 "merge_count_total": self.merge_count_total,
@@ -1681,6 +1833,12 @@ class AtomNativeModel(nn.Module):
         current = self.surface.state_dict()
         filtered = {key: value for key, value in surface_state.items() if key in current and current[key].shape == value.shape}
         missing = [key for key in current if key not in filtered]
+        has_la_keys = any(key.startswith("last_atom") for key in surface_state)
+        want_la = getattr(self.surface, "last_atom", None) is not None
+        if has_la_keys and not want_la:
+            print("warning: checkpoint has last-atom weights but model built without last_atom_readout (keys dropped)")
+        if want_la and not has_la_keys:
+            print("info: last_atom_readout on but checkpoint lacks last-atom weights (fresh init kept)")
         self.surface.load_state_dict(filtered, strict=False)
         # If max_payload grew (e.g. 16→32), pad-copy span heads before any reinit wipe.
         span_migrate = self._migrate_span_head_weights(surface_state)
@@ -1705,6 +1863,7 @@ class AtomNativeModel(nn.Module):
             if not (
                 key.startswith("alpha_byte_proj")
                 or key.startswith("alpha_length_proj")
+                or key.startswith("last_atom")
                 or _is_payload_key(key)
             )
         ]
@@ -1814,6 +1973,8 @@ class AtomNativeModel(nn.Module):
             # Constructor / CLI may set obligatory after load; always sync surface.
             self.surface.field_obligatory_readout = bool(self.field_obligatory_readout)
         self.merge_count_total = int(cfg.get("merge_count_total", 0) or 0)
+        if "payload_copy" in cfg:
+            self.surface.payload_enabled = bool(cfg["payload_copy"])
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
         training = checkpoint.get("training")
