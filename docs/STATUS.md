@@ -30,14 +30,23 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 104k ep8000 | 1.706 (5.51) | 67.0% | **both regimes perfect** `Tu ?\nAssistant: Tu ?\nAs` primed |
 | 112k ep8000 | 1.645 (5.18) | **69.0%** | teacher record, val ↓ trend, `plainuo`/`Pe ven` |
 | 120k ep8000 | 1.716 (5.56) | 66.5% | `Ouisateu`/`Je veur:`/` d'accor` (d'accord returns) |
+| 128k ep8000 | 1.677 (5.35) | 67.2% | primed ` Tu plus.\n\n` clean stop |
+| 136k ep8000 | **1.370 (3.93)** | 68.2% | **val rec s21**, cold+primed perfect `Tu ?\nAssistant: Tu ?\n` |
+| 144k ep8000 | **1.365 (3.92)** | 66.2% | **val rec**, both perfect `Tu ?\nAssistant: Tu ?\nAs`, `Parle  v` |
+| 152k ep8000 | 1.477 (4.38) | 67.5% | primed ` D'accord ?\nAssistant: D` full D'accord |
+| 160k ep8000 | **1.346 (3.84)** | 67.0% | **val rec beats d16 1.352**, d32 > d16, `Parle  q`/`Je ve` |
+| 168k ep8000 | 1.364 (3.91) | 68.0% | cold `Tu veur:`, `Parle  ?`/`Je qu'e` |
 
-Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (val rec 1.417) + `atom_native_d32_32k_s21.pt`
-+ `checkpoints/byte_tick/atom_native_step_64000_d32.pt` (ep8000 cold best val 1.432)
-+ `atom_native_step_104000_d32.pt` (ep8000 both regimes perfect, val 1.706, teacher 67%)
-+ `atom_native_step_112000_d32.pt` (teacher 69% record, val 1.645)
-+ `atom_native_step_120000_d32.pt` (latest, d'accord fragment)
+Tips: `checkpoints/RELEASE/atom_native_d32_40k_s21.pt` (val 1.417) + `..._32k_s21.pt`
++ `..._64k_s21_ep8000.pt` (cold best val 1.432)
++ `..._104k_s21_ep8000.pt` (both perfect)
++ `..._112k_s21_ep8000.pt` (teacher 69% rec)
++ `..._136k_s21_ep8000.pt` (val 1.370 rec)
++ `..._144k_s21_ep8000.pt` (val 1.365 rec, both perfect, Parle)
++ `..._160k_s21_ep8000.pt` (**val 1.346 beats d16 1.352**, d32 > d16)
++ `..._168k_s21_ep8000.pt` (latest, Tu veur)
 (previous: `checkpoints/RELEASE/atom_native_d16_120k_epr4.pt`,
-val 1.352 / teacher 63.2%). Recipe now: ep-8000 (62.5% saturated) is sweet spot for d32, restores two-regime FR, val spike at 72k then down 1.889→1.645 over 40k, teacher 63→69% monotonic overall. Next: continue ep-8000 or try LR decay single variable.
+val 1.352 / teacher 63.2%). Recipe now: ep-8000 (62.5% saturated) sweet spot, val 1.889→1.346 over 88k, teacher 63→68-69% stable, free-run FR constant. Corpus s21 seen ~34% at 168k (168k/500k), runway remains. Next: continue ep-8000.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
