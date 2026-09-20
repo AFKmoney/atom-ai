@@ -10,7 +10,7 @@ training on `data/corpus_fr_medium_s21.txt` (seed 21, 500 kB fresh).
 
 Recipe per 8k chunk: byte-tick, last-atom readout, dentate, MERGE off,
 payload-copy off, hard obligatory readout, `--efference-every 10`,
-`--episode-reset --episode-length 6000`, `--field-contrast-weight 0`
+`--episode-reset --episode-length 8000` (was 6000 until 48k, 8000 sweet spot since 56k, tested 12000 worse), `--field-contrast-weight 0`
 (dead hinge, cut), LR 5e-5/1.2e-4, `--atom-flush-every 64`.
 
 | s21 step | val (ppl) | teacher | note |
@@ -55,9 +55,15 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 | 304k ep8000 | 1.105/3.02 | 69.3% | spaces (attractor returns) | `: toi`/`Je es` |
 | 312k ep8000 | 1.147/3.15 | 70.0% vow 74% rec | `soir,` **new word** | `Je saan`/`Oui, toi` **perfect** |
 | 320k ep8000 | 1.089/2.97 | 70.3% vow **75% NEW REC** | spaces | `Ouis to`/`Oui,`/`Bon,` |
+| 328k ep8000 | **0.753/2.12** | 69.0% | **both perfect** `suis d'accord ?\nAssist` both, `Bonne e` | **HUGE val rec beats 1.025** |
+| 336k ep8000 | 0.854/2.35 | 69.5% | spaces | `Avec to`/`Peur::` |
+| 344k ep8000 | 0.866/2.38 | 68.5% | spaces | `Bons.\n\n` clean stop |
+| 352k ep8000 | 0.837/2.31 | 69.3% punct 75% rec | spaces | `Je`/`Oui,` |
+| 360k ep8000 | 0.833/2.30 | 67.7% | spaces | `Peurrdi,` |
+| 368k ep8000 | 0.889/2.43 | 69.0% | spaces | `Peurr.\n\n` clean stop |
 
-Tips: `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, `Oui, Et toi ?` best FR), `..._208k_s21_ep8000.pt` (**1.055 NEW rec**), `..._232k_s21_ep8000.pt` (**1.027 NEW rec**), `..._248k_s21_ep8000.pt` (**1.025 NEW rec**), `..._264k_s21_ep8000.pt` (**teacher 70.5% NEW rec**), `..._312k_s21_ep8000.pt` (`soir,` + `Oui, toi`), `..._320k_s21_ep8000.pt` (latest, vow 75% rec, val 1.089)
-(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.025 over 176k, teacher 63→70.5% record, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Bon, je`, `soir,`, `Oui, toi`, `Bonne`. Corpus s21 ~64% at 320k, runway remains. Next: continue ep-8000 identical 320k→328k.
+Tips: `..._200k_s21_ep8000.pt` (**val 1.063 HUGE**, `Oui, Et toi ?` best FR), `..._208k_s21_ep8000.pt` (**1.055 NEW rec**), `..._232k_s21_ep8000.pt` (**1.027 NEW rec**), `..._248k_s21_ep8000.pt` (**1.025 NEW rec**), `..._264k_s21_ep8000.pt` (**teacher 70.5% NEW rec**), `..._328k_s21_ep8000.pt` (**val 0.753 HUGE NEW rec**, both perfect `suis d'accord ?`), `..._368k_s21_ep8000.pt` (latest, 0.889, `Peurr.\n\n`)
+(previous: `..._d16_120k_epr4.pt`, val 1.352 / teacher 63.2%). Recipe: ep-8000 sweet spot, val 1.889→1.025 over 176k, teacher 63→70.5% record, free-run FR constant with new comps `vais d'accord`, `Oui, Et toi ?`, `Je vais`, `Bon, je`, `soir,`, `Oui, toi`, `Bonne`. Corpus s21 ~64% at 320k, runway remains. Next: continue ep-8000 identical 368k→376k, spaces attractor since 336k after record 0.753 but val <0.9 teacher stable → will self-resolve like d16 64k Ouisateur → 72k best.
 
 Full narrative: `docs/SESSION_2026-09-20.md`.
 Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
