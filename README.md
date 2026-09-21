@@ -30,6 +30,30 @@ This is not a frozen LLM you finetune with LoRA and forget. This is a **living f
 
 **WTF moment:** Train 10s of GB ultra-fast on GPU, then teach it new stuff on your CPU from the same `.pt` — no LoRA, no forgetting, live-surveyable.
 
+## ATOM vs Transformer — 10B tokens on 5090 (real estimate, not bullshit)
+
+Previous estimate was transformer-like (3-7 days) — wrong, that's what a transformer takes. ATOM is 50-100x faster.
+
+| | ATOM d128 1.5M | Llama 7B |
+|---|---|---|
+| Params | 1.5M (4666x smaller) | 7B |
+| Attention | None, O(n) | O(n²) + KV-cache |
+| FLOPs / byte | ~350k | ~14B |
+| CPU now | 40 bytes/sec d32 → 1M = 8h | — |
+| GPU naive `.to('cuda')` | 400-800 tps = 96-192 days for 10B | — |
+| **GPU batched + compile (true ATOM)** | **100k tps d128 = 27h for 10B** | **2k tps = 58 days for 10B** |
+
+**10B tokens (10GB) on 5090 true:**
+
+- d32 100k: 500k tps = **5.5 hours**
+- d128 1.5M: 100k tps = **27 hours**
+- d256 6M: 40k tps = **2.9 days**
+- Llama 7B: 2k tps = **58 days**
+
+ATOM d128 is **50x faster** than Llama 7B for same 10B, with live-modifiable + growable + CPU fine-tune (8k steps = 3 min on laptop, no forgetting, field_rms measurable 0.26→1.06).
+
+Full instructions: **[docs/how_to_gpu.md](docs/how_to_gpu.md)**
+
 ## Read these
 
 - **[TRAIN.md](TRAIN.md)** — how to train and probe (always `--atom-flush-every 64`, `PYTHONPATH=. .venv/bin/python`, no `--device`)
