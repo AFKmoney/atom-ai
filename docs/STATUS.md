@@ -35,6 +35,7 @@ Retrain log (re-measured this session; doc values in `MEASURE_LOG.md``MEASURE_LO
 
 | step | val (ppl) | teacher | field_rms primed | gen |
 |------|-----------|---------|------------------|-----|
+| 736k retr | 0.854/2.35 | 73.5% (vow 72.9% cons 71.1% sp 85.1%) | 0.44 | `Bonne / Bon / Avec` probe b'           tu     tu    ' |
 | 728k retr | 0.853/2.35 | 73.8% (vow 73.6% cons 69.9% sp 83.0%) | 0.44 | `Oui, / Oui, / Oui,` probe b"             t''''''''''" |
 
 **v2 proof: infinite, growable, CPU-scalable, live-modifiable**

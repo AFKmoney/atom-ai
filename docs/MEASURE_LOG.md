@@ -252,6 +252,7 @@ of the table above; 1088k→1504k new.
 
 | step | val (ppl) | teacher | field_rms cold/primed | gen |
 |------|-----------|---------|-----------------------|-----|
+| 736k retr | 0.854/2.35 | 73.5% (vow 72.9% cons 71.1% sp 85.1%) | 0.04/0.44 | `Bonne / Bon / Avec` probe b'           tu     tu    ' |
 | 728k retr | 0.853/2.35 | 73.8% (vow 73.6% cons 69.9% sp 83.0%) | 0.04/0.44 | `Oui, / Oui, / Oui,` probe b"             t''''''''''" |
 
 ## v2 summary: new race
