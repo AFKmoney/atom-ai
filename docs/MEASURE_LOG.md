@@ -242,7 +242,8 @@ Net2Net préservant: lignes doublées tuilées+bruit, colonnes doublées zero-pa
 | 1072k ms1M | 1.017/2.76 | ~71% | `Peurra..` / `Peuu    ` / `Bonne   ` | Peurra../Bonne |
 | 1080k ms1M | 1.036/2.81 | 74.8% | `Peuu''''` / `Peut-ili` / `Bon,    ` | **Peut-ili returns**, field_rms 0.05 cold / 1.06 primed NEW HIGH, ids/idi |
 
-## RETRAIN 728k→1500k (2026-09-21, session arena/01a0c533, from 720k ckpt)
+## RETRAIN 728k→1500k (2026-09-21, session arena/01a0c533, from 720k ckpt)| 728k retr | 0.853/2.35 | 73.8% (vow 73.6% cons 69.9% sp 83.0%) | 0.04/0.44 | `Oui, / Oui, / Oui,` probe None |
+
 
 1080k ckpt was never committed (PR #2 squashed main tops out at 720k; branch
 tip verified, deleted post-merge). Re-running 728k→1500k same recipe/seed from

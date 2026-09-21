@@ -31,7 +31,8 @@ started at global step 496k, so `skip = start − 496000` for start < 1M; from
 the 1M wrap, 2nd epoch `skip = start % 500000` (= start − 1000000) per the
 1080k→ plan (`1080k = 108% = 80k into 2nd epoch`).
 
-Retrain log (re-measured this session; doc values in `MEASURE_LOG.md`):
+Retrain log (re-measured this session; doc values in `MEASURE_LOG.md`):| 728k retr | 0.853/2.35 | 73.8% (vow 73.6% cons 69.9% sp 83.0%) | 0.44 | `Oui, / Oui, / Oui,` probe None |
+
 
 | step | val (ppl) | teacher | field_rms primed | gen |
 |------|-----------|---------|------------------|-----|
