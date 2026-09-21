@@ -2,8 +2,41 @@
 
 A tick-based toroidal field. **Not a Transformer.**
 No softmax attention, no BPE, no KV-cache, no HF tokenizer on the live path.
+**New race: infinite, growable, CPU-scalable, live-modifiable.**
 
 ## One sentence
+
+A UTF-8 byte becomes an atom; atoms live in a field α that RK4 advances;
+the surface reads **the last atom + α** and emits the next byte.
+The same `.pt` can be grown (d16→d32→d64…) and taught forever — stream, no forgetting.
+
+## Why this is a new race (v2 proof: 0→1080k ms1M, d32, no patches)
+
+**Growable to infinity:** `tools/grow_checkpoint.py` Net2Net-preserving:
+- doubled output rows tiled+noise (symmetry breakers)
+- doubled input cols zero-padded (old outputs exact)
+- embeddings tiled+noise
+- JL interleaved + frozen grown (α-branch exact on tiled α)
+Result: d16 120k (val 1.352 / teacher 63.2%) → d32 grown init → 8k later 56% teacher, 16k 61.3% = d16 best. No restart. You can chain d32→d64→d128 same lineage. Field and readout are co-adapted — exact function ≠ same trajectory because d32 saturates at ~3000 steps vs ~850 d16 — but training re-adapts in 1 chunk.
+
+**Infinitely learnable, not frozen:**
+- Stream forever: `--stream --data-glob 'data/corpus_fr_medium*.txt' --loop-shards --chunk-bytes 65536 --stream-skip-packets k*steps` → fresh 64kB chunks each run.
+- No replay (quarantined — drove CE 2.99→0.008 by reciting ring), no MERGE, no payload-copy (both off at train AND chat).
+- `episode-reset --episode-length 8000` (was 6000 until 48k, 8000 sweet spot since 56k, tested 12000 worse): ~37.5% transient / 62.5% saturated for d32, exposes readout to both regimes. Episodes are far longer than saturation transient, so field persists across dialogue scales — not a wipe.
+- `atom-flush-every 64` mandatory everywhere (train + primer probes) or atoms grow unbounded → 20× slowdown (same for probing).
+- Same checkpoint lineage 0→120k d16 → 0→496k s21 → 504k→1M ms1M (s21 500k + s7 500k =1M) → 1080k 2nd epoch: val 1.765→0.551, teacher 56%→75.2%, no catastrophic forgetting. Val spikes at shard boundaries (1.645@632k, 1.49@976k) then descends — knowledge intact.
+
+**CPU-scalable, GPU-fast:**
+- No attention = O(n) not O(n²). Surface = `α-MLP(α) + 0.3*frozen_JL(α) + last_atom(2-gram + dentate top-25% + φ)`.
+- CPU: d16 50-72 tick/s, d32 37-50 tps. 8k steps = 3-4 min. 1M = 125 chunks = ~8h CPU. GPU would be 10-100× — 10s GB in hours.
+- `field-contrast-weight 0` — dead hinge (grads zero, 3 forwards/step wasted), cut for free speedup. `efference-every 10` = 1 tick/10 predict own byte no-grad → commit → CE on gold next — ~0% tps cost, 800/8000 eff ticks verified, not guilty of collapse.
+
+**Live-modifiable without breaking + live survey:**
+- `.pt` is infinitely trainable: `PYTHONPATH=. .venv/bin/python tools/run_atom_native.py --resume your.pt --data your_corpus.txt ...` on CPU, even after GPU pre-train on 10s GB.
+- Read-only probes never stop training: `tools/probe_field_persistence.py` (field_rms cold ~0.04 / primed 0.26@560k→0.43@768k→0.62@872k→0.87@1M→1.06@1080k towards 3.0), `tools/probe_field_regimes.py --primer-packets 3500` (cold vs primed 3500), `tools/diagnose_teacher.py --max-span-bytes 1` (must, default span-4 gives ~22% artefact). Probe shows field differs across prompts but surface logits nearly identical when field not reliably read — Transformer-regime risk. Our scaling improves it.
+- You can watch the model live while it trains — `field_rms`, `n_atoms`, generation `Peut-être`, `Peux qu'`, `Parler,`, `Je il`, clean stop `\n\n`.
+
+## One sentence (original)
 
 A UTF-8 byte becomes an atom; atoms live in a field α that RK4 advances;
 the surface reads **the last atom + α** and emits the next byte.
