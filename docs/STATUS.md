@@ -3,6 +3,13 @@
 Repo: https://github.com/AFKmoney/atom-ai
 English docs only. **No fluency claim yet — but scaling is real.**
 
+
+## Latest (branch `ms1M-continue-d32`, 2026-09-21)
+
+Resume from highest GH weight **736k** (1080k/872k/1M `.pt` absent on remote; docs only).
+- **744k**: val **0.821/2.27**, teacher **73.8%**, gen `Oui,` / `Je  `, ~50 tps. Probe 3500 pending.
+- Loop running toward **1500k**, exact original recipe, 0 patches.
+
 ## Active line: d32 on s21 + s7 = 1M ms1M (this branch) — NEW RACE PROOF
 
 Grown from the d16 tip (`tools/grow_checkpoint.py`, Net2Net-style),
