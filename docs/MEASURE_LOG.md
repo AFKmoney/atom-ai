@@ -242,6 +242,17 @@ Net2Net préservant: lignes doublées tuilées+bruit, colonnes doublées zero-pa
 | 1072k ms1M | 1.017/2.76 | ~71% | `Peurra..` / `Peuu    ` / `Bonne   ` | Peurra../Bonne |
 | 1080k ms1M | 1.036/2.81 | 74.8% | `Peuu''''` / `Peut-ili` / `Bon,    ` | **Peut-ili returns**, field_rms 0.05 cold / 1.06 primed NEW HIGH, ids/idi |
 
+## RETRAIN 728k→1500k (2026-09-21, session arena/01a0c533, from 720k ckpt)
+
+1080k ckpt was never committed (PR #2 squashed main tops out at 720k; branch
+tip verified, deleted post-merge). Re-running 728k→1500k same recipe/seed from
+`atom_native_step_720000_d32_ms1M.pt`. Skip = start−496000 for start<1M,
+start%500000 from the 1M wrap. Re-measured 728k→1080k = reproducibility check
+of the table above; 1088k→1504k new.
+
+| step | val (ppl) | teacher | field_rms cold/primed | gen |
+|------|-----------|---------|-----------------------|-----|
+
 ## v2 summary: new race
 
 - **Growable:** d16 120k → d32 via `grow_checkpoint.py` (Net2Net, old outputs exact, JL interleaved) → 1 chunk to re-adapt. Chainable to d64/d128 same lineage.

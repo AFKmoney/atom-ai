@@ -14,6 +14,28 @@ payload-copy off, hard obligatory readout, `--efference-every 10`,
 `--episode-reset --episode-length 8000` (was 6000 until 48k, 8000 sweet spot since 56k, tested 12000 worse), `--field-contrast-weight 0`
 (dead hinge, cut), LR 5e-5/1.2e-4, `--atom-flush-every 64` mandatory.
 
+## 2026-09-21 — state restore + retrain 728k→1500k (session `arena/01a0c533`)
+
+The 1080k state was **doc-only**: PR #2 (merged 2026-09-21 17:34 UTC, squashed
+into main) carries ms1M artifacts only up to
+`atom_native_step_720000_d32_ms1M.pt` — the 728k→1080k `.pt`/metrics/logs were
+never committed (branch tip `69ea7297` verified via GitHub API; branch deleted
+post-merge, no releases). Resume point: **720k** (teacher 72.0%, field_rms cold
+0.04 / primed 0.40 re-measured this session, consistent with docs).
+
+This session re-runs **728k→1500k** on the exact same recipe/seed (pure
+scaling, 0 patches): re-measured 728k→1080k rows double as a reproducibility
+check of the documented trajectory; 1088k→1504k is new 2nd-epoch territory.
+Skip convention (uniform across the 28 surviving ms1M logs): the 1M stream
+started at global step 496k, so `skip = start − 496000` for start < 1M; from
+the 1M wrap, 2nd epoch `skip = start % 500000` (= start − 1000000) per the
+1080k→ plan (`1080k = 108% = 80k into 2nd epoch`).
+
+Retrain log (re-measured this session; doc values in `MEASURE_LOG.md`):
+
+| step | val (ppl) | teacher | field_rms primed | gen |
+|------|-----------|---------|------------------|-----|
+
 **v2 proof: infinite, growable, CPU-scalable, live-modifiable**
 - Growable: d16 120k → d32 → d64 via `grow_checkpoint.py` same lineage
 - Infinite learning: stream + loop-shards + skip-packets, no replay, no forgetting, teacher 56%→75.2%
@@ -166,7 +188,9 @@ Numbers: `docs/MEASURE_LOG.md`. Train: `TRAIN.md`.
 
 ## Next (one at a time)
 
-1. Continue ms1M 1080k→1.5M second epoch same recipe (pure scaling)
+1. **IN PROGRESS:** retrain ms1M 728k→1500k from 720k ckpt (1080k ckpt was never
+   committed — see restore note above), same recipe ep8000 (pure scaling).
+   At 1088k: continue 2nd epoch to 1504k per plan.
 2. If spaces attractor persists: dosage ep-10000 or LR decay 3e-5/7.2e-5 single variable
 3. Corpus runway: 10s GB on GPU ultra-fast, then on-demand CPU teach from same .pt
 4. Do **not** reopen payload-copy, MERGE retune, replay, contrast, 3.5M resume. Do not declare fluent. Do not stack mechanisms.
