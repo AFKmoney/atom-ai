@@ -52,7 +52,16 @@ Previous estimate was transformer-like (3-7 days) — wrong, that's what a trans
 
 ATOM d128 is **50x faster** than Llama 7B for same 10B, with live-modifiable + growable + CPU fine-tune (8k steps = 3 min on laptop, no forgetting, field_rms measurable 0.26→1.06).
 
-Full instructions: **[docs/how_to_gpu.md](docs/how_to_gpu.md)**
+**200GB (200B) on a single normal 5090 — outshining server farms:**
+
+- d32 100k: 110h = **4.5 days**
+- d128 1.5M: 540h = **22.5 days = 1 month feasible**
+- d256 6M: 58 days = **1.9 months**
+- Llama 7B: 1160 days = **3.1 years**
+
+200GB in 1 month on normal GPU is 100% feasible with d128 (22.5 days). Llama 7B needs 3.1 years on same 1x 5090, or 8x H100 cluster $500k. ATOM outshines server farms: train 10s-100s GB ultra-fast on 1x 5090 ($2000) in living room, no H100 farm needed, then fine-tune private domain on CPU.
+
+Full instructions + server farm comparison: **[docs/how_to_gpu.md](docs/how_to_gpu.md)**
 
 ## Read these
 
