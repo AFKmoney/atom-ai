@@ -1,0 +1,481 @@
+train lock skipped (--allow-parallel-train)
+stream skip: advancing 256000 packet transitions...
+stream skip done: packets_seen=262144
+resumed weights from checkpoints/byte_tick/atom_native_step_752000_d32_ms1M.pt (recorded step=752000, legacy_surface_migrated=False, span_head_migrated=False)
+atomizer pack_mode=linguistic max_span_bytes=1
+dynamics on load: energy_decay=0.30000001192092896 -> 0.30000001192092896 (repaired=False, bounds=(0.3, 0.95))
+MERGE gates: enable=False coherence_thr=0.450 energy_floor=0.080
+field_obligatory_hard=ON hard-v2+ (mix_floor=1.0, freeze bypass, logits=frozen+cap*(α_MLP+payload_prod))
+payload_copy=False (train-time copy-bias branch)
+last_atom_readout=True (byte-tick 2-gram + dentate)
+efference_every=10 (0=off)
+optimizer groups: field/other lr=5e-05 (13 tensors), surface lr=0.00012 (25 tensors); energy_decay_bounds=(0.3, 0.95); field_max_rms=3.0
+stream mode: 2 shard(s), chunk_bytes=65536, loop_shards=True, stream_buffer=2048, stream_prefetch=True
+optimizer restore skipped: surface LR param groups differ from checkpoint
+step=0752001 (run 1/8000) loss=4.59785 byte_ppl=99.271 atoms=1 merges=0 field=0.0516 rms=0.0019 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752025 (run 25/8000) loss=2.71188 byte_ppl=15.058 atoms=27 merges=0 field=0.7247 rms=0.0227 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752050 (run 50/8000) loss=3.13283 byte_ppl=22.939 atoms=55 merges=0 field=1.2541 rms=0.0392 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752075 (run 75/8000) loss=1.32385 byte_ppl=3.758 atoms=12 merges=0 field=1.7078 rms=0.0534 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752100 (run 100/8000) loss=6.73472 byte_ppl=841.105 atoms=40 merges=0 field=2.1809 rms=0.0682 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752125 (run 125/8000) loss=0.00249 byte_ppl=1.002 atoms=67 merges=0 field=2.5382 rms=0.0793 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752150 (run 150/8000) loss=0.37440 byte_ppl=1.454 atoms=25 merges=0 field=2.7870 rms=0.0871 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752175 (run 175/8000) loss=0.01386 byte_ppl=1.014 atoms=52 merges=0 field=3.0864 rms=0.0965 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752200 (run 200/8000) loss=7.68440 byte_ppl=2174.161 atoms=9 merges=0 field=3.3419 rms=0.1044 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752225 (run 225/8000) loss=2.67695 byte_ppl=14.541 atoms=36 merges=0 field=3.5702 rms=0.1116 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752250 (run 250/8000) loss=4.93740 byte_ppl=139.408 atoms=64 merges=0 field=3.8355 rms=0.1199 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752275 (run 275/8000) loss=0.01115 byte_ppl=1.011 atoms=21 merges=0 field=4.1207 rms=0.1288 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752300 (run 300/8000) loss=0.00124 byte_ppl=1.001 atoms=49 merges=0 field=4.3761 rms=0.1368 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752325 (run 325/8000) loss=0.00253 byte_ppl=1.003 atoms=5 merges=0 field=4.5809 rms=0.1432 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752350 (run 350/8000) loss=5.02186 byte_ppl=151.694 atoms=33 merges=0 field=4.8782 rms=0.1524 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752375 (run 375/8000) loss=3.41606 byte_ppl=30.449 atoms=60 merges=0 field=5.0970 rms=0.1593 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752400 (run 400/8000) loss=2.34947 byte_ppl=10.480 atoms=18 merges=0 field=5.3174 rms=0.1662 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752425 (run 425/8000) loss=0.01808 byte_ppl=1.018 atoms=45 merges=0 field=5.5296 rms=0.1728 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752450 (run 450/8000) loss=2.28873 byte_ppl=9.862 atoms=3 merges=0 field=5.7176 rms=0.1787 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752475 (run 475/8000) loss=0.00024 byte_ppl=1.000 atoms=30 merges=0 field=5.9537 rms=0.1861 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752500 (run 500/8000) loss=8.30344 byte_ppl=4037.750 atoms=58 merges=0 field=6.1849 rms=0.1933 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752525 (run 525/8000) loss=0.00113 byte_ppl=1.001 atoms=14 merges=0 field=6.3905 rms=0.1997 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752550 (run 550/8000) loss=4.82906 byte_ppl=125.093 atoms=42 merges=0 field=6.6104 rms=0.2066 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752575 (run 575/8000) loss=0.81032 byte_ppl=2.249 atoms=69 merges=0 field=6.8630 rms=0.2145 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752600 (run 600/8000) loss=4.48127 byte_ppl=88.347 atoms=27 merges=0 field=7.0726 rms=0.2210 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752625 (run 625/8000) loss=0.00014 byte_ppl=1.000 atoms=54 merges=0 field=7.3024 rms=0.2282 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752650 (run 650/8000) loss=0.13415 byte_ppl=1.144 atoms=11 merges=0 field=7.4497 rms=0.2328 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752675 (run 675/8000) loss=0.58434 byte_ppl=1.794 atoms=38 merges=0 field=7.6610 rms=0.2394 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752700 (run 700/8000) loss=5.90094 byte_ppl=365.380 atoms=66 merges=0 field=7.8525 rms=0.2454 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752725 (run 725/8000) loss=0.00024 byte_ppl=1.000 atoms=23 merges=0 field=8.0079 rms=0.2502 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752750 (run 750/8000) loss=0.27732 byte_ppl=1.320 atoms=51 merges=0 field=8.1889 rms=0.2559 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752775 (run 775/8000) loss=1.27743 byte_ppl=3.587 atoms=8 merges=0 field=8.3666 rms=0.2615 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752800 (run 800/8000) loss=5.24459 byte_ppl=189.539 atoms=36 merges=0 field=8.5215 rms=0.2663 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752825 (run 825/8000) loss=0.00448 byte_ppl=1.004 atoms=63 merges=0 field=8.6972 rms=0.2718 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752850 (run 850/8000) loss=5.57325 byte_ppl=263.288 atoms=20 merges=0 field=8.8964 rms=0.2780 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752875 (run 875/8000) loss=0.00004 byte_ppl=1.000 atoms=47 merges=0 field=9.0508 rms=0.2828 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752900 (run 900/8000) loss=4.31665 byte_ppl=74.937 atoms=5 merges=0 field=9.2727 rms=0.2898 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752925 (run 925/8000) loss=0.75041 byte_ppl=2.118 atoms=32 merges=0 field=9.4315 rms=0.2947 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752950 (run 950/8000) loss=0.06333 byte_ppl=1.065 atoms=60 merges=0 field=9.5630 rms=0.2988 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0752975 (run 975/8000) loss=0.00092 byte_ppl=1.001 atoms=16 merges=0 field=9.6943 rms=0.3030 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753000 (run 1000/8000) loss=0.44930 byte_ppl=1.567 atoms=44 merges=0 field=9.8088 rms=0.3065 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753025 (run 1025/8000) loss=0.27450 byte_ppl=1.316 atoms=1 merges=0 field=9.9399 rms=0.3106 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753050 (run 1050/8000) loss=0.05350 byte_ppl=1.055 atoms=29 merges=0 field=10.1173 rms=0.3162 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753075 (run 1075/8000) loss=2.06619 byte_ppl=7.895 atoms=56 merges=0 field=10.2547 rms=0.3205 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753100 (run 1100/8000) loss=0.00401 byte_ppl=1.004 atoms=14 merges=0 field=10.3465 rms=0.3233 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753125 (run 1125/8000) loss=0.92982 byte_ppl=2.534 atoms=41 merges=0 field=10.4942 rms=0.3279 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753150 (run 1150/8000) loss=5.50000 byte_ppl=244.692 atoms=69 merges=0 field=10.5912 rms=0.3310 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753175 (run 1175/8000) loss=0.00215 byte_ppl=1.002 atoms=25 merges=0 field=10.6733 rms=0.3335 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753200 (run 1200/8000) loss=0.01666 byte_ppl=1.017 atoms=53 merges=0 field=10.7854 rms=0.3370 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753225 (run 1225/8000) loss=0.00046 byte_ppl=1.000 atoms=10 merges=0 field=10.8906 rms=0.3403 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753250 (run 1250/8000) loss=0.05297 byte_ppl=1.054 atoms=38 merges=0 field=11.0032 rms=0.3439 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753275 (run 1275/8000) loss=0.00029 byte_ppl=1.000 atoms=65 merges=0 field=11.1584 rms=0.3487 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753300 (run 1300/8000) loss=6.24001 byte_ppl=512.863 atoms=22 merges=0 field=11.3098 rms=0.3534 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753325 (run 1325/8000) loss=0.00025 byte_ppl=1.000 atoms=49 merges=0 field=11.3223 rms=0.3538 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753350 (run 1350/8000) loss=9.05291 byte_ppl=8543.337 atoms=7 merges=0 field=11.3963 rms=0.3561 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753375 (run 1375/8000) loss=0.00007 byte_ppl=1.000 atoms=34 merges=0 field=11.4686 rms=0.3584 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753400 (run 1400/8000) loss=6.25621 byte_ppl=521.241 atoms=62 merges=0 field=11.5936 rms=0.3623 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753425 (run 1425/8000) loss=1.21360 byte_ppl=3.366 atoms=19 merges=0 field=11.7125 rms=0.3660 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753450 (run 1450/8000) loss=1.56881 byte_ppl=4.801 atoms=47 merges=0 field=11.8130 rms=0.3692 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753475 (run 1475/8000) loss=0.00148 byte_ppl=1.001 atoms=3 merges=0 field=11.8737 rms=0.3711 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753500 (run 1500/8000) loss=2.95026 byte_ppl=19.111 atoms=31 merges=0 field=11.9352 rms=0.3730 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753525 (run 1525/8000) loss=0.00025 byte_ppl=1.000 atoms=58 merges=0 field=11.9842 rms=0.3745 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753550 (run 1550/8000) loss=8.08061 byte_ppl=3231.201 atoms=16 merges=0 field=12.1122 rms=0.3785 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753575 (run 1575/8000) loss=0.00147 byte_ppl=1.001 atoms=43 merges=0 field=12.1734 rms=0.3804 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753600 (run 1600/8000) loss=3.32991 byte_ppl=27.936 atoms=71 merges=0 field=12.2936 rms=0.3842 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753625 (run 1625/8000) loss=0.00286 byte_ppl=1.003 atoms=27 merges=0 field=12.3568 rms=0.3862 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753650 (run 1650/8000) loss=4.48067 byte_ppl=88.294 atoms=55 merges=0 field=12.3539 rms=0.3861 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753675 (run 1675/8000) loss=0.00211 byte_ppl=1.002 atoms=12 merges=0 field=12.3213 rms=0.3850 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753700 (run 1700/8000) loss=11.03131 byte_ppl=61778.463 atoms=40 merges=0 field=12.4472 rms=0.3890 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753725 (run 1725/8000) loss=0.00257 byte_ppl=1.003 atoms=67 merges=0 field=12.5188 rms=0.3912 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753750 (run 1750/8000) loss=1.78686 byte_ppl=5.971 atoms=25 merges=0 field=12.5439 rms=0.3920 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753775 (run 1775/8000) loss=3.16901 byte_ppl=23.784 atoms=52 merges=0 field=12.6124 rms=0.3941 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753800 (run 1800/8000) loss=11.53370 byte_ppl=102099.279 atoms=9 merges=0 field=12.6729 rms=0.3960 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753825 (run 1825/8000) loss=0.00510 byte_ppl=1.005 atoms=36 merges=0 field=12.7042 rms=0.3970 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753850 (run 1850/8000) loss=0.01063 byte_ppl=1.011 atoms=64 merges=0 field=12.8047 rms=0.4001 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753875 (run 1875/8000) loss=0.00197 byte_ppl=1.002 atoms=21 merges=0 field=12.8597 rms=0.4019 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753900 (run 1900/8000) loss=3.99392 byte_ppl=54.267 atoms=49 merges=0 field=12.9247 rms=0.4039 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753925 (run 1925/8000) loss=0.00713 byte_ppl=1.007 atoms=5 merges=0 field=12.9702 rms=0.4053 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753950 (run 1950/8000) loss=5.00389 byte_ppl=148.992 atoms=33 merges=0 field=12.9876 rms=0.4059 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0753975 (run 1975/8000) loss=3.74135 byte_ppl=42.155 atoms=60 merges=0 field=13.0537 rms=0.4079 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754000 (run 2000/8000) loss=0.05068 byte_ppl=1.052 atoms=18 merges=0 field=13.1275 rms=0.4102 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754025 (run 2025/8000) loss=1.52506 byte_ppl=4.595 atoms=45 merges=0 field=13.0992 rms=0.4094 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754050 (run 2050/8000) loss=9.07518 byte_ppl=8735.742 atoms=3 merges=0 field=13.1288 rms=0.4103 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754075 (run 2075/8000) loss=4.00946 byte_ppl=55.117 atoms=30 merges=0 field=13.1416 rms=0.4107 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754100 (run 2100/8000) loss=0.00550 byte_ppl=1.006 atoms=58 merges=0 field=13.1845 rms=0.4120 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754125 (run 2125/8000) loss=0.00049 byte_ppl=1.000 atoms=14 merges=0 field=13.2711 rms=0.4147 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754150 (run 2150/8000) loss=6.43811 byte_ppl=625.224 atoms=42 merges=0 field=13.3508 rms=0.4172 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754175 (run 2175/8000) loss=0.00110 byte_ppl=1.001 atoms=69 merges=0 field=13.3556 rms=0.4174 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754200 (run 2200/8000) loss=0.03414 byte_ppl=1.035 atoms=27 merges=0 field=13.3576 rms=0.4174 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754225 (run 2225/8000) loss=0.00282 byte_ppl=1.003 atoms=54 merges=0 field=13.3666 rms=0.4177 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754250 (run 2250/8000) loss=7.15945 byte_ppl=1286.208 atoms=11 merges=0 field=13.3793 rms=0.4181 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754275 (run 2275/8000) loss=1.19999 byte_ppl=3.320 atoms=38 merges=0 field=13.4501 rms=0.4203 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754300 (run 2300/8000) loss=6.45845 byte_ppl=638.068 atoms=66 merges=0 field=13.4302 rms=0.4197 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754325 (run 2325/8000) loss=0.00285 byte_ppl=1.003 atoms=23 merges=0 field=13.4291 rms=0.4197 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754350 (run 2350/8000) loss=7.91983 byte_ppl=2751.292 atoms=51 merges=0 field=13.4562 rms=0.4205 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754375 (run 2375/8000) loss=0.32924 byte_ppl=1.390 atoms=8 merges=0 field=13.4605 rms=0.4206 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754400 (run 2400/8000) loss=0.02403 byte_ppl=1.024 atoms=36 merges=0 field=13.4801 rms=0.4213 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754425 (run 2425/8000) loss=9.50091 byte_ppl=13371.862 atoms=63 merges=0 field=13.5931 rms=0.4248 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754450 (run 2450/8000) loss=5.68836 byte_ppl=295.409 atoms=20 merges=0 field=13.6494 rms=0.4265 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754475 (run 2475/8000) loss=0.00204 byte_ppl=1.002 atoms=47 merges=0 field=13.5983 rms=0.4249 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754500 (run 2500/8000) loss=6.00354 byte_ppl=404.859 atoms=5 merges=0 field=13.6112 rms=0.4254 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754525 (run 2525/8000) loss=0.00187 byte_ppl=1.002 atoms=32 merges=0 field=13.5742 rms=0.4242 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754550 (run 2550/8000) loss=0.05728 byte_ppl=1.059 atoms=60 merges=0 field=13.5583 rms=0.4237 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754575 (run 2575/8000) loss=1.66241 byte_ppl=5.272 atoms=16 merges=0 field=13.6035 rms=0.4251 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754600 (run 2600/8000) loss=3.61046 byte_ppl=36.983 atoms=44 merges=0 field=13.6318 rms=0.4260 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754625 (run 2625/8000) loss=0.76978 byte_ppl=2.159 atoms=1 merges=0 field=13.6701 rms=0.4272 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754650 (run 2650/8000) loss=0.01278 byte_ppl=1.013 atoms=29 merges=0 field=13.6985 rms=0.4281 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754675 (run 2675/8000) loss=0.11932 byte_ppl=1.127 atoms=56 merges=0 field=13.7460 rms=0.4296 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754700 (run 2700/8000) loss=8.00266 byte_ppl=2988.892 atoms=14 merges=0 field=13.7447 rms=0.4295 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754725 (run 2725/8000) loss=0.00439 byte_ppl=1.004 atoms=41 merges=0 field=13.7545 rms=0.4298 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754750 (run 2750/8000) loss=0.00044 byte_ppl=1.000 atoms=69 merges=0 field=13.7533 rms=0.4298 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754775 (run 2775/8000) loss=0.04750 byte_ppl=1.049 atoms=25 merges=0 field=13.7796 rms=0.4306 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754800 (run 2800/8000) loss=4.47893 byte_ppl=88.141 atoms=53 merges=0 field=13.8118 rms=0.4316 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754825 (run 2825/8000) loss=0.00778 byte_ppl=1.008 atoms=10 merges=0 field=13.8537 rms=0.4329 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754850 (run 2850/8000) loss=17.32457 byte_ppl=33416940.062 atoms=38 merges=0 field=13.8817 rms=0.4338 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754875 (run 2875/8000) loss=0.89827 byte_ppl=2.455 atoms=65 merges=0 field=13.8602 rms=0.4331 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754900 (run 2900/8000) loss=0.08438 byte_ppl=1.088 atoms=22 merges=0 field=13.9810 rms=0.4369 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754925 (run 2925/8000) loss=3.94176 byte_ppl=51.509 atoms=49 merges=0 field=14.0423 rms=0.4388 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754950 (run 2950/8000) loss=0.00134 byte_ppl=1.001 atoms=7 merges=0 field=14.0718 rms=0.4397 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0754975 (run 2975/8000) loss=2.11997 byte_ppl=8.331 atoms=34 merges=0 field=14.0596 rms=0.4394 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755000 (run 3000/8000) loss=13.67402 byte_ppl=868065.694 atoms=62 merges=0 field=14.1337 rms=0.4417 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755025 (run 3025/8000) loss=3.48585 byte_ppl=32.650 atoms=19 merges=0 field=14.1504 rms=0.4422 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755050 (run 3050/8000) loss=0.53075 byte_ppl=1.700 atoms=47 merges=0 field=14.0886 rms=0.4403 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755075 (run 3075/8000) loss=0.49684 byte_ppl=1.644 atoms=3 merges=0 field=14.0777 rms=0.4399 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755100 (run 3100/8000) loss=12.87535 byte_ppl=390566.611 atoms=31 merges=0 field=14.1188 rms=0.4412 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755125 (run 3125/8000) loss=2.25132 byte_ppl=9.500 atoms=58 merges=0 field=14.1147 rms=0.4411 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755150 (run 3150/8000) loss=0.79075 byte_ppl=2.205 atoms=16 merges=0 field=14.0742 rms=0.4398 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755175 (run 3175/8000) loss=0.04686 byte_ppl=1.048 atoms=43 merges=0 field=14.0988 rms=0.4406 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755200 (run 3200/8000) loss=1.08505 byte_ppl=2.960 atoms=71 merges=0 field=14.1159 rms=0.4411 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755225 (run 3225/8000) loss=6.70994 byte_ppl=820.524 atoms=27 merges=0 field=14.0989 rms=0.4406 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755250 (run 3250/8000) loss=6.55738 byte_ppl=704.422 atoms=55 merges=0 field=14.1200 rms=0.4413 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755275 (run 3275/8000) loss=0.60817 byte_ppl=1.837 atoms=12 merges=0 field=14.1416 rms=0.4419 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755300 (run 3300/8000) loss=9.34770 byte_ppl=11472.408 atoms=40 merges=0 field=14.2063 rms=0.4439 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755325 (run 3325/8000) loss=0.00076 byte_ppl=1.001 atoms=67 merges=0 field=14.1159 rms=0.4411 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755350 (run 3350/8000) loss=0.84471 byte_ppl=2.327 atoms=25 merges=0 field=14.1514 rms=0.4422 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755375 (run 3375/8000) loss=0.40000 byte_ppl=1.492 atoms=52 merges=0 field=14.1227 rms=0.4413 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755400 (run 3400/8000) loss=0.00171 byte_ppl=1.002 atoms=9 merges=0 field=14.1514 rms=0.4422 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755425 (run 3425/8000) loss=0.01071 byte_ppl=1.011 atoms=36 merges=0 field=14.1663 rms=0.4427 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755450 (run 3450/8000) loss=3.18745 byte_ppl=24.227 atoms=64 merges=0 field=14.1601 rms=0.4425 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755475 (run 3475/8000) loss=0.81887 byte_ppl=2.268 atoms=21 merges=0 field=14.2137 rms=0.4442 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755500 (run 3500/8000) loss=6.07140 byte_ppl=433.288 atoms=49 merges=0 field=14.2406 rms=0.4450 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755525 (run 3525/8000) loss=0.00081 byte_ppl=1.001 atoms=5 merges=0 field=14.1913 rms=0.4435 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755550 (run 3550/8000) loss=0.00009 byte_ppl=1.000 atoms=33 merges=0 field=14.2352 rms=0.4449 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755575 (run 3575/8000) loss=0.10536 byte_ppl=1.111 atoms=60 merges=0 field=14.2841 rms=0.4464 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755600 (run 3600/8000) loss=9.58179 byte_ppl=14498.320 atoms=18 merges=0 field=14.3142 rms=0.4473 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755625 (run 3625/8000) loss=0.78285 byte_ppl=2.188 atoms=45 merges=0 field=14.3056 rms=0.4471 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755650 (run 3650/8000) loss=4.77775 byte_ppl=118.836 atoms=3 merges=0 field=14.2948 rms=0.4467 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755675 (run 3675/8000) loss=0.00010 byte_ppl=1.000 atoms=30 merges=0 field=14.3103 rms=0.4472 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755700 (run 3700/8000) loss=0.00356 byte_ppl=1.004 atoms=58 merges=0 field=14.3502 rms=0.4484 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755725 (run 3725/8000) loss=0.02056 byte_ppl=1.021 atoms=14 merges=0 field=14.3828 rms=0.4495 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755750 (run 3750/8000) loss=2.97679 byte_ppl=19.625 atoms=42 merges=0 field=14.3791 rms=0.4493 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755775 (run 3775/8000) loss=0.00894 byte_ppl=1.009 atoms=69 merges=0 field=14.4257 rms=0.4508 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755800 (run 3800/8000) loss=13.71404 byte_ppl=903510.187 atoms=27 merges=0 field=14.4654 rms=0.4520 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755825 (run 3825/8000) loss=4.58022 byte_ppl=97.536 atoms=54 merges=0 field=14.4846 rms=0.4526 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755850 (run 3850/8000) loss=0.86699 byte_ppl=2.380 atoms=11 merges=0 field=14.4890 rms=0.4528 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755875 (run 3875/8000) loss=0.00749 byte_ppl=1.008 atoms=38 merges=0 field=14.5761 rms=0.4555 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755900 (run 3900/8000) loss=5.29607 byte_ppl=199.550 atoms=66 merges=0 field=14.5964 rms=0.4561 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755925 (run 3925/8000) loss=0.67928 byte_ppl=1.972 atoms=23 merges=0 field=14.5950 rms=0.4561 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755950 (run 3950/8000) loss=10.49594 byte_ppl=36168.541 atoms=51 merges=0 field=14.6142 rms=0.4567 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0755975 (run 3975/8000) loss=0.00147 byte_ppl=1.001 atoms=8 merges=0 field=14.6047 rms=0.4564 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756000 (run 4000/8000) loss=6.22549 byte_ppl=505.469 atoms=36 merges=0 field=14.6176 rms=0.4568 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756025 (run 4025/8000) loss=0.00014 byte_ppl=1.000 atoms=63 merges=0 field=14.6391 rms=0.4575 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756050 (run 4050/8000) loss=8.32353 byte_ppl=4119.658 atoms=20 merges=0 field=14.6523 rms=0.4579 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756075 (run 4075/8000) loss=0.01222 byte_ppl=1.012 atoms=47 merges=0 field=14.7074 rms=0.4596 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756100 (run 4100/8000) loss=0.00106 byte_ppl=1.001 atoms=5 merges=0 field=14.6490 rms=0.4578 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756125 (run 4125/8000) loss=0.17003 byte_ppl=1.185 atoms=32 merges=0 field=14.6696 rms=0.4584 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756150 (run 4150/8000) loss=4.77638 byte_ppl=118.674 atoms=60 merges=0 field=14.6866 rms=0.4590 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756175 (run 4175/8000) loss=0.00373 byte_ppl=1.004 atoms=16 merges=0 field=14.6617 rms=0.4582 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756200 (run 4200/8000) loss=8.81699 byte_ppl=6747.941 atoms=44 merges=0 field=14.7081 rms=0.4596 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756225 (run 4225/8000) loss=0.00076 byte_ppl=1.001 atoms=1 merges=0 field=14.7066 rms=0.4596 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756250 (run 4250/8000) loss=6.05539 byte_ppl=426.404 atoms=29 merges=0 field=14.7715 rms=0.4616 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756275 (run 4275/8000) loss=2.67182 byte_ppl=14.466 atoms=56 merges=0 field=14.7600 rms=0.4613 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756300 (run 4300/8000) loss=7.61321 byte_ppl=2024.759 atoms=14 merges=0 field=14.7697 rms=0.4616 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756325 (run 4325/8000) loss=0.00285 byte_ppl=1.003 atoms=41 merges=0 field=14.7749 rms=0.4617 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756350 (run 4350/8000) loss=11.32901 byte_ppl=83200.852 atoms=69 merges=0 field=14.6941 rms=0.4592 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756375 (run 4375/8000) loss=0.00271 byte_ppl=1.003 atoms=25 merges=0 field=14.6823 rms=0.4588 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756400 (run 4400/8000) loss=0.02167 byte_ppl=1.022 atoms=53 merges=0 field=14.6744 rms=0.4586 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756425 (run 4425/8000) loss=1.70442 byte_ppl=5.498 atoms=10 merges=0 field=14.6548 rms=0.4580 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756450 (run 4450/8000) loss=0.34560 byte_ppl=1.413 atoms=38 merges=0 field=14.6800 rms=0.4588 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756475 (run 4475/8000) loss=0.00218 byte_ppl=1.002 atoms=65 merges=0 field=14.7537 rms=0.4611 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756500 (run 4500/8000) loss=0.84296 byte_ppl=2.323 atoms=22 merges=0 field=14.7557 rms=0.4611 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756525 (run 4525/8000) loss=0.01185 byte_ppl=1.012 atoms=49 merges=0 field=14.7953 rms=0.4624 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756550 (run 4550/8000) loss=0.34925 byte_ppl=1.418 atoms=7 merges=0 field=14.7937 rms=0.4623 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756575 (run 4575/8000) loss=0.00008 byte_ppl=1.000 atoms=34 merges=0 field=14.7959 rms=0.4624 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756600 (run 4600/8000) loss=5.85967 byte_ppl=350.608 atoms=62 merges=0 field=14.7992 rms=0.4625 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756625 (run 4625/8000) loss=4.00770 byte_ppl=55.020 atoms=19 merges=0 field=14.7954 rms=0.4624 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756650 (run 4650/8000) loss=0.10234 byte_ppl=1.108 atoms=47 merges=0 field=14.7791 rms=0.4618 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756675 (run 4675/8000) loss=0.00013 byte_ppl=1.000 atoms=3 merges=0 field=14.7643 rms=0.4614 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756700 (run 4700/8000) loss=1.65505 byte_ppl=5.233 atoms=31 merges=0 field=14.7823 rms=0.4619 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756725 (run 4725/8000) loss=0.00027 byte_ppl=1.000 atoms=58 merges=0 field=14.7745 rms=0.4617 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756750 (run 4750/8000) loss=0.92724 byte_ppl=2.528 atoms=16 merges=0 field=14.7870 rms=0.4621 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756775 (run 4775/8000) loss=2.59738 byte_ppl=13.429 atoms=43 merges=0 field=14.7999 rms=0.4625 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756800 (run 4800/8000) loss=0.00152 byte_ppl=1.002 atoms=71 merges=0 field=14.7917 rms=0.4622 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756825 (run 4825/8000) loss=0.00163 byte_ppl=1.002 atoms=27 merges=0 field=14.8269 rms=0.4633 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756850 (run 4850/8000) loss=3.77188 byte_ppl=43.462 atoms=55 merges=0 field=14.8346 rms=0.4636 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756875 (run 4875/8000) loss=0.87192 byte_ppl=2.392 atoms=12 merges=0 field=14.8177 rms=0.4631 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756900 (run 4900/8000) loss=0.13485 byte_ppl=1.144 atoms=40 merges=0 field=14.8074 rms=0.4627 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756925 (run 4925/8000) loss=0.01418 byte_ppl=1.014 atoms=67 merges=0 field=14.8436 rms=0.4639 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756950 (run 4950/8000) loss=1.44797 byte_ppl=4.254 atoms=25 merges=0 field=14.8383 rms=0.4637 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0756975 (run 4975/8000) loss=0.00224 byte_ppl=1.002 atoms=52 merges=0 field=14.8304 rms=0.4635 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757000 (run 5000/8000) loss=5.56486 byte_ppl=261.088 atoms=9 merges=0 field=14.8622 rms=0.4644 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757025 (run 5025/8000) loss=0.00019 byte_ppl=1.000 atoms=36 merges=0 field=14.8271 rms=0.4633 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757050 (run 5050/8000) loss=0.00053 byte_ppl=1.001 atoms=64 merges=0 field=14.8030 rms=0.4626 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757075 (run 5075/8000) loss=0.01110 byte_ppl=1.011 atoms=21 merges=0 field=14.8120 rms=0.4629 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757100 (run 5100/8000) loss=5.51754 byte_ppl=249.022 atoms=49 merges=0 field=14.8402 rms=0.4638 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757125 (run 5125/8000) loss=1.31009 byte_ppl=3.707 atoms=5 merges=0 field=14.8139 rms=0.4629 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757150 (run 5150/8000) loss=8.90536 byte_ppl=7371.373 atoms=33 merges=0 field=14.7905 rms=0.4622 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757175 (run 5175/8000) loss=0.00372 byte_ppl=1.004 atoms=60 merges=0 field=14.7807 rms=0.4619 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757200 (run 5200/8000) loss=0.06845 byte_ppl=1.071 atoms=18 merges=0 field=14.7598 rms=0.4612 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757225 (run 5225/8000) loss=0.01309 byte_ppl=1.013 atoms=45 merges=0 field=14.7895 rms=0.4622 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757250 (run 5250/8000) loss=5.20225 byte_ppl=181.680 atoms=3 merges=0 field=14.7869 rms=0.4621 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757275 (run 5275/8000) loss=0.61629 byte_ppl=1.852 atoms=30 merges=0 field=14.8469 rms=0.4640 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757300 (run 5300/8000) loss=5.36565 byte_ppl=213.930 atoms=58 merges=0 field=14.9182 rms=0.4662 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757325 (run 5325/8000) loss=0.00232 byte_ppl=1.002 atoms=14 merges=0 field=14.9384 rms=0.4668 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757350 (run 5350/8000) loss=6.47524 byte_ppl=648.877 atoms=42 merges=0 field=14.9267 rms=0.4665 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757375 (run 5375/8000) loss=0.01978 byte_ppl=1.020 atoms=69 merges=0 field=14.9224 rms=0.4663 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757400 (run 5400/8000) loss=12.58733 byte_ppl=292825.390 atoms=27 merges=0 field=14.9046 rms=0.4658 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757425 (run 5425/8000) loss=0.00716 byte_ppl=1.007 atoms=54 merges=0 field=14.9220 rms=0.4663 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757450 (run 5450/8000) loss=3.58013 byte_ppl=35.878 atoms=11 merges=0 field=14.9074 rms=0.4659 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757475 (run 5475/8000) loss=0.00564 byte_ppl=1.006 atoms=38 merges=0 field=14.9831 rms=0.4682 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757500 (run 5500/8000) loss=1.05339 byte_ppl=2.867 atoms=66 merges=0 field=14.9897 rms=0.4684 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757525 (run 5525/8000) loss=7.92810 byte_ppl=2774.138 atoms=23 merges=0 field=14.9869 rms=0.4683 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757550 (run 5550/8000) loss=6.00636 byte_ppl=406.004 atoms=51 merges=0 field=15.0055 rms=0.4689 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757575 (run 5575/8000) loss=0.08698 byte_ppl=1.091 atoms=8 merges=0 field=14.9834 rms=0.4682 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757600 (run 5600/8000) loss=2.02087 byte_ppl=7.545 atoms=36 merges=0 field=14.9998 rms=0.4687 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757625 (run 5625/8000) loss=0.00021 byte_ppl=1.000 atoms=63 merges=0 field=15.0638 rms=0.4707 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757650 (run 5650/8000) loss=7.77958 byte_ppl=2391.261 atoms=20 merges=0 field=15.0793 rms=0.4712 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757675 (run 5675/8000) loss=0.00367 byte_ppl=1.004 atoms=47 merges=0 field=15.0831 rms=0.4713 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757700 (run 5700/8000) loss=5.01337 byte_ppl=150.410 atoms=5 merges=0 field=15.0613 rms=0.4707 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757725 (run 5725/8000) loss=0.18462 byte_ppl=1.203 atoms=32 merges=0 field=15.1103 rms=0.4722 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757750 (run 5750/8000) loss=7.15179 byte_ppl=1276.387 atoms=60 merges=0 field=15.1284 rms=0.4728 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757775 (run 5775/8000) loss=1.49265 byte_ppl=4.449 atoms=16 merges=0 field=15.1559 rms=0.4736 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757800 (run 5800/8000) loss=0.00841 byte_ppl=1.008 atoms=44 merges=0 field=15.1870 rms=0.4746 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757825 (run 5825/8000) loss=2.64119 byte_ppl=14.030 atoms=1 merges=0 field=15.2070 rms=0.4752 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757850 (run 5850/8000) loss=1.09824 byte_ppl=2.999 atoms=29 merges=0 field=15.2304 rms=0.4760 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757875 (run 5875/8000) loss=0.00131 byte_ppl=1.001 atoms=56 merges=0 field=15.1759 rms=0.4742 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757900 (run 5900/8000) loss=0.01522 byte_ppl=1.015 atoms=14 merges=0 field=15.1894 rms=0.4747 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757925 (run 5925/8000) loss=0.00326 byte_ppl=1.003 atoms=41 merges=0 field=15.2244 rms=0.4758 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757950 (run 5950/8000) loss=5.10141 byte_ppl=164.253 atoms=69 merges=0 field=15.2332 rms=0.4760 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0757975 (run 5975/8000) loss=4.32394 byte_ppl=75.485 atoms=25 merges=0 field=15.2756 rms=0.4774 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758000 (run 6000/8000) loss=8.85359 byte_ppl=6999.472 atoms=53 merges=0 field=15.3182 rms=0.4787 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758025 (run 6025/8000) loss=0.00100 byte_ppl=1.001 atoms=10 merges=0 field=15.2645 rms=0.4770 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758050 (run 6050/8000) loss=5.76276 byte_ppl=318.225 atoms=38 merges=0 field=15.2491 rms=0.4765 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758075 (run 6075/8000) loss=0.24773 byte_ppl=1.281 atoms=65 merges=0 field=15.2302 rms=0.4759 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758100 (run 6100/8000) loss=0.71675 byte_ppl=2.048 atoms=22 merges=0 field=15.2100 rms=0.4753 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758125 (run 6125/8000) loss=0.00036 byte_ppl=1.000 atoms=49 merges=0 field=15.2672 rms=0.4771 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=262144 pkts=262144 shard=0
+step=0758150 (run 6150/8000) loss=0.00505 byte_ppl=1.005 atoms=7 merges=0 field=15.2638 rms=0.4770 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758175 (run 6175/8000) loss=0.00278 byte_ppl=1.003 atoms=34 merges=0 field=15.2331 rms=0.4760 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758200 (run 6200/8000) loss=1.35025 byte_ppl=3.858 atoms=62 merges=0 field=15.2679 rms=0.4771 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758225 (run 6225/8000) loss=0.05723 byte_ppl=1.059 atoms=19 merges=0 field=15.2919 rms=0.4779 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758250 (run 6250/8000) loss=5.01643 byte_ppl=150.871 atoms=47 merges=0 field=15.2850 rms=0.4777 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758275 (run 6275/8000) loss=2.54971 byte_ppl=12.803 atoms=3 merges=0 field=15.3339 rms=0.4792 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758300 (run 6300/8000) loss=0.10197 byte_ppl=1.107 atoms=31 merges=0 field=15.3014 rms=0.4782 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758325 (run 6325/8000) loss=0.00010 byte_ppl=1.000 atoms=58 merges=0 field=15.2937 rms=0.4779 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758350 (run 6350/8000) loss=0.01462 byte_ppl=1.015 atoms=16 merges=0 field=15.3279 rms=0.4790 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758375 (run 6375/8000) loss=0.15753 byte_ppl=1.171 atoms=43 merges=0 field=15.3481 rms=0.4796 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758400 (run 6400/8000) loss=3.93448 byte_ppl=51.135 atoms=71 merges=0 field=15.3762 rms=0.4805 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758425 (run 6425/8000) loss=0.00010 byte_ppl=1.000 atoms=27 merges=0 field=15.3472 rms=0.4796 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758450 (run 6450/8000) loss=10.32975 byte_ppl=30630.426 atoms=55 merges=0 field=15.3930 rms=0.4810 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758475 (run 6475/8000) loss=0.01910 byte_ppl=1.019 atoms=12 merges=0 field=15.4288 rms=0.4822 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758500 (run 6500/8000) loss=4.40252 byte_ppl=81.656 atoms=40 merges=0 field=15.4103 rms=0.4816 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758525 (run 6525/8000) loss=0.00126 byte_ppl=1.001 atoms=67 merges=0 field=15.3933 rms=0.4810 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758550 (run 6550/8000) loss=11.68423 byte_ppl=118685.761 atoms=25 merges=0 field=15.4337 rms=0.4823 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758575 (run 6575/8000) loss=0.00133 byte_ppl=1.001 atoms=52 merges=0 field=15.3928 rms=0.4810 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758600 (run 6600/8000) loss=0.52960 byte_ppl=1.698 atoms=9 merges=0 field=15.4040 rms=0.4814 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758625 (run 6625/8000) loss=0.00118 byte_ppl=1.001 atoms=36 merges=0 field=15.3834 rms=0.4807 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758650 (run 6650/8000) loss=14.30145 byte_ppl=1625693.427 atoms=64 merges=0 field=15.3734 rms=0.4804 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758675 (run 6675/8000) loss=5.47438 byte_ppl=238.503 atoms=21 merges=0 field=15.3861 rms=0.4808 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758700 (run 6700/8000) loss=0.00550 byte_ppl=1.006 atoms=49 merges=0 field=15.3093 rms=0.4784 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758725 (run 6725/8000) loss=0.00027 byte_ppl=1.000 atoms=5 merges=0 field=15.2721 rms=0.4773 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758750 (run 6750/8000) loss=0.00908 byte_ppl=1.009 atoms=33 merges=0 field=15.2267 rms=0.4758 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758775 (run 6775/8000) loss=5.45329 byte_ppl=233.526 atoms=60 merges=0 field=15.2250 rms=0.4758 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758800 (run 6800/8000) loss=11.67757 byte_ppl=117897.774 atoms=18 merges=0 field=15.1894 rms=0.4747 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758825 (run 6825/8000) loss=7.29671 byte_ppl=1475.434 atoms=45 merges=0 field=15.2190 rms=0.4756 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758850 (run 6850/8000) loss=6.06504 byte_ppl=430.539 atoms=3 merges=0 field=15.2025 rms=0.4751 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758875 (run 6875/8000) loss=0.00014 byte_ppl=1.000 atoms=30 merges=0 field=15.1608 rms=0.4738 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758900 (run 6900/8000) loss=0.56682 byte_ppl=1.763 atoms=58 merges=0 field=15.1417 rms=0.4732 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758925 (run 6925/8000) loss=0.11090 byte_ppl=1.117 atoms=14 merges=0 field=15.1657 rms=0.4739 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758950 (run 6950/8000) loss=7.85617 byte_ppl=2581.625 atoms=42 merges=0 field=15.1444 rms=0.4733 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0758975 (run 6975/8000) loss=0.00995 byte_ppl=1.010 atoms=69 merges=0 field=15.1297 rms=0.4728 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759000 (run 7000/8000) loss=10.66335 byte_ppl=42759.524 atoms=27 merges=0 field=15.1240 rms=0.4726 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759025 (run 7025/8000) loss=2.71562 byte_ppl=15.114 atoms=54 merges=0 field=15.1330 rms=0.4729 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759050 (run 7050/8000) loss=21.56975 byte_ppl=2331443980.878 atoms=11 merges=0 field=15.1232 rms=0.4726 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759075 (run 7075/8000) loss=4.59344 byte_ppl=98.834 atoms=38 merges=0 field=15.0944 rms=0.4717 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759100 (run 7100/8000) loss=0.00197 byte_ppl=1.002 atoms=66 merges=0 field=15.0702 rms=0.4709 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759125 (run 7125/8000) loss=0.11777 byte_ppl=1.125 atoms=23 merges=0 field=15.0733 rms=0.4710 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759150 (run 7150/8000) loss=3.10940 byte_ppl=22.408 atoms=51 merges=0 field=15.0618 rms=0.4707 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759175 (run 7175/8000) loss=0.00008 byte_ppl=1.000 atoms=8 merges=0 field=15.0552 rms=0.4705 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759200 (run 7200/8000) loss=6.58100 byte_ppl=721.264 atoms=36 merges=0 field=15.0576 rms=0.4706 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759225 (run 7225/8000) loss=0.00051 byte_ppl=1.001 atoms=63 merges=0 field=15.0251 rms=0.4695 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759250 (run 7250/8000) loss=0.03718 byte_ppl=1.038 atoms=20 merges=0 field=15.0049 rms=0.4689 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759275 (run 7275/8000) loss=0.00033 byte_ppl=1.000 atoms=47 merges=0 field=14.9653 rms=0.4677 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759300 (run 7300/8000) loss=0.00375 byte_ppl=1.004 atoms=5 merges=0 field=15.0135 rms=0.4692 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759325 (run 7325/8000) loss=0.00007 byte_ppl=1.000 atoms=32 merges=0 field=15.0533 rms=0.4704 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759350 (run 7350/8000) loss=5.49842 byte_ppl=244.305 atoms=60 merges=0 field=15.0254 rms=0.4695 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759375 (run 7375/8000) loss=1.84357 byte_ppl=6.319 atoms=16 merges=0 field=15.0578 rms=0.4706 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759400 (run 7400/8000) loss=0.00589 byte_ppl=1.006 atoms=44 merges=0 field=15.0940 rms=0.4717 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759425 (run 7425/8000) loss=11.56490 byte_ppl=105334.432 atoms=1 merges=0 field=15.0983 rms=0.4718 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759450 (run 7450/8000) loss=0.00008 byte_ppl=1.000 atoms=29 merges=0 field=15.1087 rms=0.4721 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759475 (run 7475/8000) loss=8.19850 byte_ppl=3635.495 atoms=56 merges=0 field=15.1390 rms=0.4731 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759500 (run 7500/8000) loss=4.95626 byte_ppl=142.062 atoms=14 merges=0 field=15.1642 rms=0.4739 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759525 (run 7525/8000) loss=0.00054 byte_ppl=1.001 atoms=41 merges=0 field=15.1539 rms=0.4736 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759550 (run 7550/8000) loss=3.54926 byte_ppl=34.788 atoms=69 merges=0 field=15.1839 rms=0.4745 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759575 (run 7575/8000) loss=0.00409 byte_ppl=1.004 atoms=25 merges=0 field=15.2453 rms=0.4764 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759600 (run 7600/8000) loss=0.00430 byte_ppl=1.004 atoms=53 merges=0 field=15.2056 rms=0.4752 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759625 (run 7625/8000) loss=0.00540 byte_ppl=1.005 atoms=10 merges=0 field=15.1470 rms=0.4733 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759650 (run 7650/8000) loss=0.64176 byte_ppl=1.900 atoms=38 merges=0 field=15.2279 rms=0.4759 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759675 (run 7675/8000) loss=0.00370 byte_ppl=1.004 atoms=65 merges=0 field=15.1648 rms=0.4739 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759700 (run 7700/8000) loss=4.40645 byte_ppl=81.978 atoms=22 merges=0 field=15.1727 rms=0.4741 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759725 (run 7725/8000) loss=0.01249 byte_ppl=1.013 atoms=49 merges=0 field=15.2171 rms=0.4755 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759750 (run 7750/8000) loss=0.20360 byte_ppl=1.226 atoms=7 merges=0 field=15.2220 rms=0.4757 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759775 (run 7775/8000) loss=0.00280 byte_ppl=1.003 atoms=34 merges=0 field=15.1502 rms=0.4734 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759800 (run 7800/8000) loss=5.03706 byte_ppl=154.017 atoms=62 merges=0 field=15.1669 rms=0.4740 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759825 (run 7825/8000) loss=0.01876 byte_ppl=1.019 atoms=19 merges=0 field=15.1623 rms=0.4738 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759850 (run 7850/8000) loss=10.57912 byte_ppl=39305.648 atoms=47 merges=0 field=15.2153 rms=0.4755 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759875 (run 7875/8000) loss=7.92972 byte_ppl=2778.651 atoms=3 merges=0 field=15.2531 rms=0.4767 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759900 (run 7900/8000) loss=4.73519 byte_ppl=113.886 atoms=31 merges=0 field=15.2589 rms=0.4768 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759925 (run 7925/8000) loss=0.00185 byte_ppl=1.002 atoms=58 merges=0 field=15.3240 rms=0.4789 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759950 (run 7950/8000) loss=1.26526 byte_ppl=3.544 atoms=16 merges=0 field=15.2861 rms=0.4777 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0759975 (run 7975/8000) loss=0.01671 byte_ppl=1.017 atoms=43 merges=0 field=15.2790 rms=0.4775 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+step=0760000 (run 8000/8000) loss=0.03514 byte_ppl=1.036 atoms=71 merges=0 field=15.3282 rms=0.4790 scale=1.0000 fcos=nan ign=0.0000 prn=nan nxp=0.000 mph=0.000 bytes=327680 pkts=327680 shard=0
+{
+  "stream": true,
+  "data_path": null,
+  "data_glob": "data/corpus_fr_medium*.txt",
+  "shard_paths": [
+    "/workspace/exports/atom-ai/data/corpus_fr_medium.txt",
+    "/workspace/exports/atom-ai/data/corpus_fr_medium_s21.txt"
+  ],
+  "data_bytes": 1000453,
+  "data_characters": null,
+  "atomizer_version": "atomizer-v1-byte-span",
+  "feature_dim": 320,
+  "packet_count": null,
+  "train_packet_count": null,
+  "validation_packet_count": 2048,
+  "mean_packet_bytes": null,
+  "max_packet_bytes": null,
+  "min_packet_bytes": null,
+  "bytes_seen": 327680,
+  "config": {
+    "d_model": 32,
+    "n_modes": 32,
+    "n_atoms_max": 64,
+    "max_span_bytes": 1,
+    "episode_length": 8000,
+    "episode_reset": true,
+    "atom_flush_every": 64,
+    "learning_rate": 5e-05,
+    "surface_learning_rate": 0.00012,
+    "steps": 8000,
+    "start_step": 752000,
+    "seed": 20260913,
+    "surface_alphabet": 256,
+    "field_max_rms": 3.0,
+    "energy_decay_bounds": [
+      0.3,
+      0.95
+    ],
+    "stream": true,
+    "chunk_bytes": 65536,
+    "loop_shards": true,
+    "stream_buffer": 2048,
+    "stream_prefetch": true,
+    "stream_skip_packets": 256000,
+    "last_atom_readout": true,
+    "efference_every": 10,
+    "enable_merge": false,
+    "payload_copy": false,
+    "merge_coherence_threshold": 0.45,
+    "merge_energy_floor": 0.08,
+    "field_loss_weight": 0.05,
+    "field_contrast_weight": 0.0,
+    "field_ignorance_weight": 0.08,
+    "field_ignorance_ablate_shared": false,
+    "field_ignorance_prompt_bank": false,
+    "field_obligatory_readout": true,
+    "field_obligatory_hard": true,
+    "printable_aux_weight": 0.0,
+    "field_next_packet_weight": 0.0,
+    "slow_every": 1
+  },
+  "packets_seen": 327680,
+  "stream_epoch": 0,
+  "train": {
+    "steps": 8000,
+    "efference_every": 10,
+    "efference_steps": 800,
+    "start_step": 752000,
+    "total_steps": 760000,
+    "episode_length": 8000,
+    "episode_reset": true,
+    "atom_flush_every": 64,
+    "elapsed_seconds": 162.9094468569965,
+    "transitions_per_second": 49.10703556081973,
+    "first_loss": 4.597848892211914,
+    "final_loss": 0.03514067828655243,
+    "final_total_perplexity": 1.0357654082539116,
+    "finite_losses": true,
+    "finite_parameters": true,
+    "nan_or_inf": false,
+    "field_rms_before_max": 0.4831616282463074,
+    "field_rms_after_max": 0.4831616282463074,
+    "field_scale_min": 1.0,
+    "field_norm_max": 15.461139678955078,
+    "field_limited_steps": 0,
+    "field_limited_fraction": 0.0,
+    "final_dynamics": {
+      "coupling_scale": 1.2025973796844482,
+      "energy_decay": 0.3004094660282135,
+      "phase_sync": 0.20572145283222198,
+      "energy_decay_before": 0.3004094660282135,
+      "energy_decay_repaired": false,
+      "energy_decay_bounds": [
+        0.3,
+        0.95
+      ]
+    },
+    "final_atoms_before_validation": 59,
+    "stream": true,
+    "bytes_seen": 327680
+  },
+  "validation": {
+    "transitions": 256,
+    "loss": 0.7734437754893939,
+    "total_perplexity": 2.1672168255573534,
+    "byte_loss": 0.7734437754893939,
+    "byte_perplexity": 2.1672168255573534,
+    "source": "stream_ring"
+  },
+  "checkpoint": "checkpoints/byte_tick/atom_native_step_760000_d32_ms1M.pt",
+  "reload": {
+    "n_atoms": 0,
+    "field_norm": 15.328153610229492,
+    "time": 88.0003890991211,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "4a65202020202020",
+      "text": "Je      ",
+      "reload_text": "Je      ",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "4a65202020202020",
+      "text": "Je      ",
+      "reload_text": "Je      ",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "5065757520202020",
+      "text": "Peuu    ",
+      "reload_text": "Peuu    ",
+      "reload_match": true
+    }
+  }
+}
