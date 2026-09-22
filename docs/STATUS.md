@@ -1,3 +1,13 @@
+
+## Both levers (2026-09-21)
+
+1. **LR decay** 872→880: val **0.593**, teacher 75.5% (kept).
+2. **ep10000** 880→890 on top of LR decay: val **0.908** — FAIL (worse; same pattern as old ep12000).
+3. **speech_ok** widened (was hard-capping non-hint text at 6 chars → blocked phrases); train free-run `max_length` 20→64; chat `max-packets` default 96.
+4. Continue: **LR decay + ep8000** from 880k (`*_lrd.pt`), not ep10000.
+
+Phrase gen @890 cold: longer scraps (`Peut-ilisateur…`, `Je ire tu…`) — still not coherent sentences. Role-prime still empty.
+
 # ATOM status snapshot — 2026-09-21
 
 Repo: https://github.com/AFKmoney/atom-ai

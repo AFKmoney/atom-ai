@@ -90,6 +90,7 @@ def generate_reply(
         prefer_printable=True,
         reset=True,
         merge_enabled=merge_enabled,
+        speech_gate=True,
     )
     text = raw.decode("utf-8", errors="replace")
     # Drop leading whitespace-only noise common before content stabilizes.
@@ -140,7 +141,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Chat with atom-native checkpoint")
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--prompt", default="Bonjour")
-    parser.add_argument("--max-packets", type=int, default=24)
+    parser.add_argument("--max-packets", type=int, default=96)
     parser.add_argument("--max-length", type=int, default=256)
     parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--top-k", type=int, default=8)

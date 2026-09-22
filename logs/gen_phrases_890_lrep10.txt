@@ -1,0 +1,42 @@
+===== ROLE Bonjour, comment ça va ? =====
+Prompt: Bonjour, comment ça va ?
+Response: 
+===== COLD Bonjour, comment ça va ? =====
+Prompt: Bonjour, comment ça va ?
+Response: Peut-ilisateur::::::::::O tuu  tuu toi...,         irra..
+
+
+===== ROLE Peux-tu me dire une phrase complète ? =====
+Prompt: Peux-tu me dire une phrase complète ?
+Response: 
+===== COLD Peux-tu me dire une phrase complète ? =====
+Prompt: Peux-tu me dire une phrase complète ?
+Response: Je    ire     tu    tilisateur::::::::::ourrra..
+
+
+===== ROLE Il était une fois une petite maison. =====
+Prompt: Il était une fois une petite maison.
+Response: 
+===== COLD Il était une fois une petite maison. =====
+Prompt: Il était une fois une petite maison.
+Response: Oui,         idi        ,cc      ilis         idi        it      t'     tilisateur::::::::::: irrra..,    t'     tu    t
+===== ROLE Qui es-tu et que fais-tu ? =====
+Prompt: Qui es-tu et que fais-tu ?
+Response: 
+===== COLD Qui es-tu et que fais-tu ? =====
+Prompt: Qui es-tu et que fais-tu ?
+Response: Je    ire     tu    tilisateur::::::::::ourrra..
+
+
+gate=True prompt='Bonjour, comment ça va ?'
+  -> 'Peut-ilisateur::::::::::O tuu  tuu toi...,         irra..\n\n'
+
+gate=False prompt='Bonjour, comment ça va ?'
+  -> 'Oui,          irra..\n\n'
+
+gate=True prompt='Il était une fois'
+  -> "un       ids       tu  ,     idi        idi        tu   idi      t'     toi,,         idi         tdi       ,ce      ire"
+
+gate=False prompt='Il était une fois'
+  -> 'Bonne      ilisateur:::::::::ourra..\n\n'
+

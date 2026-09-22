@@ -51,4 +51,8 @@ def speech_ok(payload: bytes) -> bool:
         tokens.append("".join(buf))
     if any(tok in _SPEECH_HINTS for tok in tokens):
         return True
+    # Phrase-friendly: allow longer printable FR-like text (was capped at 6
+    # chars, which forced one-word attractors and empty/truncated chat).
+    if 2 <= len(text) <= 160 and len(letters) >= 4:
+        return True
     return 2 <= len(text) <= 6

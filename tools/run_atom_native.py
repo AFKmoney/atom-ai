@@ -965,7 +965,7 @@ def main() -> None:
         source_bytes = model.generate_packets(
             prompt,
             max_packets=8,
-            max_length=20,
+            max_length=64,
             temperature=0.8,
             top_k=5,
             deterministic=False,
@@ -974,7 +974,7 @@ def main() -> None:
         reload_bytes = reloaded.generate_packets(
             prompt,
             max_packets=8,
-            max_length=20,
+            max_length=64,
             temperature=0.8,
             top_k=5,
             deterministic=False,
