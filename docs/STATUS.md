@@ -4,6 +4,19 @@ Repo: https://github.com/AFKmoney/atom-ai
 English docs only. **No fluency claim yet — but scaling is real.**
 
 
+
+## LR decay smoke (2026-09-21, branch ms1M-continue-d32)
+
+Stopped blind 1500k. One variable from **872k** best: LR **3e-5 / 7.2e-5** (was 5e-5 / 1.2e-4), ep8000 unchanged.
+
+| tip | val (ppl) | teacher | train gen | chat role-prime Bonjour | cold Bonjour |
+|-----|-----------|---------|-----------|-------------------------|--------------|
+| 872k baseline | 0.550 / 1.73 | (prior ~74%) | Bon,/Oui, | *(empty)* | Peux     t |
+| 880k same-LR (prior) | 0.620 / 1.86 | — | Oui,/Bonne | — | — |
+| **880k LR decay** | **0.593 / 1.81** | **75.5%** | Oui,/Bonne | *(see gen log)* | *(see gen log)* |
+
+PASS vs prior same-step 880 (0.620→0.593). Still not coherent dialogue. Next: more LR-decay chunks OR try ep10000 alone — not both.
+
 ## Latest (branch `ms1M-continue-d32`, 2026-09-21)
 
 Resume from highest GH weight **736k** (1080k/872k/1M `.pt` absent on remote; docs only).
