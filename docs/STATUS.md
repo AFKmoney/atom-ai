@@ -1,3 +1,7 @@
+## Config bugfix (2026-09-23) — field_loss post-resume
+
+`tools/run_atom_native.py` already rewrote obligatory / printable / next_packet / merge / payload after `model.load()`, but not `field_loss_weight` / `field_contrast_weight`. Construct CLI (`--field-loss-weight 0.05`) was overwritten by tip ckpt `0.0`, so all `*_lrd.pt` saved `field_loss_weight=0.0`. Fix: CLI wins for those two weights on resume (same sibling pattern). Code-only; live `train_until_coherent` / `run_atom_native` keep `field_loss=0` until relaunch.
+
 
 ## Both levers (2026-09-21)
 

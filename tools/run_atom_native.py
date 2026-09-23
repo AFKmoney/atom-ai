@@ -550,6 +550,11 @@ def main() -> None:
         # CLI wins for printable aux (mechanism under test).
         model.printable_aux_weight = float(args.printable_aux_weight)
         model.field_next_packet_weight = float(args.field_next_packet_weight)
+        # CLI wins for field persistence / contrast weights (same pattern as
+        # printable_aux / next_packet). Without this, model.load() restores
+        # ckpt 0.0 and drops construct CLI e.g. --field-loss-weight 0.05.
+        model.field_loss_weight = float(args.field_loss_weight)
+        model.field_contrast_weight = float(args.field_contrast_weight)
         if float(args.field_next_packet_weight) > 0:
             print(
                 f"field_next_packet_weight={float(args.field_next_packet_weight)} "
