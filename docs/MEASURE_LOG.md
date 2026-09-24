@@ -16,9 +16,12 @@ Recipe otherwise = ms1M lrd (d32, hard, no-merge, last-atom-readout, field-loss 
 |-----|-----|--------------|-------------|---------------|------|
 | 3764k baseline | lrd (no L_roll) | identical `Oui,,\n'uuttilisateur::::` PASS=False | all `Bonne` / `uuttilisateur` | 2.02 | single attractor |
 | 3764k→+4k frroll | L_roll H=4 /10 | distinct (`Bonne suis…` / `Oui,, ends…` / `Oui,,…accord` / `Bonne idi…ilisateur`) PASS=True | diversifies (`Peut-- re…`, `Bonne parle…`, `Bonne ques…`) | 3.15 | attractor broke; **not fluent** |
+| 3800k→+8k lascale | L_roll + S=0.15 | distinct (`Bon en…Assistant` / `Bon en re…eti`) PASS=True | scrap (`ne en pen…`, `ne ien en…`, `ne ien…`) — no Peut-être | 3.51 (scaled; raw la≈58.9) | **Peut-être attractor broke**; dual Bon-en basin; α_rms fell ~7.4→2.5 so la still ~3.5×; **not fluent**; ckpt `*_3808000_*_lascale.pt` (800 L_roll fires, val byte_ppl≈3.37) |
 | 3768k→+32k frroll (→3800k) | same L_roll | collapsed identical `Peut-être re ends d'acc` PASS=False | still scrap-diverse (`Bonne is rès d'accord…`, `Comment t'accord…`, `e rends…ilisateur`) | 6.54 | **re-collapsed to new phrase attractor**; chats not fully collapsed; la dominates more; **not fluent**; ckpt `atom_native_step_3800000_d32_ms1M_frroll.pt` (32k steps, 3200 L_roll fires, 1.77 tick/s, val byte_ppl≈1.91) |
 
 FR read: +4k briefly unlocked prompt-distinct debris; extending to +32k did **not** push toward fluent phrases — probe diversity reversed into a stronger shared `Peut-être…` basin while last_atom/α logit RMS rose (~2→6.5). Live 5M lrd continued in parallel (untouched).
+
+Next lever `--last-atom-scale 0.15` (+8k from 3800k frroll, L_roll still on): broke the Peut-être basin (PASS=True, two `Bon en…` scraps) but chats degraded toward letter-soup; scaled la/α mean 3.51 (not ~1 — α_rms shrank). **Not fluent.** Live 5M untouched.
 
 | step | cut | train loss | wrap generate (honest) | note |
 |------|-----|------------|------------------------|------|

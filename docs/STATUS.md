@@ -1,3 +1,10 @@
+## last_atom scale probe (2026-09-24) — measured
+
+From 3800k frroll +8k with `--last-atom-scale 0.15` + free-run-aux ON.
+Probe PASS=True (broke Peut-être); dual `Bon en…` basin; chats letter-soup;
+scaled la/α≈3.51. **Not fluent.** Live 5M lrd continued (untouched).
+See MEASURE_LOG + LAST_ATOM_SCALE.md.
+
 ## last_atom scale S (2026-09-23) — one math lever
 
 Hard mix: `logits += S * la_byte` via `--last-atom-scale S` (default **1.0** =
