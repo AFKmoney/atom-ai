@@ -47,6 +47,8 @@ def load(checkpoint: Path) -> AtomNativeModel:
         model.surface.last_atom_scale_min = float(cfg["last_atom_scale_min"])
     if "last_atom_scale_max" in cfg:
         model.surface.last_atom_scale_max = float(cfg["last_atom_scale_max"])
+    if "field_hard_couple_scale" in cfg:
+        model.surface.field_hard_couple_scale = float(cfg["field_hard_couple_scale"])
     model.eval()
     return model
 

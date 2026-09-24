@@ -241,6 +241,15 @@ class AtomSurfaceHead(nn.Module):
         self.field_length_skip = nn.Linear(self.field_feat_dim, max_payload_bytes, bias=False)
         # softplus(4)≈4.0 — enough for inter-prompt logit cosine << 0.998 at load.
         self.skip_gate = nn.Parameter(torch.tensor(1.0))
+        # Hard-path couple: dedicated (NOT in _freeze_non_alpha_bypass). Soft hard
+        # zeros field_byte_skip; this head re-opens persist‖atom.r → logits when
+        # field_hard_couple_scale > 0.
+        self.field_hard_couple_byte = nn.Linear(
+            self.field_feat_dim, max_payload_bytes * 256, bias=False
+        )
+        self.field_hard_couple_length = nn.Linear(
+            self.field_feat_dim, max_payload_bytes, bias=False
+        )
         # Obligatory α readout (main CE path): full-α JL fingerprint → logits.
         # Frozen random map cannot be CE-collapsed; trainable residual can adapt.
         # zeros_like(α) ⇒ exact zero branch. Persist/atom_r cannot bypass.
@@ -309,6 +318,10 @@ class AtomSurfaceHead(nn.Module):
         self.last_atom_scale_adaptive = False
         self.last_atom_scale_min = 0.0
         self.last_atom_scale_max = 1.0
+        # Opt-in: reinject full field feats (mean‖std‖persist‖atom.r) into hard
+        # logits via the existing bias-free field_byte_skip (hard early-return
+        # otherwise discards that path). Default 0 = identical to current hard.
+        self.field_hard_couple_scale = 0.0
         if self.last_atom_readout:
             if max_payload_bytes != 1:
                 raise ValueError("last_atom_readout requires max_payload_bytes=1 (byte-tick)")
@@ -372,6 +385,9 @@ class AtomSurfaceHead(nn.Module):
                 )
             self.field_gate.fill_(2.0)
             self.skip_gate.fill_(1.0)
+            # Small open so S>0 is audible but does not swamp α-MLP at tip load.
+            nn.init.normal_(self.field_hard_couple_byte.weight, mean=0.0, std=0.02)
+            nn.init.normal_(self.field_hard_couple_length.weight, mean=0.0, std=0.02)
 
     def _init_obligatory_readout(self) -> None:
         """Seed JL/frozen buffers + trainable adapter (deterministic)."""
@@ -734,9 +750,21 @@ class AtomSurfaceHead(nn.Module):
                         # Equalize last_atom vs α-MLP (obl*train_byte) when adaptive.
                         scale = self.effective_last_atom_scale(obl * train_byte, la_raw)
                         la_byte = scale * la_raw
+                    # Field→hard-decode couple: reinject full spectral feats
+                    # (incl. persist‖atom.r) that the hard early-return else drops.
+                    # Uses dedicated W (field_byte_skip is zeroed+frozen under hard).
+                    couple_byte = torch.zeros_like(frozen_byte)
+                    couple_len = torch.zeros_like(frozen_len)
+                    s_couple = float(getattr(self, "field_hard_couple_scale", 0.0) or 0.0)
+                    if s_couple > 0.0:
+                        # `feats` already = LN([mean‖std‖persist‖atom.r]) above.
+                        couple_byte = s_couple * self.field_hard_couple_byte(feats).view(
+                            self.max_payload_bytes, 256
+                        )
+                        couple_len = s_couple * self.field_hard_couple_length(feats)
                     return {
-                        "byte_logits": obl * train_byte + 0.3 * frozen_byte + pay_byte + la_byte,
-                        "length_logits": obl * train_len + 0.3 * frozen_len + pay_len,
+                        "byte_logits": obl * train_byte + 0.3 * frozen_byte + pay_byte + la_byte + couple_byte,
+                        "length_logits": obl * train_len + 0.3 * frozen_len + pay_len + couple_len,
                     }
                 train_byte = self.alpha_byte_proj(a_hat).view(self.max_payload_bytes, 256)
                 train_len = self.alpha_length_proj(a_hat)
@@ -1873,6 +1901,9 @@ class AtomNativeModel(nn.Module):
                 "last_atom_scale_max": float(
                     getattr(self.surface, "last_atom_scale_max", 1.0)
                 ),
+                "field_hard_couple_scale": float(
+                    getattr(self.surface, "field_hard_couple_scale", 0.0)
+                ),
                 "printable_aux_weight": float(self.printable_aux_weight),
                 "field_next_packet_weight": float(self.field_next_packet_weight),
                 "merge_count_total": self.merge_count_total,
@@ -2134,6 +2165,8 @@ class AtomNativeModel(nn.Module):
             self.surface.last_atom_scale_min = float(cfg["last_atom_scale_min"])
         if "last_atom_scale_max" in cfg:
             self.surface.last_atom_scale_max = float(cfg["last_atom_scale_max"])
+        if "field_hard_couple_scale" in cfg:
+            self.surface.field_hard_couple_scale = float(cfg["field_hard_couple_scale"])
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
         training = checkpoint.get("training")

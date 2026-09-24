@@ -395,6 +395,14 @@ def main() -> None:
         help="adaptive clamp ceiling for S_eff (default 1.0)",
     )
     parser.add_argument(
+        "--field-hard-couple-scale",
+        type=float,
+        default=0.0,
+        help="opt-in: under hard obligatory, add S * field_hard_couple_byte("
+             "LN([mean‖std‖persist‖atom.r])) into hard logits "
+             "(default 0 = OFF; dedicated W, not frozen field_byte_skip)",
+    )
+    parser.add_argument(
         "--efference-every",
         type=int,
         default=0,
@@ -657,6 +665,15 @@ def main() -> None:
     model.surface.last_atom_scale_adaptive = bool(args.last_atom_scale_adaptive)
     model.surface.last_atom_scale_min = float(args.last_atom_scale_min)
     model.surface.last_atom_scale_max = float(args.last_atom_scale_max)
+    # CLI wins for field→hard-decode couple (default 0 = no behavior change).
+    model.surface.field_hard_couple_scale = float(args.field_hard_couple_scale)
+    if float(args.field_hard_couple_scale) > 0:
+        print(
+            f"field_hard_couple_scale={float(args.field_hard_couple_scale)} "
+            "(hard logits += S * field_hard_couple_byte(full feats))"
+        )
+    else:
+        print("field_hard_couple_scale=0 (OFF — hard path unchanged)")
     if bool(args.last_atom_scale_adaptive):
         print(
             f"last_atom_scale=adaptive "
@@ -761,6 +778,7 @@ def main() -> None:
                 "last_atom_scale_adaptive": bool(args.last_atom_scale_adaptive),
                 "last_atom_scale_min": float(args.last_atom_scale_min),
                 "last_atom_scale_max": float(args.last_atom_scale_max),
+                "field_hard_couple_scale": float(args.field_hard_couple_scale),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -822,6 +840,7 @@ def main() -> None:
                 "last_atom_scale_adaptive": bool(args.last_atom_scale_adaptive),
                 "last_atom_scale_min": float(args.last_atom_scale_min),
                 "last_atom_scale_max": float(args.last_atom_scale_max),
+                "field_hard_couple_scale": float(args.field_hard_couple_scale),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -1144,6 +1163,7 @@ def main() -> None:
                 "last_atom_scale_adaptive": bool(args.last_atom_scale_adaptive),
                 "last_atom_scale_min": float(args.last_atom_scale_min),
                 "last_atom_scale_max": float(args.last_atom_scale_max),
+                "field_hard_couple_scale": float(args.field_hard_couple_scale),
             "start_step": start_step,
             "total_steps": start_step + args.steps,
             "episode_length": args.episode_length,
