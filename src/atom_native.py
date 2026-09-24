@@ -2037,6 +2037,11 @@ class AtomNativeModel(nn.Module):
                 or key.startswith("payload_")
             )
         payload_missing = any(_is_payload_key(key) for key in missing)
+        def _is_hard_couple_key(key: str) -> bool:
+            # New opt-in head: must NOT trigger full field-readout reinit
+            # (that would wipe tip field_feat_norm / field_to_state).
+            return key.startswith("field_hard_couple_")
+
         non_mlp_missing = [
             key
             for key in missing
@@ -2045,11 +2050,21 @@ class AtomNativeModel(nn.Module):
                 or key.startswith("alpha_length_proj")
                 or key.startswith("last_atom")
                 or _is_payload_key(key)
+                or _is_hard_couple_key(key)
             )
         ]
         if payload_missing:
             with torch.no_grad():
                 self.surface._init_payload_production()
+        couple_missing = any(_is_hard_couple_key(key) for key in missing)
+        if couple_missing:
+            with torch.no_grad():
+                nn.init.normal_(
+                    self.surface.field_hard_couple_byte.weight, mean=0.0, std=0.02
+                )
+                nn.init.normal_(
+                    self.surface.field_hard_couple_length.weight, mean=0.0, std=0.02
+                )
         if legacy_surface or non_mlp_missing or field_readout_missing:
             with torch.no_grad():
                 if legacy_surface or "state_norm.weight" in missing:
@@ -2058,12 +2073,17 @@ class AtomNativeModel(nn.Module):
                 self.surface.byte_decoder.bias.mul_(0.05)
                 self.surface.length_decoder.bias.mul_(0.05)
                 if field_readout_missing or any(
-                    key.startswith("field_") or key in {"skip_gate"} for key in missing
+                    (
+                        (key.startswith("field_") and not _is_hard_couple_key(key))
+                        or key in {"skip_gate"}
+                    )
+                    for key in missing
                 ):
                     self.surface._init_field_readout()
                     self.surface.field_feat_norm.reset_parameters()
                     # Open skip strongly so migrated ckpts separate logits before retrain.
                     self.surface.skip_gate.fill_(4.0)
+                    # _init_field_readout already seeds couple weights; keep them.
 
         frozen_alpha_missing = any(
             key in missing

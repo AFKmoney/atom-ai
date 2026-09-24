@@ -100,5 +100,30 @@ class FieldHardCoupleTests(unittest.TestCase):
         self.assertGreater(delta, 1e-6)
 
 
+    def test_load_keeps_tip_field_feat_norm(self) -> None:
+        """New couple keys must not trigger full field-readout reinit."""
+        import tempfile
+        from pathlib import Path
+
+        torch.manual_seed(3)
+        model = _tiny_byte_tick()
+        tip_ln = model.surface.field_feat_norm.weight.detach().clone()
+        # Simulate a tip ckpt that predates couple weights.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tip.pt"
+            model.save(path)
+            blob = torch.load(path, map_location="cpu", weights_only=False)
+            surf = {k: v for k, v in blob["surface"].items() if not k.startswith("field_hard_couple_")}
+            blob["surface"] = surf
+            torch.save(blob, path)
+            model2 = _tiny_byte_tick()
+            ts = model2.load(path)
+            self.assertFalse(bool(ts.get("legacy_surface_migrated")))
+            self.assertTrue(torch.allclose(model2.surface.field_feat_norm.weight, tip_ln))
+            # Couple head is freshly seeded, not zero-frozen.
+            self.assertGreater(
+                float(model2.surface.field_hard_couple_byte.weight.abs().mean()), 0.0
+            )
+
 if __name__ == "__main__":
     unittest.main()
