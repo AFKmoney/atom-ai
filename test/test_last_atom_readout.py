@@ -162,5 +162,82 @@ class LastAtomScaleTests(unittest.TestCase):
         self.assertTrue(torch.allclose(delta_half, 0.5 * delta_full, rtol=1e-4, atol=1e-5))
 
 
+
+
+class LastAtomScaleAdaptiveTests(unittest.TestCase):
+    def test_adaptive_equalizes_la_vs_alpha_rms(self) -> None:
+        """Synthetic tensors: S_eff * la_rms ≈ α_rms within clamp/tolerance."""
+        torch.manual_seed(0)
+        head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
+        head.last_atom_scale_adaptive = True
+        head.last_atom_scale_min = 0.05
+        head.last_atom_scale_max = 1.0
+        # α small, la large → S_eff ≈ α/la < 1, effective la ≈ α
+        alpha_term = torch.randn(1, 256) * 0.5
+        la_raw = torch.randn(1, 256) * 4.0
+        s_eff = head.effective_last_atom_scale(alpha_term, la_raw)
+        alpha_rms = float(alpha_term.pow(2).mean().sqrt())
+        la_raw_rms = float(la_raw.pow(2).mean().sqrt())
+        la_eff_rms = float((s_eff * la_raw).pow(2).mean().sqrt())
+        expected = alpha_rms / (la_raw_rms + 1e-8)
+        expected = max(0.05, min(1.0, expected))
+        self.assertAlmostEqual(float(s_eff), expected, places=5)
+        self.assertAlmostEqual(la_eff_rms / alpha_rms, 1.0, places=2)
+
+    def test_adaptive_clamps_to_min_max(self) -> None:
+        head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
+        head.last_atom_scale_adaptive = True
+        head.last_atom_scale_min = 0.05
+        head.last_atom_scale_max = 1.0
+        # la tiny vs α → raw ratio >> 1 → clamp to S_max
+        alpha_term = torch.ones(1, 256)
+        la_raw = torch.ones(1, 256) * 1e-6
+        s_hi = float(head.effective_last_atom_scale(alpha_term, la_raw))
+        self.assertAlmostEqual(s_hi, 1.0, places=5)
+        # la huge vs α → raw ratio << 0.05 → clamp to S_min
+        la_huge = torch.ones(1, 256) * 1e3
+        s_lo = float(head.effective_last_atom_scale(alpha_term, la_huge))
+        self.assertAlmostEqual(s_lo, 0.05, places=5)
+
+    def test_fixed_scale_still_linear_when_adaptive_off(self) -> None:
+        torch.manual_seed(1)
+        model = _tiny_byte_tick(last_atom_readout=True)
+        model.eval()
+        model.surface.last_atom_scale_adaptive = False
+        atomizer = Atomizer(max_span_bytes=1)
+        packets = atomizer.encode("ab")
+        surf = model.surface
+
+        def logits_at(scale: float):
+            surf.last_atom_scale = float(scale)
+            model.reset_state(reset_atomizer=True)
+            with torch.no_grad():
+                model.forward_packet(packets[0])
+                out = model.forward_packet(packets[1])["surface"]["byte_logits"]
+            return out.clone()
+
+        out1 = logits_at(1.0)
+        out0 = logits_at(0.0)
+        out_half = logits_at(0.5)
+        self.assertTrue(
+            torch.allclose(out_half - out0, 0.5 * (out1 - out0), rtol=1e-4, atol=1e-5)
+        )
+
+    def test_adaptive_scale_detached_from_grad(self) -> None:
+        torch.manual_seed(0)
+        head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
+        head.last_atom_scale_adaptive = True
+        alpha_term = torch.randn(1, 256, requires_grad=True)
+        la_raw = torch.randn(1, 256, requires_grad=True)
+        s_eff = head.effective_last_atom_scale(alpha_term, la_raw)
+        # Scale factor itself must not create a graph back to inputs.
+        self.assertFalse(s_eff.requires_grad)
+        loss = (s_eff * la_raw).sum()
+        loss.backward()
+        self.assertIsNotNone(la_raw.grad)
+        # alpha_term only entered via detached RMS → no grad
+        self.assertIsNone(alpha_term.grad)
+
+
 if __name__ == "__main__":
     unittest.main()

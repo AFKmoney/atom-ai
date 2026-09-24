@@ -41,6 +41,12 @@ def load(checkpoint: Path) -> AtomNativeModel:
     model.load(checkpoint)
     if "last_atom_scale" in cfg:
         model.surface.last_atom_scale = float(cfg["last_atom_scale"])
+    if "last_atom_scale_adaptive" in cfg:
+        model.surface.last_atom_scale_adaptive = bool(cfg["last_atom_scale_adaptive"])
+    if "last_atom_scale_min" in cfg:
+        model.surface.last_atom_scale_min = float(cfg["last_atom_scale_min"])
+    if "last_atom_scale_max" in cfg:
+        model.surface.last_atom_scale_max = float(cfg["last_atom_scale_max"])
     model.eval()
     return model
 

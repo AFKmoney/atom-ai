@@ -33,3 +33,41 @@ returns while la/α (scaled) stays ~1, lever falsified for fluency.
 ```
 
 Live `train_until_coherent` recipe unchanged (no flag → S=1.0).
+
+## Adaptive scale (opt-in, 2026-09-24)
+
+Fixed `S` was a one-shot guess (`α_rms/la_rms` at tip). After +8k with
+`S=0.15`, la/α crept back to ~3.5× — fixed gain does not track drift.
+
+### Math
+
+```
+α_term = obl * train_byte
+la_raw = LastAtomReadout(last_b, prev_b, φ)
+S_eff  = clamp( RMS(α_term) / (RMS(la_raw) + ε), S_min, S_max )
+logits = obl·α_MLP + 0.3·frozen_JL + payload + S_eff · la_raw
+```
+
+RMS stats are **detached** (no grad through `S_eff` itself). Gradients still
+flow through `α_MLP` and `LastAtomReadout` weights via the scaled add.
+
+Defaults: `S_min=0.05`, `S_max=1.0`, `ε=1e-8`. Floor avoids silencing last_atom
+when α collapses; ceiling avoids amplifying a weak last_atom above α.
+
+### Flags (default OFF-compatible)
+
+```
+--last-atom-scale 1.0              # fixed S (unchanged; ignored if adaptive)
+--last-atom-scale-adaptive         # enable S_eff equalization
+--no-last-atom-scale-adaptive      # explicit off (default)
+--last-atom-scale-min 0.05
+--last-atom-scale-max 1.0
+```
+
+Live `train_until_coherent` recipe unchanged (adaptive OFF → fixed S=1.0).
+
+### Falsification
+
+Short probe (~8k) from 3808k lascale tip with free-run-aux ON + adaptive ON:
+if chats stay letter-soup / dual-Bon attractor and/or effective la/α leaves ~1
+after train, adaptive lever does not buy fluency either.

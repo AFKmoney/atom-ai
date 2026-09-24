@@ -371,8 +371,27 @@ def main() -> None:
         "--last-atom-scale",
         type=float,
         default=1.0,
-        help="scale last_atom logits on hard mix: logits += S * la_byte "
-             "(default 1.0 = current behavior; set S≈α_rms/la_rms to rebalance)",
+        help="fixed scale on last_atom logits (hard mix): logits += S * la_byte "
+             "(default 1.0 = current behavior; ignored when --last-atom-scale-adaptive)",
+    )
+    parser.add_argument(
+        "--last-atom-scale-adaptive",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="opt-in: S_eff = clamp(α_rms/(la_rms+eps), S_min, S_max) each forward "
+             "(detached RMS; overrides fixed --last-atom-scale; default OFF)",
+    )
+    parser.add_argument(
+        "--last-atom-scale-min",
+        type=float,
+        default=0.05,
+        help="adaptive clamp floor for S_eff (default 0.05)",
+    )
+    parser.add_argument(
+        "--last-atom-scale-max",
+        type=float,
+        default=1.0,
+        help="adaptive clamp ceiling for S_eff (default 1.0)",
     )
     parser.add_argument(
         "--efference-every",
@@ -632,12 +651,23 @@ def main() -> None:
     model.surface.payload_enabled = bool(args.payload_copy)
     print(f"payload_copy={bool(args.payload_copy)} (train-time copy-bias branch)")
     print(f"last_atom_readout={bool(args.last_atom_readout)} (byte-tick 2-gram + dentate)")
-    # CLI wins for last_atom scale (default 1.0 = no behavior change).
+    # CLI wins for last_atom scale (default 1.0 / adaptive OFF = no behavior change).
     model.surface.last_atom_scale = float(args.last_atom_scale)
-    print(
-        f"last_atom_scale={float(args.last_atom_scale)} "
-        "(1.0=off/current; hard-path la_byte *= S)"
-    )
+    model.surface.last_atom_scale_adaptive = bool(args.last_atom_scale_adaptive)
+    model.surface.last_atom_scale_min = float(args.last_atom_scale_min)
+    model.surface.last_atom_scale_max = float(args.last_atom_scale_max)
+    if bool(args.last_atom_scale_adaptive):
+        print(
+            f"last_atom_scale=adaptive "
+            f"(S_eff=clamp(α_rms/(la_rms+eps), "
+            f"{float(args.last_atom_scale_min)}, {float(args.last_atom_scale_max)}); "
+            f"fixed S={float(args.last_atom_scale)} ignored)"
+        )
+    else:
+        print(
+            f"last_atom_scale={float(args.last_atom_scale)} "
+            "(1.0=off/current; hard-path la_byte *= S)"
+        )
     model._efference_every = max(0, int(args.efference_every))
     print(f"efference_every={model._efference_every} (0=off)")
     model._free_run_aux_every = max(0, int(args.free_run_aux_every))
@@ -727,6 +757,9 @@ def main() -> None:
                 "stream_skip_packets": max(0, int(args.stream_skip_packets)),
                 "last_atom_readout": bool(args.last_atom_readout),
                 "last_atom_scale": float(args.last_atom_scale),
+                "last_atom_scale_adaptive": bool(args.last_atom_scale_adaptive),
+                "last_atom_scale_min": float(args.last_atom_scale_min),
+                "last_atom_scale_max": float(args.last_atom_scale_max),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -785,6 +818,9 @@ def main() -> None:
                 "payload_copy": bool(args.payload_copy),
                 "last_atom_readout": bool(args.last_atom_readout),
                 "last_atom_scale": float(args.last_atom_scale),
+                "last_atom_scale_adaptive": bool(args.last_atom_scale_adaptive),
+                "last_atom_scale_min": float(args.last_atom_scale_min),
+                "last_atom_scale_max": float(args.last_atom_scale_max),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -1104,6 +1140,9 @@ def main() -> None:
             "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
             "free_run_aux_weight": float(args.free_run_aux_weight),
             "last_atom_scale": float(args.last_atom_scale),
+                "last_atom_scale_adaptive": bool(args.last_atom_scale_adaptive),
+                "last_atom_scale_min": float(args.last_atom_scale_min),
+                "last_atom_scale_max": float(args.last_atom_scale_max),
             "start_step": start_step,
             "total_steps": start_step + args.steps,
             "episode_length": args.episode_length,
