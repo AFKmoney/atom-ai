@@ -1,3 +1,18 @@
+## Free-run aux L_roll (2026-09-23) — one math lever
+
+**Not a dead-end on proxy-mismatch.** Primary lever (opt-in, default OFF):
+
+`L_roll = (1/H) Σ_h CE(logits(s_h), gold_h)` with `s_{h+1}=commit(argmax(decode(s_h)))`
+— same generate commit path as chat. Gradients through multi-step free-run
+surface logits; discrete commits stop-grad (scheduled sampling).
+
+Flags: `--free-run-aux-every N` (0=OFF), `--free-run-aux-horizon H` (4),
+`--free-run-aux-weight W` (1.0). Live `train_until_coherent` recipe unchanged.
+Falsify: after short probe, gen scraps / prompt diversity no better than tip
+baseline → try last_atom scale under hard next.
+
+See MEASURE_LOG + docs/FREE_RUN_AUX.md.
+
 ## Config bugfix (2026-09-23) — field_loss post-resume
 
 `tools/run_atom_native.py` already rewrote obligatory / printable / next_packet / merge / payload after `model.load()`, but not `field_loss_weight` / `field_contrast_weight`. Construct CLI (`--field-loss-weight 0.05`) was overwritten by tip ckpt `0.0`, so all `*_lrd.pt` saved `field_loss_weight=0.0`. Fix: CLI wins for those two weights on resume (same sibling pattern). Code-only; live `train_until_coherent` / `run_atom_native` keep `field_loss=0` until relaunch.

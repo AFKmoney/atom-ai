@@ -1575,6 +1575,110 @@ class AtomNativeModel(nn.Module):
             return self.transition_loss(pred_packet, target)
         return self.transition_loss(current, target)
 
+    def free_run_aux_loss(
+        self,
+        start: AtomPacket,
+        golds: list[AtomPacket],
+        *,
+        weight: float = 1.0,
+    ) -> tuple[torch.Tensor, dict]:
+        """Multi-tick free-run CE using the SAME commit path as generate_packets.
+
+        Math (L_roll): for horizon H = len(golds),
+          L_roll = (1/H) Σ_h CE(logits(s_h), gold_h)
+        where s_0 = start, and s_{h+1} = packet_from_payload(argmax(decode(s_h)))
+        with the discrete commit stop-grad (scheduled sampling). Gradients flow
+        through each step's surface logits (α-MLP + last_atom + …) under the
+        free-run field trajectory — closing teacher-forced ↔ chat mismatch.
+
+        Mutates living field like generate (no restore): continuum after this
+        step is free-run-drifted. Falls back to transition_loss when golds is
+        empty or atomizer has a pending span.
+        """
+        if not golds:
+            raise ValueError("free_run_aux_loss requires at least one gold packet")
+        if len(self.atomizer._buffer) != 0:
+            return self.transition_loss(start, golds[0])
+
+        device = self.core.state.alpha.device
+        total_ce = torch.zeros((), device=device)
+        byte_losses: list[float] = []
+        length_losses: list[float] = []
+        current = start
+        n_steps = 0
+        last_output: dict | None = None
+        for gold in golds:
+            output = self.forward_packet(current, merge_enabled=False)
+            last_output = output
+            surface = output["surface"]
+            payload = gold.payload[: self.max_payload_bytes]
+            if not payload:
+                # Skip empty gold; still need a commit to advance free-run.
+                with torch.no_grad():
+                    pred_bytes = self.surface.decode(
+                        surface, deterministic=True, prefer_printable=True
+                    )
+                current = self.atomizer.packet_from_payload(bytes(pred_bytes))
+                continue
+            target_length = torch.tensor(
+                [len(payload) - 1], dtype=torch.long, device=surface["length_logits"].device
+            )
+            length_loss = F.cross_entropy(
+                surface["length_logits"].unsqueeze(0), target_length
+            )
+            target_bytes = torch.tensor(
+                list(payload), dtype=torch.long, device=surface["byte_logits"].device
+            )
+            byte_logits = surface["byte_logits"][: len(payload)]
+            byte_loss = F.cross_entropy(byte_logits, target_bytes)
+            step_ce = length_loss + byte_loss
+            total_ce = total_ce + step_ce
+            byte_losses.append(float(byte_loss.detach().item()))
+            length_losses.append(float(length_loss.detach().item()))
+            n_steps += 1
+            # Discrete free-run commit (stop-grad) — same decode as chat.
+            with torch.no_grad():
+                pred_bytes = self.surface.decode(
+                    surface, deterministic=True, prefer_printable=True
+                )
+            current = self.atomizer.packet_from_payload(bytes(pred_bytes))
+
+        if n_steps == 0:
+            return self.transition_loss(start, golds[0])
+
+        mean_ce = total_ce / float(n_steps)
+        w = float(weight)
+        loss = w * mean_ce
+        mean_byte = sum(byte_losses) / len(byte_losses)
+        mean_len = sum(length_losses) / len(length_losses)
+        out = last_output or {}
+        return loss, {
+            "loss": float(loss.detach().item()),
+            "ce_loss": float(mean_ce.detach().item()),
+            "byte_loss": mean_byte,
+            "length_loss": mean_len,
+            "n_atoms": len(self.core.atoms),
+            "field_norm": float(out.get("field", self.core.state.alpha).detach().norm().item())
+                if "field" in out else float(self.core.state.alpha.detach().norm().item()),
+            "field_rms_before": float(out.get("field_rms_before", 0.0) or 0.0),
+            "field_rms_after": float(out.get("field_rms_after", 0.0) or 0.0),
+            "field_scale": float(out.get("field_scale", 1.0) or 1.0),
+            "merge_count": int(out.get("merge_count", 0) or 0),
+            "merge_count_total": int(out.get("merge_count_total", self.merge_count_total) or self.merge_count_total),
+            "max_phase_coherence": float(out.get("max_phase_coherence", 0.0) or 0.0),
+            "n_pairs_above_energy_floor": int(out.get("n_pairs_above_energy_floor", 0) or 0),
+            "slow_tick": bool(out.get("slow_tick", True)),
+            "free_run_aux": True,
+            "free_run_horizon": int(n_steps),
+            "free_run_aux_weight": w,
+            "field_contrast_loss": 0.0,
+            "field_persist_loss": 0.0,
+            "field_ignorance_loss": 0.0,
+            "printable_aux_loss": 0.0,
+            "printable_mass_mean": float("nan"),
+            "field_next_packet_loss": 0.0,
+        }
+
     @torch.no_grad()
     def predict_packet(
         self,

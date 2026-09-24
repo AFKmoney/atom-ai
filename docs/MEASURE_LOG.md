@@ -5,6 +5,16 @@ One mechanism per row. **No fluency claim yet — but scaling real.**
 
 Pass rule: two prompts emit ≥4 Latin letters **and** the strings differ.
 
+
+## Free-run aux L_roll probe (2026-09-23, ms1M-continue-d32)
+
+Lever: multi-tick free-run CE (`--free-run-aux-every`, default OFF).
+Tip baseline: `*_d32_ms1M_lrd.pt` @3764k. Probe suffix `*_frroll.pt` (live 5M run untouched).
+
+| tip | cut | before gen (honest) | after gen | note |
+|-----|-----|---------------------|-----------|------|
+| 3764k→+4k frroll | L_roll H=4 every 10 | probe identical `Oui,,\n'uuttilisateur::::` PASS=False; chat all `Bonne` | probe distinct scraps (`Bonne suis…` / `Oui,, ends…` / `Oui,,…accord` / `Bonne idi…ilisateur`) PASS=True; chat diversifies (`Peut-- re…`, `Bonne parle…`, `Bonne ques…`) | **not fluent**; attractor broke; live 5M untouched (`*_frroll.pt`) |
+
 | step | cut | train loss | wrap generate (honest) | note |
 |------|-----|------------|------------------------|------|
 | 8–13k | span-16 | 6.1–6.9 | soup / `T T T` | contract wrong |

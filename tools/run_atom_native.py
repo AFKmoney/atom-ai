@@ -122,10 +122,20 @@ def finite_model(model: AtomNativeModel) -> bool:
 
 
 def transition_metrics(
-    model: AtomNativeModel, current, target, train: bool, efference: bool = False
+    model: AtomNativeModel,
+    current,
+    target,
+    train: bool,
+    efference: bool = False,
+    free_run_golds=None,
+    free_run_weight: float = 1.0,
 ) -> tuple[float, dict]:
     if train:
-        if efference:
+        if free_run_golds is not None:
+            loss, info = model.free_run_aux_loss(
+                current, list(free_run_golds), weight=float(free_run_weight)
+            )
+        elif efference:
             loss, info = model.efference_loss(current, target)
         else:
             loss, info = model.transition_loss(current, target)
@@ -366,6 +376,26 @@ def main() -> None:
              "sandbox speech line used 10)",
     )
     parser.add_argument(
+        "--free-run-aux-every",
+        type=int,
+        default=0,
+        help="multi-tick free-run aux (L_roll): every N steps replace CE with "
+             "H-step free-run CE using generate commit path (0=OFF default; "
+             "does not change live recipe until opted in)",
+    )
+    parser.add_argument(
+        "--free-run-aux-horizon",
+        type=int,
+        default=4,
+        help="horizon H for --free-run-aux-every (default 4)",
+    )
+    parser.add_argument(
+        "--free-run-aux-weight",
+        type=float,
+        default=1.0,
+        help="scale on mean free-run CE when free-run aux fires (default 1.0)",
+    )
+    parser.add_argument(
         "--printable-aux-weight",
         type=float,
         default=0.0,
@@ -597,6 +627,14 @@ def main() -> None:
     print(f"last_atom_readout={bool(args.last_atom_readout)} (byte-tick 2-gram + dentate)")
     model._efference_every = max(0, int(args.efference_every))
     print(f"efference_every={model._efference_every} (0=off)")
+    model._free_run_aux_every = max(0, int(args.free_run_aux_every))
+    model._free_run_aux_horizon = max(1, int(args.free_run_aux_horizon))
+    model._free_run_aux_weight = float(args.free_run_aux_weight)
+    print(
+        f"free_run_aux_every={model._free_run_aux_every} "
+        f"horizon={model._free_run_aux_horizon} "
+        f"weight={model._free_run_aux_weight} (0=off)"
+    )
     surface_lr = (
         float(args.surface_learning_rate)
         if args.surface_learning_rate is not None
@@ -676,6 +714,9 @@ def main() -> None:
                 "stream_skip_packets": max(0, int(args.stream_skip_packets)),
                 "last_atom_readout": bool(args.last_atom_readout),
                 "efference_every": max(0, int(args.efference_every)),
+                "free_run_aux_every": max(0, int(args.free_run_aux_every)),
+                "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
+                "free_run_aux_weight": float(args.free_run_aux_weight),
                 "enable_merge": bool(args.enable_merge),
                 "payload_copy": bool(args.payload_copy),
                 "merge_coherence_threshold": float(args.merge_coherence_threshold),
@@ -730,6 +771,9 @@ def main() -> None:
                 "payload_copy": bool(args.payload_copy),
                 "last_atom_readout": bool(args.last_atom_readout),
                 "efference_every": max(0, int(args.efference_every)),
+                "free_run_aux_every": max(0, int(args.free_run_aux_every)),
+                "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
+                "free_run_aux_weight": float(args.free_run_aux_weight),
                 "merge_coherence_threshold": float(args.merge_coherence_threshold),
                 "merge_energy_floor": float(args.merge_energy_floor),
                 "field_loss_weight": float(args.field_loss_weight),
@@ -749,6 +793,7 @@ def main() -> None:
     trajectory: list[dict] = []
     all_losses: list[float] = []
     efference_steps = 0
+    free_run_aux_steps = 0
     field_rms_before_values: list[float] = []
     field_rms_after_values: list[float] = []
     field_scales: list[float] = []
@@ -761,6 +806,10 @@ def main() -> None:
     atom_soft_cap = max(16, int(args.n_atoms_max * 0.9))
     for step in range(1, args.steps + 1):
         current_episode = (step - 1) // args.episode_length
+        free_run_golds = None
+        do_free_run = bool(args.free_run_aux_every) and step % int(args.free_run_aux_every) == 0
+        horizon = max(1, int(args.free_run_aux_horizon)) if do_free_run else 1
+
         if stream_mode:
             # Prefer continuous stream. Episode windows only force a field wipe
             # when --episode-reset is set; otherwise the field persists.
@@ -777,6 +826,12 @@ def main() -> None:
             try:
                 # Prefer iterator protocol (avoids extra Python method frame).
                 current_packet, target_packet = next(stream_source)
+                if do_free_run:
+                    golds = [target_packet]
+                    for _ in range(horizon - 1):
+                        _, g = next(stream_source)
+                        golds.append(g)
+                    free_run_golds = golds
             except StopIteration as exc:
                 raise RuntimeError(
                     f"stream exhausted at step {step}/{args.steps}; "
@@ -804,12 +859,36 @@ def main() -> None:
                 index = index % (len(train_packets) - 1)
             current_packet = train_packets[index]
             target_packet = train_packets[index + 1]
+            if do_free_run:
+                golds = []
+                for h in range(horizon):
+                    gi = index + 1 + h
+                    if gi >= len(train_packets):
+                        break
+                    golds.append(train_packets[gi])
+                if golds:
+                    free_run_golds = golds
 
         optimizer.zero_grad(set_to_none=True)
-        do_eff = bool(args.efference_every) and step % int(args.efference_every) == 0
+        # Free-run aux supersedes 1-tick efference when both would fire.
+        do_eff = (
+            free_run_golds is None
+            and bool(args.efference_every)
+            and step % int(args.efference_every) == 0
+        )
         if do_eff:
             efference_steps += 1
-        loss, info = transition_metrics(model, current_packet, target_packet, train=True, efference=do_eff)
+        if do_free_run and free_run_golds is not None:
+            free_run_aux_steps += 1
+        loss, info = transition_metrics(
+            model,
+            current_packet,
+            target_packet,
+            train=True,
+            efference=do_eff,
+            free_run_golds=free_run_golds,
+            free_run_weight=float(args.free_run_aux_weight),
+        )
         optimizer.step()
         if args.atom_flush_every and step % args.atom_flush_every == 0:
             model.core.atoms = type(model.core.atoms)()
@@ -839,6 +918,8 @@ def main() -> None:
                 "grad_norm": info.get("grad_norm"),
                 "n_atoms": info["n_atoms"],
                 "efference": do_eff,
+                "free_run_aux": bool(info.get("free_run_aux", False)),
+                "free_run_horizon": int(info.get("free_run_horizon", 0) or 0),
                 "merge_count": info.get("merge_count", 0),
                 "merge_count_total": info.get("merge_count_total", 0),
                 "slow_tick": info.get("slow_tick", True),
@@ -999,7 +1080,14 @@ def main() -> None:
         "train": {
             "steps": args.steps,
             "efference_every": max(0, int(args.efference_every)),
+                "free_run_aux_every": max(0, int(args.free_run_aux_every)),
+                "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
+                "free_run_aux_weight": float(args.free_run_aux_weight),
             "efference_steps": efference_steps,
+            "free_run_aux_steps": free_run_aux_steps,
+            "free_run_aux_every": max(0, int(args.free_run_aux_every)),
+            "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
+            "free_run_aux_weight": float(args.free_run_aux_weight),
             "start_step": start_step,
             "total_steps": start_step + args.steps,
             "episode_length": args.episode_length,
