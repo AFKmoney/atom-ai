@@ -40,7 +40,7 @@ def main() -> None:
     adaptive = bool(getattr(surf, "last_atom_scale_adaptive", False))
     fixed_s = float(getattr(surf, "last_atom_scale", 1.0))
     mode = (
-        f"adaptive[{float(getattr(surf, 'last_atom_scale_min', 0.05))}.."
+        f"adaptive[{float(getattr(surf, 'last_atom_scale_min', 0.0))}.."
         f"{float(getattr(surf, 'last_atom_scale_max', 1.0))}]"
         if adaptive
         else f"fixed={fixed_s}"

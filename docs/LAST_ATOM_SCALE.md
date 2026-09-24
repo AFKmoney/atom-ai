@@ -51,8 +51,9 @@ logits = obl·α_MLP + 0.3·frozen_JL + payload + S_eff · la_raw
 RMS stats are **detached** (no grad through `S_eff` itself). Gradients still
 flow through `α_MLP` and `LastAtomReadout` weights via the scaled add.
 
-Defaults: `S_min=0.05`, `S_max=1.0`, `ε=1e-8`. Floor avoids silencing last_atom
-when α collapses; ceiling avoids amplifying a weak last_atom above α.
+Defaults: `S_min=0.0`, `S_max=1.0`, `ε=1e-8`. Ceiling avoids amplifying a
+weak last_atom above α. Floor is **0** so S_eff can true-RMS-match when
+`la_rms ≫ α_rms` (see falsification of 0.05 below).
 
 ### Flags (default OFF-compatible)
 
@@ -60,14 +61,24 @@ when α collapses; ceiling avoids amplifying a weak last_atom above α.
 --last-atom-scale 1.0              # fixed S (unchanged; ignored if adaptive)
 --last-atom-scale-adaptive         # enable S_eff equalization
 --no-last-atom-scale-adaptive      # explicit off (default)
---last-atom-scale-min 0.05
+--last-atom-scale-min 0.0          # true RMS match (was 0.05; falsified)
 --last-atom-scale-max 1.0
 ```
 
 Live `train_until_coherent` recipe unchanged (adaptive OFF → fixed S=1.0).
 
-### Falsification
+### Falsification of S_min=0.05 (2026-09-24)
 
-Short probe (~8k) from 3808k lascale tip with free-run-aux ON + adaptive ON:
-if chats stay letter-soup / dual-Bon attractor and/or effective la/α leaves ~1
-after train, adaptive lever does not buy fluency either.
++8k adaptive from 3808k lascale (`*_lascale_adapt.pt`): under free-run-aux,
+`la_raw` exploded (~59→~230). Desired `S=α_rms/la_rms` wanted to go **below
+0.05**; the floor kept too much last_atom → mean `S_eff` stuck at 0.05,
+effective la/α worsened 3.51→5.82, speech worse (`:::` / isi soup). Frozen
+preview at tip did equalize (~1.35) but only because tip already sat near the
+floor. **Conclusion:** 0.05 floor falsified for free-run-aux train; next step
+is true RMS match with `S_min=0` (keep `S_max=1.0`).
+
+### Falsification (S_min=0)
+
+Short probe (~8k) from 3816k lascale_adapt tip with free-run-aux ON + adaptive
+ON + `S_min=0`: if chats stay letter-soup and/or effective la/α leaves ~1 after
+train, even true RMS match does not buy fluency.

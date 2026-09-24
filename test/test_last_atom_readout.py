@@ -165,39 +165,50 @@ class LastAtomScaleTests(unittest.TestCase):
 
 
 class LastAtomScaleAdaptiveTests(unittest.TestCase):
+    def test_default_s_min_is_zero(self) -> None:
+        head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
+        self.assertEqual(float(head.last_atom_scale_min), 0.0)
+
     def test_adaptive_equalizes_la_vs_alpha_rms(self) -> None:
-        """Synthetic tensors: S_eff * la_rms ≈ α_rms within clamp/tolerance."""
+        """Synthetic tensors: S_eff * la_rms ≈ α_rms (true RMS match, S_min=0)."""
         torch.manual_seed(0)
         head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
         head.last_atom_scale_adaptive = True
-        head.last_atom_scale_min = 0.05
+        # default S_min=0.0, S_max=1.0
+        self.assertEqual(float(head.last_atom_scale_min), 0.0)
         head.last_atom_scale_max = 1.0
-        # α small, la large → S_eff ≈ α/la < 1, effective la ≈ α
+        # α small, la large → S_eff ≈ α/la << 0.05 (former floor); effective la ≈ α
         alpha_term = torch.randn(1, 256) * 0.5
-        la_raw = torch.randn(1, 256) * 4.0
+        la_raw = torch.randn(1, 256) * 20.0
         s_eff = head.effective_last_atom_scale(alpha_term, la_raw)
         alpha_rms = float(alpha_term.pow(2).mean().sqrt())
         la_raw_rms = float(la_raw.pow(2).mean().sqrt())
         la_eff_rms = float((s_eff * la_raw).pow(2).mean().sqrt())
         expected = alpha_rms / (la_raw_rms + 1e-8)
-        expected = max(0.05, min(1.0, expected))
+        expected = max(0.0, min(1.0, expected))
+        self.assertLess(expected, 0.05)  # would have hit former floor
         self.assertAlmostEqual(float(s_eff), expected, places=5)
+        self.assertLess(float(s_eff), 0.05)
         self.assertAlmostEqual(la_eff_rms / alpha_rms, 1.0, places=2)
 
     def test_adaptive_clamps_to_min_max(self) -> None:
         head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
         head.last_atom_scale_adaptive = True
-        head.last_atom_scale_min = 0.05
+        head.last_atom_scale_min = 0.0
         head.last_atom_scale_max = 1.0
         # la tiny vs α → raw ratio >> 1 → clamp to S_max
         alpha_term = torch.ones(1, 256)
         la_raw = torch.ones(1, 256) * 1e-6
         s_hi = float(head.effective_last_atom_scale(alpha_term, la_raw))
         self.assertAlmostEqual(s_hi, 1.0, places=5)
-        # la huge vs α → raw ratio << 0.05 → clamp to S_min
-        la_huge = torch.ones(1, 256) * 1e3
+        # la huge vs α → raw ratio → 0 → clamp to S_min=0
+        la_huge = torch.ones(1, 256) * 1e6
         s_lo = float(head.effective_last_atom_scale(alpha_term, la_huge))
-        self.assertAlmostEqual(s_lo, 0.05, places=5)
+        self.assertAlmostEqual(s_lo, 0.0, places=5)
+        # configurable floor still honored when set above 0
+        head.last_atom_scale_min = 0.05
+        s_floor = float(head.effective_last_atom_scale(alpha_term, la_huge))
+        self.assertAlmostEqual(s_floor, 0.05, places=5)
 
     def test_fixed_scale_still_linear_when_adaptive_off(self) -> None:
         torch.manual_seed(1)

@@ -307,7 +307,7 @@ class AtomSurfaceHead(nn.Module):
         # S=1.0 = current behavior. Opt-in adaptive: see last_atom_scale_adaptive.
         self.last_atom_scale = 1.0
         self.last_atom_scale_adaptive = False
-        self.last_atom_scale_min = 0.05
+        self.last_atom_scale_min = 0.0
         self.last_atom_scale_max = 1.0
         if self.last_atom_readout:
             if max_payload_bytes != 1:
@@ -335,7 +335,7 @@ class AtomSurfaceHead(nn.Module):
             )
         alpha_rms = alpha_term.detach().pow(2).mean().sqrt()
         la_rms = la_raw.detach().pow(2).mean().sqrt()
-        s_min = float(getattr(self, "last_atom_scale_min", 0.05))
+        s_min = float(getattr(self, "last_atom_scale_min", 0.0))
         s_max = float(getattr(self, "last_atom_scale_max", 1.0))
         s_eff = alpha_rms / (la_rms + float(eps))
         return s_eff.clamp(min=s_min, max=s_max)
@@ -1868,7 +1868,7 @@ class AtomNativeModel(nn.Module):
                     getattr(self.surface, "last_atom_scale_adaptive", False)
                 ),
                 "last_atom_scale_min": float(
-                    getattr(self.surface, "last_atom_scale_min", 0.05)
+                    getattr(self.surface, "last_atom_scale_min", 0.0)
                 ),
                 "last_atom_scale_max": float(
                     getattr(self.surface, "last_atom_scale_max", 1.0)

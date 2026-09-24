@@ -384,8 +384,9 @@ def main() -> None:
     parser.add_argument(
         "--last-atom-scale-min",
         type=float,
-        default=0.05,
-        help="adaptive clamp floor for S_eff (default 0.05)",
+        default=0.0,
+        help="adaptive clamp floor for S_eff (default 0.0 = true RMS match; "
+             "0.05 floor falsified under free-run-aux)",
     )
     parser.add_argument(
         "--last-atom-scale-max",
