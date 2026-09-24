@@ -1,0 +1,124 @@
+=== post_train start Thu Sep 24 10:31:14 PDT 2026 waiting for 2747754 ===
+10:31:14 waiting 
+10:33:14 waiting 
+10:35:14 waiting 
+10:37:14 waiting run 1/8000
+10:39:14 waiting run 200/8000
+10:41:14 waiting run 400/8000
+10:43:14 waiting run 600/8000
+10:45:14 waiting run 800/8000
+10:47:14 waiting run 975/8000
+10:49:14 waiting run 1175/8000
+10:51:14 waiting run 1375/8000
+10:53:14 waiting run 1575/8000
+10:55:14 waiting run 1775/8000
+10:57:14 waiting run 1975/8000
+10:59:14 waiting run 2175/8000
+11:01:14 waiting run 2375/8000
+11:03:14 waiting run 2550/8000
+11:05:14 waiting run 2750/8000
+11:07:14 waiting run 2950/8000
+11:09:14 waiting run 3150/8000
+11:11:14 waiting run 3350/8000
+11:13:14 waiting run 3550/8000
+11:15:14 waiting run 3750/8000
+11:17:14 waiting run 3925/8000
+11:19:15 waiting run 4125/8000
+11:21:15 waiting run 4325/8000
+11:23:15 waiting run 4525/8000
+11:25:15 waiting run 4725/8000
+11:27:15 waiting run 4925/8000
+11:29:15 waiting run 5100/8000
+11:31:15 waiting run 5300/8000
+11:33:15 waiting run 5500/8000
+11:35:15 waiting run 5700/8000
+11:37:15 waiting run 5900/8000
+11:39:15 waiting run 6075/8000
+11:41:15 waiting run 6275/8000
+11:43:15 waiting run 6475/8000
+11:45:15 waiting run 6675/8000
+11:47:15 waiting run 6875/8000
+11:49:15 waiting run 7075/8000
+11:51:15 waiting run 7275/8000
+11:53:15 waiting run 7700/8000
+=== process exited Thu Sep 24 14:55:15 EDT 2026 ===
+CKPT=checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd_fradapt.pt
+-rw-r--r-- 1 box box 3682523 Sep 24 14:53 checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd_fradapt.pt
+[probe] checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd_fradapt.pt hard=True
+  'Bonjour' -> ':::::::o::::r  \n\n' (latin=2)
+  'Qui es-tu ?' -> ':::::: :::is    ais   s ' (latin=6)
+  'Merci' -> '::::::i:::iis   u   ais ' (latin=8)
+  'Comment vas-tu ?' -> '::::::i:::e t:::t: :::e ' (latin=5)
+[probe] PASS=True (3/4 with >=4 latin, distinct=True)
+Prompt: Bonjour, comment ça va ?
+Response: i :e  s
+[ingest] merge_enabled=False atoms=57 train_enable_merge=False
+Prompt: Qui es-tu ?
+Response: i :e  t
+[ingest] merge_enabled=False atoms=43 train_enable_merge=False
+Prompt: Il était une fois
+Response: i :::::
+[ingest] merge_enabled=False atoms=53 train_enable_merge=False
+[la_alpha_rms] checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd_fradapt.pt last_atom_scale=adaptive[0.0..1.0]
+  'Bonjour': alpha_rms=2.5943 la_rms=2.5943 (raw=133.0310*S_eff=0.0195) la/alpha=1.0000
+  'Qui es-tu ?': alpha_rms=2.7347 la_rms=2.7347 (raw=71.3880*S_eff=0.0383) la/alpha=1.0000
+  'Merci': alpha_rms=2.5363 la_rms=2.5363 (raw=142.5962*S_eff=0.0178) la/alpha=1.0000
+  'Comment vas-tu ?': alpha_rms=2.8056 la_rms=2.8056 (raw=142.5962*S_eff=0.0197) la/alpha=1.0000
+[la_alpha_rms] mean_S_eff=0.0238 min=0.0178 max=0.0383
+[la_alpha_rms] mean_ratio=1.0000 min=1.0000 max=1.0000
+    },
+    "final_atoms_before_validation": 60,
+    "stream": true,
+    "bytes_seen": 3829235
+  },
+  "validation": {
+    "transitions": 256,
+    "loss": 2.8273790003731847,
+    "total_perplexity": 16.90110493182522,
+    "byte_loss": 2.8218668597983196,
+    "byte_perplexity": 16.808199953453812,
+    "source": "stream_ring"
+  },
+  "checkpoint": "checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd_fradapt.pt",
+  "reload": {
+    "n_atoms": 0,
+    "field_norm": 95.99996185302734,
+    "time": 104.0038070678711,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a3a3a3a3a6f6e74",
+      "text": ":::::ont",
+      "reload_text": ":::::ont",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a3a3a3a3a6f6e69",
+      "text": ":::::oni",
+      "reload_text": ":::::oni",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a3a3a3a3a6f3a3a",
+      "text": ":::::o::",
+      "reload_text": ":::::o::",
+      "reload_match": true
+    }
+  }
+}
+=== live status ===
+box       657454  0.0  0.0   4620  3592 ?        S    Sep22   0:01 bash scripts/train_until_coherent.sh 1556000
+box      2914000 94.9  4.0 3794152 671820 ?      Rl   14:53   2:38 .venv/bin/python -u tools/run_atom_native.py --stream --data-glob data/corpus_fr_medium*.txt --loop-shards --chunk-bytes 65536 --stream-skip-packets 3772000 --resume checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd.pt --output-dir checkpoints/byte_tick --checkpoint-name atom_native_step_4276000_d32_ms1M_lrd.pt --steps 8000 --d-model 32 --n-modes 32 --n-atoms-max 64 --max-span-bytes 1 --field-obligatory-hard --no-enable-merge --no-payload-copy --last-atom-readout --efference-every 10 --learning-rate 3e-5 --surface-learning-rate 7.2e-5 --seed 20260913 --atom-flush-every 64 --episode-length 8000 --episode-reset --slow-every 1 --field-loss-weight 0.05 --field-contrast-weight 0 --allow-parallel-train
+-rw-r--r-- 1 box box 3681083 Sep 24 14:50 checkpoints/byte_tick/atom_native_step_4268000_d32_ms1M_lrd.pt
+-rw-r--r-- 1 box box 3681083 Sep 24 13:29 checkpoints/byte_tick/atom_native_step_4260000_d32_ms1M_lrd.pt
+-rw-r--r-- 1 box box 3681083 Sep 24 13:18 checkpoints/byte_tick/atom_native_step_4252000_d32_ms1M_lrd.pt

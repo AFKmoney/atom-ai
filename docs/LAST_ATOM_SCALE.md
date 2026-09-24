@@ -82,3 +82,25 @@ is true RMS match with `S_min=0` (keep `S_max=1.0`).
 Short probe (~8k) from 3816k lascale_adapt tip with free-run-aux ON + adaptive
 ON + `S_min=0`: if chats stay letter-soup and/or effective la/α leaves ~1 after
 train, even true RMS match does not buy fluency.
+
+### Result (S_min=0 on soup lineage) — falsified for fluency
+
++8k from 3816k → `*_lascale_adapt0.pt`: mean S_eff≈0.011, eff la/α=1.00, speech
+still colon/isi soup. See `logs/lascale_adapt0_probe/REPORT.md`.
+
+### Clean-tip re-test (lineage contamination) — 2026-09-24
+
+Hypothesis: soup lineage poisoned prior probes. Re-ran free-run-aux every=10 H=4
++ adaptive S_min=0 from clean live tip `4260000_d32_ms1M_lrd.pt` →
+`4268000_d32_ms1M_lrd_fradapt.pt` (+8k, allow-parallel; live untouched).
+
+| | before (fixed S=1) | preview adapt@tip | after +8k |
+|---|---|---|---|
+| la/α eff | 6.45 | 1.00 | 1.00 |
+| mean S_eff | 1.00 | 0.102 | 0.024 |
+| la raw mean | ~54 | ~81 | ~122 |
+| speech | Peut-- / empty chat | — | ::: colon soup |
+
+**Honest:** math OK; chats not French. Lineage-clean tip does **not** buy fluency
+on this lever. Stop tweaking S; next lever elsewhere.
+See `logs/lrd_fradapt_probe/REPORT.md`.
