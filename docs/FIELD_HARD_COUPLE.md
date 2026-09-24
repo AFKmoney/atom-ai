@@ -55,6 +55,10 @@ CLI wins after resume (same pattern as field_loss / last_atom_scale).
 if speech PASS/distinct / 3 chats no better than tip baseline and couple
 RMS stays decorative → lever falsified for fluency; do not auto-stack.
 
+## Load note
+
+Tip checkpoints predating this head lack `field_hard_couple_*` keys. Load seeds only those weights (`N(0,0.02)`); it must **not** reinit `field_feat_norm` / `field_to_state` (see fix commit). Legacy migrate flag stays false.
+
 ## Code
 
 `AtomSurfaceHead.forward` hard branch; CLI in `tools/run_atom_native.py`;
