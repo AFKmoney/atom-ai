@@ -45,6 +45,8 @@ def load_model(checkpoint: str | Path, device: str = "cpu") -> AtomNativeModel:
         last_atom_readout=bool(config.get("last_atom_readout", False)),
     )
     training = model.load(path)
+    if "last_atom_scale" in config:
+        model.surface.last_atom_scale = float(config["last_atom_scale"])
     if hard or bool(config.get("field_obligatory_hard", False)):
         model.field_obligatory_hard = True
         model.field_obligatory_readout = True

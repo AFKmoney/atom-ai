@@ -303,6 +303,9 @@ class AtomSurfaceHead(nn.Module):
         self._init_payload_production()
         self.last_atom_readout = bool(last_atom_readout)
         self.last_atom = None
+        # CLI --last-atom-scale S (default 1.0): scales la_byte on hard mix only.
+        # S=1.0 = current behavior; S≈α_rms/la_rms rebalances branches.
+        self.last_atom_scale = 1.0
         if self.last_atom_readout:
             if max_payload_bytes != 1:
                 raise ValueError("last_atom_readout requires max_payload_bytes=1 (byte-tick)")
@@ -698,7 +701,8 @@ class AtomSurfaceHead(nn.Module):
                                 device=frozen_byte.device,
                                 dtype=frozen_byte.dtype,
                             )
-                        la_byte = self.last_atom(last_b, prev_b, phi_vec).unsqueeze(0)
+                        scale = float(getattr(self, "last_atom_scale", 1.0))
+                        la_byte = scale * self.last_atom(last_b, prev_b, phi_vec).unsqueeze(0)
                     return {
                         "byte_logits": obl * train_byte + 0.3 * frozen_byte + pay_byte + la_byte,
                         "length_logits": obl * train_len + 0.3 * frozen_len + pay_len,
@@ -1828,6 +1832,7 @@ class AtomNativeModel(nn.Module):
                 "field_obligatory_hard": bool(self.field_obligatory_hard),
                 "payload_copy": bool(getattr(self.surface, "payload_enabled", True)),
                 "last_atom_readout": bool(self.last_atom_readout),
+                "last_atom_scale": float(getattr(self.surface, "last_atom_scale", 1.0)),
                 "printable_aux_weight": float(self.printable_aux_weight),
                 "field_next_packet_weight": float(self.field_next_packet_weight),
                 "merge_count_total": self.merge_count_total,
@@ -2079,6 +2084,9 @@ class AtomNativeModel(nn.Module):
         self.merge_count_total = int(cfg.get("merge_count_total", 0) or 0)
         if "payload_copy" in cfg:
             self.surface.payload_enabled = bool(cfg["payload_copy"])
+        # Provenance scale; CLI --last-atom-scale wins after load in run_atom_native.
+        if "last_atom_scale" in cfg:
+            self.surface.last_atom_scale = float(cfg["last_atom_scale"])
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
         training = checkpoint.get("training")

@@ -1,3 +1,10 @@
+## last_atom scale S (2026-09-23) — one math lever
+
+Hard mix: `logits += S * la_byte` via `--last-atom-scale S` (default **1.0** =
+no behavior change). Pick S≈α_rms/la_rms so α-MLP can compete under obligatory
+hard (measured ~6.5 at 3800k frroll → try S=0.15). Opt-in; live 5M recipe
+untouched. See `docs/LAST_ATOM_SCALE.md` + MEASURE_LOG.
+
 ## Free-run aux L_roll (2026-09-23) — one math lever
 
 **Not a dead-end on proxy-mismatch.** Primary lever (opt-in, default OFF):

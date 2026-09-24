@@ -39,6 +39,8 @@ def load(checkpoint: Path) -> AtomNativeModel:
         enable_merge=False,
     )
     model.load(checkpoint)
+    if "last_atom_scale" in cfg:
+        model.surface.last_atom_scale = float(cfg["last_atom_scale"])
     model.eval()
     return model
 

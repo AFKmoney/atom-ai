@@ -368,6 +368,13 @@ def main() -> None:
              "(requires --max-span-bytes 1; default: off)",
     )
     parser.add_argument(
+        "--last-atom-scale",
+        type=float,
+        default=1.0,
+        help="scale last_atom logits on hard mix: logits += S * la_byte "
+             "(default 1.0 = current behavior; set S≈α_rms/la_rms to rebalance)",
+    )
+    parser.add_argument(
         "--efference-every",
         type=int,
         default=0,
@@ -625,6 +632,12 @@ def main() -> None:
     model.surface.payload_enabled = bool(args.payload_copy)
     print(f"payload_copy={bool(args.payload_copy)} (train-time copy-bias branch)")
     print(f"last_atom_readout={bool(args.last_atom_readout)} (byte-tick 2-gram + dentate)")
+    # CLI wins for last_atom scale (default 1.0 = no behavior change).
+    model.surface.last_atom_scale = float(args.last_atom_scale)
+    print(
+        f"last_atom_scale={float(args.last_atom_scale)} "
+        "(1.0=off/current; hard-path la_byte *= S)"
+    )
     model._efference_every = max(0, int(args.efference_every))
     print(f"efference_every={model._efference_every} (0=off)")
     model._free_run_aux_every = max(0, int(args.free_run_aux_every))
@@ -713,6 +726,7 @@ def main() -> None:
                 "stream_prefetch": bool(args.stream_prefetch),
                 "stream_skip_packets": max(0, int(args.stream_skip_packets)),
                 "last_atom_readout": bool(args.last_atom_readout),
+                "last_atom_scale": float(args.last_atom_scale),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -770,6 +784,7 @@ def main() -> None:
                 "enable_merge": bool(args.enable_merge),
                 "payload_copy": bool(args.payload_copy),
                 "last_atom_readout": bool(args.last_atom_readout),
+                "last_atom_scale": float(args.last_atom_scale),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -1088,6 +1103,7 @@ def main() -> None:
             "free_run_aux_every": max(0, int(args.free_run_aux_every)),
             "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
             "free_run_aux_weight": float(args.free_run_aux_weight),
+            "last_atom_scale": float(args.last_atom_scale),
             "start_step": start_step,
             "total_steps": start_step + args.steps,
             "episode_length": args.episode_length,

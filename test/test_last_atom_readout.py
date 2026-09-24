@@ -131,6 +131,36 @@ class LastAtomReadoutTests(unittest.TestCase):
         )
         self.assertEqual(len(raw), 6)
 
+class LastAtomScaleTests(unittest.TestCase):
+    def test_default_scale_is_one(self) -> None:
+        head = AtomSurfaceHead(d_model=8, max_payload_bytes=1, last_atom_readout=True)
+        self.assertEqual(float(head.last_atom_scale), 1.0)
+
+    def test_scale_multiplies_hard_mix_la(self) -> None:
+        torch.manual_seed(0)
+        model = _tiny_byte_tick(last_atom_readout=True)
+        model.eval()
+        atomizer = Atomizer(max_span_bytes=1)
+        packets = atomizer.encode("ab")
+        surf = model.surface
+
+        def logits_at(scale: float):
+            surf.last_atom_scale = float(scale)
+            model.reset_state(reset_atomizer=True)
+            with torch.no_grad():
+                model.forward_packet(packets[0])
+                out = model.forward_packet(packets[1])["surface"]["byte_logits"]
+            return out.clone()
+
+        out1 = logits_at(1.0)
+        out0 = logits_at(0.0)
+        out_half = logits_at(0.5)
+        delta_full = out1 - out0
+        delta_half = out_half - out0
+        self.assertTrue(torch.isfinite(delta_full).all().item())
+        self.assertGreater(float(delta_full.pow(2).mean().sqrt()), 1e-6)
+        self.assertTrue(torch.allclose(delta_half, 0.5 * delta_full, rtol=1e-4, atol=1e-5))
+
 
 if __name__ == "__main__":
     unittest.main()
