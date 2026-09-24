@@ -8,12 +8,17 @@ Pass rule: two prompts emit ≥4 Latin letters **and** the strings differ.
 
 ## Free-run aux L_roll probe (2026-09-23, ms1M-continue-d32)
 
-Lever: multi-tick free-run CE (`--free-run-aux-every`, default OFF).
-Tip baseline: `*_d32_ms1M_lrd.pt` @3764k. Probe suffix `*_frroll.pt` (live 5M run untouched).
+Lever: multi-tick free-run CE (`--free-run-aux-every 10 --free-run-aux-horizon 4 --free-run-aux-weight 1.0`, default OFF).
+Tip baseline: `*_d32_ms1M_lrd.pt` @3764k. Probe suffix `*_frroll.pt` (live 5M `train_until_coherent` untouched; `--allow-parallel-train`).
+Recipe otherwise = ms1M lrd (d32, hard, no-merge, last-atom-readout, field-loss 0.05).
 
-| tip | cut | before gen (honest) | after gen | note |
-|-----|-----|---------------------|-----------|------|
-| 3764k→+4k frroll | L_roll H=4 every 10 | probe identical `Oui,,\n'uuttilisateur::::` PASS=False; chat all `Bonne` | probe distinct scraps (`Bonne suis…` / `Oui,, ends…` / `Oui,,…accord` / `Bonne idi…ilisateur`) PASS=True; chat diversifies (`Peut-- re…`, `Bonne parle…`, `Bonne ques…`) | **not fluent**; attractor broke; live 5M untouched (`*_frroll.pt`) |
+| tip | cut | honest probe | chat scraps | la/α RMS mean | note |
+|-----|-----|--------------|-------------|---------------|------|
+| 3764k baseline | lrd (no L_roll) | identical `Oui,,\n'uuttilisateur::::` PASS=False | all `Bonne` / `uuttilisateur` | 2.02 | single attractor |
+| 3764k→+4k frroll | L_roll H=4 /10 | distinct (`Bonne suis…` / `Oui,, ends…` / `Oui,,…accord` / `Bonne idi…ilisateur`) PASS=True | diversifies (`Peut-- re…`, `Bonne parle…`, `Bonne ques…`) | 3.15 | attractor broke; **not fluent** |
+| 3768k→+32k frroll (→3800k) | same L_roll | collapsed identical `Peut-être re ends d'acc` PASS=False | still scrap-diverse (`Bonne is rès d'accord…`, `Comment t'accord…`, `e rends…ilisateur`) | 6.54 | **re-collapsed to new phrase attractor**; chats not fully collapsed; la dominates more; **not fluent**; ckpt `atom_native_step_3800000_d32_ms1M_frroll.pt` (32k steps, 3200 L_roll fires, 1.77 tick/s, val byte_ppl≈1.91) |
+
+FR read: +4k briefly unlocked prompt-distinct debris; extending to +32k did **not** push toward fluent phrases — probe diversity reversed into a stronger shared `Peut-être…` basin while last_atom/α logit RMS rose (~2→6.5). Live 5M lrd continued in parallel (untouched).
 
 | step | cut | train loss | wrap generate (honest) | note |
 |------|-----|------------|------------------------|------|
