@@ -1,0 +1,112 @@
+=== post_train start Thu Sep 24 07:32:42 PDT 2026 waiting for 2272588 ===
+07:32:42 waiting 
+07:34:42 waiting 
+07:36:42 waiting run 25/8000
+07:38:42 waiting run 225/8000
+07:40:42 waiting run 425/8000
+07:42:42 waiting run 625/8000
+07:44:42 waiting run 825/8000
+07:46:42 waiting run 1000/8000
+07:48:42 waiting run 1200/8000
+07:50:42 waiting run 1400/8000
+07:52:42 waiting run 1600/8000
+07:54:42 waiting run 1800/8000
+07:56:42 waiting run 2000/8000
+07:58:42 waiting run 2200/8000
+08:00:42 waiting run 2400/8000
+08:02:42 waiting run 2600/8000
+08:04:42 waiting run 2800/8000
+08:06:42 waiting run 3000/8000
+08:08:42 waiting run 3200/8000
+08:10:42 waiting run 3400/8000
+08:12:42 waiting run 3600/8000
+08:14:42 waiting run 3800/8000
+08:16:42 waiting run 4000/8000
+08:18:42 waiting run 4200/8000
+08:20:42 waiting run 4400/8000
+08:22:42 waiting run 4575/8000
+08:24:42 waiting run 4775/8000
+08:26:42 waiting run 4975/8000
+08:28:42 waiting run 5175/8000
+08:30:42 waiting run 5375/8000
+08:32:42 waiting run 5575/8000
+08:34:42 waiting run 5775/8000
+08:36:42 waiting run 5975/8000
+08:38:42 waiting run 6175/8000
+08:40:42 waiting run 6350/8000
+08:42:42 waiting run 6550/8000
+08:44:43 waiting run 6750/8000
+08:46:43 waiting run 6950/8000
+08:48:43 waiting run 7425/8000
+08:50:43 waiting run 7950/8000
+=== process exited Thu Sep 24 08:52:43 PDT 2026 ===
+CKPT=checkpoints/byte_tick/atom_native_step_3816000_d32_ms1M_lascale_adapt.pt
+-rw-r--r-- 1 box box 3682851 Sep 24 08:51 checkpoints/byte_tick/atom_native_step_3816000_d32_ms1M_lascale_adapt.pt
+[probe] checkpoints/byte_tick/atom_native_step_3816000_d32_ms1M_lascale_adapt.pt hard=True
+  'Bonjour' -> '::: ::n ?\nisisisir: :ili' (latin=12)
+  'Qui es-tu ?' -> ':: :: un ?\nAssisir: :u  ' (latin=10)
+  'Merci' -> ':: :on en :on e ?\nAssisi' (latin=13)
+  'Comment vas-tu ?' -> ':: :: n ?\nisisisir: :u  ' (latin=10)
+[probe] PASS=True (4/4 with >=4 latin, distinct=True)
+Prompt: Bonjour, comment ça va ?
+Response: nien on ne  :: :our: :: oiisie n  ieisir: Unt:  ouisateur:  en   re toi   i  e seisi e  our: 
+
+[ingest] merge_enabled=False atoms=149 train_enable_merge=False
+Prompt: Qui es-tu ?
+Response: nn re en ?
+Utilisiisir: ie n  on on  un re sisistant: un  e  istant: ne  en ie  i e  uis isate 
+[ingest] merge_enabled=False atoms=136 train_enable_merge=False
+Prompt: Il était une fois
+Response: nn re en ?
+Utilisiisir: our: :on ?
+
+
+[ingest] merge_enabled=False atoms=80 train_enable_merge=False
+[la_alpha_rms] checkpoints/byte_tick/atom_native_step_3816000_d32_ms1M_lascale_adapt.pt last_atom_scale=adaptive[0.05..1.0]
+  'Bonjour': alpha_rms=1.9618 la_rms=12.0432 (raw=240.8638*S_eff=0.0500) la/alpha=6.1388
+  'Qui es-tu ?': alpha_rms=2.1352 la_rms=14.9893 (raw=299.7870*S_eff=0.0500) la/alpha=7.0202
+  'Merci': alpha_rms=1.6733 la_rms=8.0894 (raw=161.7881*S_eff=0.0500) la/alpha=4.8345
+  'Comment vas-tu ?': alpha_rms=2.0803 la_rms=10.9793 (raw=219.5869*S_eff=0.0500) la/alpha=5.2778
+[la_alpha_rms] mean_S_eff=0.0500 min=0.0500 max=0.0500
+[la_alpha_rms] mean_ratio=5.8178 min=4.8345 max=7.0202
+    "byte_perplexity": 6.0324809869702705,
+    "source": "stream_ring"
+  },
+  "checkpoint": "checkpoints/byte_tick/atom_native_step_3816000_d32_ms1M_lascale_adapt.pt",
+  "reload": {
+    "n_atoms": 0,
+    "field_norm": 95.99994659423828,
+    "time": 104.0038070678711,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a6f6e2065736973",
+      "text": ":on esis",
+      "reload_text": ":on esis",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a6f6e2065723a20",
+      "text": ":on er: ",
+      "reload_text": ":on er: ",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a203a756e652020",
+      "text": ": :une  ",
+      "reload_text": ": :une  ",
+      "reload_match": true
+    }
+  }
+}
+=== post_train done Thu Sep 24 08:53:46 PDT 2026 ===
