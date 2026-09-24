@@ -1,0 +1,127 @@
+=== post_train start Thu Sep 24 08:59:29 PDT 2026 waiting for 2509502 ===
+08:59:29 waiting 
+09:01:29 waiting 
+09:03:29 waiting 
+09:05:29 waiting run 100/8000
+09:07:29 waiting run 300/8000
+09:09:29 waiting run 500/8000
+09:11:29 waiting run 700/8000
+09:13:29 waiting run 900/8000
+09:15:29 waiting run 1100/8000
+09:17:29 waiting run 1300/8000
+09:19:30 waiting run 1500/8000
+09:21:30 waiting run 1700/8000
+09:23:30 waiting run 1900/8000
+09:25:30 waiting run 2075/8000
+09:27:30 waiting run 2275/8000
+09:29:30 waiting run 2475/8000
+09:31:30 waiting run 2675/8000
+09:33:30 waiting run 2875/8000
+09:35:30 waiting run 3075/8000
+09:37:30 waiting run 3275/8000
+09:39:30 waiting run 3475/8000
+09:41:30 waiting run 3675/8000
+09:43:30 waiting run 3875/8000
+09:45:30 waiting run 4050/8000
+09:47:30 waiting run 4250/8000
+09:49:30 waiting run 4450/8000
+09:51:30 waiting run 4650/8000
+09:53:30 waiting run 4850/8000
+09:55:30 waiting run 5050/8000
+09:57:30 waiting run 5250/8000
+09:59:30 waiting run 5450/8000
+10:01:30 waiting run 5650/8000
+10:03:30 waiting run 5850/8000
+10:05:30 waiting run 6050/8000
+10:07:30 waiting run 6225/8000
+10:09:30 waiting run 6425/8000
+10:11:30 waiting run 6625/8000
+10:13:30 waiting run 6825/8000
+10:15:30 waiting run 7025/8000
+10:17:30 waiting run 7225/8000
+10:19:30 waiting run 7425/8000
+10:21:30 waiting run 8000/8000
+=== process exited Thu Sep 24 10:23:30 PDT 2026 ===
+CKPT=checkpoints/byte_tick/atom_native_step_3824000_d32_ms1M_lascale_adapt0.pt
+-rw-r--r-- 1 box box 3683015 Sep 24 10:21 checkpoints/byte_tick/atom_native_step_3824000_d32_ms1M_lascale_adapt0.pt
+[probe] checkpoints/byte_tick/atom_native_step_3824000_d32_ms1M_lascale_adapt0.pt hard=True
+  'Bonjour' -> ':::i: :n  e ?\n  e ?Utiis' (latin=9)
+  'Qui es-tu ?' -> ':::: :ie ie  e en  e  ue' (latin=10)
+  'Merci' -> '::: : \ne ?\n  e ?\n is  e ' (latin=5)
+  'Comment vas-tu ?' -> ':::: :iisiissi: ::  e  r' (latin=10)
+[probe] PASS=True (4/4 with >=4 latin, distinct=True)
+Prompt: Bonjour, comment ça va ?
+Response: :in:i: n::oi  e  is in en rie  e soisie irotu ?
+is   eeu ?
+  e ir  oilt te eilis sate teu ?
+
+
+[ingest] merge_enabled=False atoms=144 train_enable_merge=False
+Prompt: Qui es-tu ?
+Response: in:i::eir:: :: ?ei  ui ieilisi  or:  ieue ?s e re   eeu ie  e ?tiere ist   euoisate   uu ?
+  eu
+[ingest] merge_enabled=False atoms=134 train_enable_merge=False
+Prompt: Il était une fois
+Response: in:i::ne ?:  e  is  
+ is i e  erore  ieue ?istee  e eeu s  e  ilissis
+t  en istee e   uu ?
+  eu
+[ingest] merge_enabled=False atoms=141 train_enable_merge=False
+[la_alpha_rms] checkpoints/byte_tick/atom_native_step_3824000_d32_ms1M_lascale_adapt0.pt last_atom_scale=adaptive[0.0..1.0]
+  'Bonjour': alpha_rms=4.5203 la_rms=4.5203 (raw=523.3532*S_eff=0.0086) la/alpha=1.0000
+  'Qui es-tu ?': alpha_rms=4.8883 la_rms=4.8883 (raw=406.2718*S_eff=0.0120) la/alpha=1.0000
+  'Merci': alpha_rms=4.8719 la_rms=4.8719 (raw=498.0536*S_eff=0.0098) la/alpha=1.0000
+  'Comment vas-tu ?': alpha_rms=4.8762 la_rms=4.8762 (raw=406.2718*S_eff=0.0120) la/alpha=1.0000
+[la_alpha_rms] mean_S_eff=0.0106 min=0.0086 max=0.0120
+[la_alpha_rms] mean_ratio=1.0000 min=1.0000 max=1.0000
+    },
+    "final_atoms_before_validation": 58,
+    "stream": true,
+    "bytes_seen": 3394575
+  },
+  "validation": {
+    "transitions": 256,
+    "loss": 2.448031651554629,
+    "total_perplexity": 11.565559249172118,
+    "byte_loss": 2.4367323177866638,
+    "byte_perplexity": 11.435611678076077,
+    "source": "stream_ring"
+  },
+  "checkpoint": "checkpoints/byte_tick/atom_native_step_3824000_d32_ms1M_lascale_adapt0.pt",
+  "reload": {
+    "n_atoms": 0,
+    "field_norm": 95.99996185302734,
+    "time": 104.0038070678711,
+    "finite": true
+  },
+  "generation": {
+    "The future of AI is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a65206520743a20",
+      "text": ":e e t: ",
+      "reload_text": ":e e t: ",
+      "reload_match": true
+    },
+    "Bonjour, je m'appelle": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a65206520726973",
+      "text": ":e e ris",
+      "reload_text": ":e e ris",
+      "reload_match": true
+    },
+    "Valkyria Chronicles III is": {
+      "temperature": 0.8,
+      "top_k": 5,
+      "max_length": 20,
+      "bytes_hex": "3a653a693a6e3a69",
+      "text": ":e:i:n:i",
+      "reload_text": ":e:i:n:i",
+      "reload_match": true
+    }
+  }
+}
+=== post_train done Thu Sep 24 10:24:36 PDT 2026 ===
