@@ -2,9 +2,14 @@
 
 Opt-in `--field-hard-couple-scale` (default 0): under hard,
 `logits += S * W_hcouple(LN([mean‖std‖persist‖atom.r]))`. Dedicated W (frozen
-`field_byte_skip` cannot be reused). +8k from 4340k tip @ S=0.25 → PASS=False,
-Peut-- attractor; |W|≈0.016 near init. **Not fluent.** Live 5M lrd untouched.
-See `docs/FIELD_HARD_COUPLE.md` + `docs/artifacts/ffield_couple/MEASURE.md`.
+`field_byte_skip` cannot be reused).
+
+- S=0.25 +8k from 4340k → PASS=False, Peut--; |W|≈0.016. Artifacts: `ffield_couple/`.
+- **S=1.0** +8k from 4404k → `*_lrd_ffield1.pt`; technical PASS=True (Oui vs Je) but
+  **not fluent** (Je/uudiil attractors; |W|≈0.017 near init). Live lrd untouched.
+  Artifacts: `docs/artifacts/ffield_couple_s1/`.
+
+See `docs/FIELD_HARD_COUPLE.md`.
 
 ## last_atom scale probe (2026-09-24) — measured
 

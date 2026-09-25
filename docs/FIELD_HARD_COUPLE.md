@@ -63,3 +63,13 @@ Tip checkpoints predating this head lack `field_hard_couple_*` keys. Load seeds 
 
 `AtomSurfaceHead.forward` hard branch; CLI in `tools/run_atom_native.py`;
 tests `test/test_field_hard_couple.py`.
+
+## Probe log (S series)
+
+| S | tip→out | PASS | \|W\| mean | note |
+|---|---------|------|-----------|------|
+| 0.25 | 4340→4348k `*_ffield` | False | ~0.016 | Peut--; near init |
+| **1.0** | 4404→4412k `*_ffield1` | True* | ~0.017 | Je/Oui fragment; **not fluent** |
+
+Details: `docs/artifacts/ffield_couple/` and `docs/artifacts/ffield_couple_s1/`.
+\*technical probe rule only — do not read as fluency.
