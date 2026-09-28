@@ -252,6 +252,14 @@ def main() -> None:
              "default: same as --learning-rate",
     )
     parser.add_argument(
+        "--field-leak",
+        type=float,
+        default=0.0,
+        help="per-tick field leak λ in [0,1): α ← (1-λ)·α before each atom "
+             "injection (contractive recency memory; keeps α off the RMS cap). "
+             "Default 0.0 = exact legacy behavior. CLI wins after --resume.",
+    )
+    parser.add_argument(
         "--field-max-rms",
         type=float,
         default=3.0,
@@ -567,6 +575,7 @@ def main() -> None:
         max_payload_bytes=args.max_span_bytes,
         atomizer=Atomizer(max_span_bytes=args.max_span_bytes, pack_mode=args.atomizer_pack),
         field_max_rms=args.field_max_rms,
+        field_leak=float(args.field_leak),
         energy_decay_bounds=energy_decay_bounds,
         enable_merge=bool(args.enable_merge),
         merge_coherence_threshold=float(args.merge_coherence_threshold),
@@ -680,6 +689,14 @@ def main() -> None:
     print(
         f"last_atom_dropout={float(args.last_atom_dropout)} "
         "(train-only per-position zeroing of la_byte; 0=off/current)"
+    )
+    # CLI wins for field leak (default 0 = no-op = exact legacy dynamics).
+    if not 0.0 <= float(args.field_leak) < 1.0:
+        raise SystemExit("error: --field-leak must be in [0, 1)")
+    model.field_leak = float(args.field_leak)
+    print(
+        f"field_leak={float(args.field_leak)} "
+        "(per-tick α*=(1-λ) before injection; 0=off/current)"
     )
     # CLI wins for field→hard-decode couple (default 0 = no behavior change).
     model.surface.field_hard_couple_scale = float(args.field_hard_couple_scale)
@@ -796,6 +813,7 @@ def main() -> None:
                 "last_atom_scale_max": float(args.last_atom_scale_max),
                 "field_hard_couple_scale": float(args.field_hard_couple_scale),
                 "last_atom_dropout": float(args.last_atom_dropout),
+                "field_leak": float(args.field_leak),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -859,6 +877,7 @@ def main() -> None:
                 "last_atom_scale_max": float(args.last_atom_scale_max),
                 "field_hard_couple_scale": float(args.field_hard_couple_scale),
                 "last_atom_dropout": float(args.last_atom_dropout),
+                "field_leak": float(args.field_leak),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -1183,6 +1202,7 @@ def main() -> None:
                 "last_atom_scale_max": float(args.last_atom_scale_max),
                 "field_hard_couple_scale": float(args.field_hard_couple_scale),
                 "last_atom_dropout": float(args.last_atom_dropout),
+                "field_leak": float(args.field_leak),
             "start_step": start_step,
             "total_steps": start_step + args.steps,
             "episode_length": args.episode_length,

@@ -945,6 +945,7 @@ class AtomNativeModel(nn.Module):
         last_atom_readout: bool = False,
         printable_aux_weight: float = 0.0,
         field_next_packet_weight: float = 0.0,
+        field_leak: float = 0.0,
         slow_rms_rel_tol: float = 0.15,
     ) -> None:
         super().__init__()
@@ -965,6 +966,13 @@ class AtomNativeModel(nn.Module):
         self.max_payload_bytes = max_payload_bytes
         self.field_controller = FieldAmplitudeController(field_max_rms)
         self.field_max_rms = field_max_rms
+        # Opt-in per-tick field leak λ (--field-leak). 0.0 = exact legacy path
+        # (no op at all).  λ>0: α ← (1-λ)·α before each atom injection, so the
+        # field is a contractive, recency-weighted memory instead of an
+        # integrator whose unstable modes pin it at the field_max_rms clamp.
+        self.field_leak = float(field_leak)
+        if not 0.0 <= self.field_leak < 1.0:
+            raise ValueError("field_leak must be in [0, 1)")
         # Always-on physical band.  The weak prior floor (1e-3) let persist
         # training drift energy_decay to ~0.001 and collapse the field.
         if energy_decay_bounds is None:
@@ -1214,6 +1222,10 @@ class AtomNativeModel(nn.Module):
         ``merge_enabled`` overrides training MERGE for chat/probe ingest only.
         """
         self._tick += 1
+        leak = float(getattr(self, "field_leak", 0.0) or 0.0)
+        if leak > 0.0:
+            with torch.no_grad():
+                self.core.state.alpha.mul_(1.0 - leak)
         self.core.state.add_atom_contribution(atom.r, atom.phi, atom.omega, atom.E, atom.kappa)
 
         # Structural memory is intentionally detached from the current loss
@@ -1894,6 +1906,7 @@ class AtomNativeModel(nn.Module):
                 "max_payload_bytes": self.max_payload_bytes,
                 "atomizer_version": self.atomizer.VERSION,
                 "field_max_rms": self.field_max_rms,
+                "field_leak": float(getattr(self, "field_leak", 0.0) or 0.0),
                 "energy_decay_bounds": self.energy_decay_bounds,
                 "enable_merge": self.enable_merge,
                 "merge_coherence_threshold": float(self.merge_coherence_threshold),
@@ -2213,6 +2226,11 @@ class AtomNativeModel(nn.Module):
         # (and P is ignored at eval/generation regardless).
         if "last_atom_dropout" in cfg:
             self.surface.last_atom_dropout = float(cfg["last_atom_dropout"])
+        # Field leak changes inference dynamics, so it is restored from the
+        # checkpoint (chat/eval see what was trained); trainer CLI --field-leak
+        # wins after load.  Absent key (older ckpts) = 0.0 = legacy.
+        if "field_leak" in cfg:
+            self.field_leak = float(cfg["field_leak"] or 0.0)
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
         training = checkpoint.get("training")
