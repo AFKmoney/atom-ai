@@ -1,3 +1,12 @@
+## Branch b4828 — rollback to best-val 4828k, LR halved (2026-09-28) — running
+
+lrd run ended at 5M without coherence (5M val 0.898, 0/3, `Bonne`/`Oui,,,` attractor);
+best val was **0.394 @ 4828k**. One lever: restart from 4828k with `--learning-rate 1.5e-5
+--surface-learning-rate 3.6e-5` (halved), everything else identical, END_TARGET 6M.
+New suffix `_lrd_b4828` (old `_lrd` ckpts untouched). `train_until_coherent.sh` now
+parametrized via env (SUFFIX/LR/SLR/START_CKPT/LOG_TAG; defaults = old behaviour).
+See `docs/BRANCH_4828_LR_HALF.md`.
+
 ## field→hard-decode couple (2026-09-24) — measured
 
 Opt-in `--field-hard-couple-scale` (default 0): under hard,
