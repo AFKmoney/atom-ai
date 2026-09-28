@@ -197,3 +197,22 @@ phase. The live loop was never signalled. Live chunk throughput during this work
 40.8 chunk (4916k→4924k, trained ≈14:41–14:44 ET) started after the probe had already
 exited (14:38 ET), while `measure.sh` was SIGSTOPped. In that window a sandbox host
 process (`sand-host` node + `codebase-telemetry`, not part of this work) was measured at ≈100% CPU.
+
+## Branch continuation (running)
+
+`scripts/train_fieldsat_branch.sh` continues the branch from the 4876k probe checkpoint to 4916k in 8k chunks.
+It uses the same recipe, and each chunk saves
+`checkpoints/byte_tick_fieldsat/atom_native_step_<END>_d32_ms1M_lrd_b4828_fieldsat.pt`.
+The script can be resumed: it restarts from the newest branch checkpoint, and an interrupted chunk is re-run.
+It uses `THREADS` (default 1) and `YIELD` (default 1, self-SIGSTOP while the live chunk is multi-threaded).
+After each chunk it appends one row to `docs/artifacts/field_saturation/branch_progress.tsv` with these metrics:
+* normal val and field-alone CE on the fixed 4876k ring, cached in
+  `checkpoints/byte_tick_fieldsat/val_ring_4876000.pt` via the new opt-in
+  `tools/eval_last_atom_ablation.py --ring-cache`;
+* the frozen linear next-byte probe on `a_hat`;
+* the fraction of ticks at the cap (train + diagnostic);
+* fork cosine;
+* the 3-prompt coherence chat.
+
+Per-chunk JSON goes in `docs/artifacts/field_saturation/branch/`. The master log is
+`logs/fieldsat_branch_master.log`.

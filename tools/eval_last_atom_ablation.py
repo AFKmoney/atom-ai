@@ -76,10 +76,29 @@ def main() -> None:
     ap.add_argument("--chunk-bytes", type=int, default=65536)
     ap.add_argument("--checkpoints", nargs="+", required=True)
     ap.add_argument("--out", default=None)
+    ap.add_argument(
+        "--ring-cache", default=None,
+        help="optional .pt cache of the built rings (keyed by end steps/base/glob/chunk); "
+             "loaded if present and matching, else built and saved atomically",
+    )
     args = ap.parse_args()
     t0 = time.time()
-    rings = build_val_pairs_multi(args.end_steps, args.base, args.data_glob, args.chunk_bytes)
-    print(f"val rings built for {sorted(rings)} in {time.time()-t0:.1f}s", flush=True)
+    key = {"end_steps": sorted(args.end_steps), "base": args.base,
+           "data_glob": args.data_glob, "chunk_bytes": args.chunk_bytes}
+    rings = None
+    if args.ring_cache and Path(args.ring_cache).exists():
+        blob = torch.load(args.ring_cache, map_location="cpu", weights_only=False)
+        if blob.get("key") == key:
+            rings = blob["rings"]
+            print(f"val rings loaded from cache {args.ring_cache}", flush=True)
+    if rings is None:
+        rings = build_val_pairs_multi(args.end_steps, args.base, args.data_glob, args.chunk_bytes)
+        print(f"val rings built for {sorted(rings)} in {time.time()-t0:.1f}s", flush=True)
+        if args.ring_cache:
+            tmp = Path(str(args.ring_cache) + f".tmp{time.time_ns()}")
+            tmp.parent.mkdir(parents=True, exist_ok=True)
+            torch.save({"key": key, "rings": rings}, tmp)
+            tmp.replace(args.ring_cache)
     results = {"val_source": "stream_ring_last256 (same as run_atom_native stream val)", "rings": {}}
     models = {ck: load_model(ck) for ck in args.checkpoints}
     for end, pairs in sorted(rings.items()):
