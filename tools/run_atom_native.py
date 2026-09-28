@@ -395,6 +395,14 @@ def main() -> None:
         help="adaptive clamp ceiling for S_eff (default 1.0)",
     )
     parser.add_argument(
+        "--last-atom-dropout",
+        type=float,
+        default=0.0,
+        help="opt-in: training only, per byte-tick position zero the last_atom "
+             "logit contribution with prob P (no inverted scaling) so CE must come "
+             "from the field path; ignored at eval/generation (default 0 = current)",
+    )
+    parser.add_argument(
         "--field-hard-couple-scale",
         type=float,
         default=0.0,
@@ -665,6 +673,14 @@ def main() -> None:
     model.surface.last_atom_scale_adaptive = bool(args.last_atom_scale_adaptive)
     model.surface.last_atom_scale_min = float(args.last_atom_scale_min)
     model.surface.last_atom_scale_max = float(args.last_atom_scale_max)
+    # CLI wins for last_atom dropout (default 0 = no behavior change; train only).
+    if not 0.0 <= float(args.last_atom_dropout) <= 1.0:
+        raise SystemExit("error: --last-atom-dropout must be in [0, 1]")
+    model.surface.last_atom_dropout = float(args.last_atom_dropout)
+    print(
+        f"last_atom_dropout={float(args.last_atom_dropout)} "
+        "(train-only per-position zeroing of la_byte; 0=off/current)"
+    )
     # CLI wins for field→hard-decode couple (default 0 = no behavior change).
     model.surface.field_hard_couple_scale = float(args.field_hard_couple_scale)
     if float(args.field_hard_couple_scale) > 0:
@@ -779,6 +795,7 @@ def main() -> None:
                 "last_atom_scale_min": float(args.last_atom_scale_min),
                 "last_atom_scale_max": float(args.last_atom_scale_max),
                 "field_hard_couple_scale": float(args.field_hard_couple_scale),
+                "last_atom_dropout": float(args.last_atom_dropout),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -841,6 +858,7 @@ def main() -> None:
                 "last_atom_scale_min": float(args.last_atom_scale_min),
                 "last_atom_scale_max": float(args.last_atom_scale_max),
                 "field_hard_couple_scale": float(args.field_hard_couple_scale),
+                "last_atom_dropout": float(args.last_atom_dropout),
                 "efference_every": max(0, int(args.efference_every)),
                 "free_run_aux_every": max(0, int(args.free_run_aux_every)),
                 "free_run_aux_horizon": max(1, int(args.free_run_aux_horizon)),
@@ -1164,6 +1182,7 @@ def main() -> None:
                 "last_atom_scale_min": float(args.last_atom_scale_min),
                 "last_atom_scale_max": float(args.last_atom_scale_max),
                 "field_hard_couple_scale": float(args.field_hard_couple_scale),
+                "last_atom_dropout": float(args.last_atom_dropout),
             "start_step": start_step,
             "total_steps": start_step + args.steps,
             "episode_length": args.episode_length,

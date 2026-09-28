@@ -42,7 +42,7 @@ class FreeRunAuxTests(unittest.TestCase):
         self.assertIsNotNone(grad)
         self.assertTrue(torch.isfinite(grad).all().item())
         # α-MLP should also get grads under hard.
-                g_mlp = next(p for p in model.surface.alpha_byte_proj.parameters() if p.grad is not None)
+        g_mlp = next(p for p in model.surface.alpha_byte_proj.parameters() if p.grad is not None)
         self.assertIsNotNone(g_mlp)
         self.assertTrue(torch.isfinite(g_mlp).all().item())
 

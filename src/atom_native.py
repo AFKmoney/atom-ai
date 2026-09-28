@@ -322,6 +322,14 @@ class AtomSurfaceHead(nn.Module):
         # logits via the existing bias-free field_byte_skip (hard early-return
         # otherwise discards that path). Default 0 = identical to current hard.
         self.field_hard_couple_scale = 0.0
+        # CLI --last-atom-dropout P (default 0.0 = exact current behavior, no RNG
+        # draw). Training only (self.training AND grad enabled): each forward =
+        # one byte-tick position; with prob P the la_byte contribution is zeroed
+        # (no inverted scaling) so CE must be carried by the field path.
+        # Eval / generation / no-grad predictions (efference own-byte pick) ignore P.
+        self.last_atom_dropout = 0.0
+        # Runtime diagnostic only (not persisted): force la_byte = 0 in any mode.
+        self.last_atom_force_off = False
         if self.last_atom_readout:
             if max_payload_bytes != 1:
                 raise ValueError("last_atom_readout requires max_payload_bytes=1 (byte-tick)")
@@ -750,6 +758,17 @@ class AtomSurfaceHead(nn.Module):
                         # Equalize last_atom vs α-MLP (obl*train_byte) when adaptive.
                         scale = self.effective_last_atom_scale(obl * train_byte, la_raw)
                         la_byte = scale * la_raw
+                        if bool(getattr(self, "last_atom_force_off", False)):
+                            la_byte = torch.zeros_like(la_byte)
+                        else:
+                            p_drop = float(getattr(self, "last_atom_dropout", 0.0) or 0.0)
+                            if (
+                                p_drop > 0.0
+                                and self.training
+                                and torch.is_grad_enabled()
+                                and (p_drop >= 1.0 or float(torch.rand(())) < p_drop)
+                            ):
+                                la_byte = torch.zeros_like(la_byte)
                     # Field→hard-decode couple: reinject full spectral feats
                     # (incl. persist‖atom.r) that the hard early-return else drops.
                     # Uses dedicated W (field_byte_skip is zeroed+frozen under hard).
@@ -1904,6 +1923,9 @@ class AtomNativeModel(nn.Module):
                 "field_hard_couple_scale": float(
                     getattr(self.surface, "field_hard_couple_scale", 0.0)
                 ),
+                "last_atom_dropout": float(
+                    getattr(self.surface, "last_atom_dropout", 0.0)
+                ),
                 "printable_aux_weight": float(self.printable_aux_weight),
                 "field_next_packet_weight": float(self.field_next_packet_weight),
                 "merge_count_total": self.merge_count_total,
@@ -2187,6 +2209,10 @@ class AtomNativeModel(nn.Module):
             self.surface.last_atom_scale_max = float(cfg["last_atom_scale_max"])
         if "field_hard_couple_scale" in cfg:
             self.surface.field_hard_couple_scale = float(cfg["field_hard_couple_scale"])
+        # Provenance only; CLI --last-atom-dropout wins after load in run_atom_native
+        # (and P is ignored at eval/generation regardless).
+        if "last_atom_dropout" in cfg:
+            self.surface.last_atom_dropout = float(cfg["last_atom_dropout"])
         # Always repair drifted dynamics (e.g. energy_decay~0.001 from 1.05M persist).
         dynamics_state = self.stabilize_dynamics_parameters()
         training = checkpoint.get("training")

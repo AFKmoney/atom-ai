@@ -1,0 +1,87 @@
+..................F.......................................s............. [ 68%]
+....................F.F..........                                        [100%]
+=================================== FAILURES ===================================
+_ ChatMergeOffIngestTests.test_payload_copy_sees_distinct_atoms_when_merge_off _
+
+self = <test_chat_merge_off.ChatMergeOffIngestTests testMethod=test_payload_copy_sees_distinct_atoms_when_merge_off>
+
+    def test_payload_copy_sees_distinct_atoms_when_merge_off(self) -> None:
+        """Distinct living payloads under merge-off boost target byte mass vs MERGE collapse."""
+        torch.manual_seed(5)
+        model = self._tiny()
+        model.eval()
+        prompt = "AAA BBB CCC DDD EEE FFF "
+        packets = model.atomizer.encode(prompt, reset=True)
+        self.assertGreaterEqual(len(packets), 2)
+    
+        model.reset_state(reset_atomizer=True)
+        last_off = None
+        for p in packets:
+            last_off = model.forward_packet(p, merge_enabled=False)
+        assert last_off is not None
+        n_off = len(model.core.atoms)
+        logits_off = last_off["surface"]["byte_logits"]
+        # Bytes present in prompt payloads.
+        target = sorted({b for p in packets for b in (p.payload or b"")})
+        mass_off = float(logits_off.softmax(dim=-1)[:, target].sum().item())
+    
+        model.reset_state(reset_atomizer=True)
+        packets2 = model.atomizer.encode(prompt, reset=True)
+        last_on = None
+        for p in packets2:
+            last_on = model.forward_packet(p)
+        assert last_on is not None
+        n_on = len(model.core.atoms)
+        logits_on = last_on["surface"]["byte_logits"]
+        mass_on = float(logits_on.softmax(dim=-1)[:, target].sum().item())
+    
+        self.assertGreaterEqual(n_off, 2)
+        self.assertEqual(n_on, 1)
+        # Soft check: merge-off should not be worse on prompt-byte mass.
+>       self.assertGreaterEqual(
+            mass_off + 1e-6,
+            mass_on * 0.9,
+            msg=f"mass_off={mass_off:.4f} mass_on={mass_on:.4f} n_off={n_off} n_on={n_on}",
+        )
+E       AssertionError: 3.050107763839722 not greater than or equal to 3.1522358894348144 : mass_off=3.0501 mass_on=3.5025 n_off=3 n_on=1
+
+test/test_chat_merge_off.py:123: AssertionError
+____________________ SpeechLockUnitTests.test_dialogue_wrap ____________________
+
+self = <test_speech_lock.SpeechLockUnitTests testMethod=test_dialogue_wrap>
+
+    def test_dialogue_wrap(self) -> None:
+>       self.assertEqual(
+            format_dialogue_prompt("Bonjour"),
+            "Utilisateur: Bonjour\nAssistant:",
+        )
+E       AssertionError: 'Utilisateur: Bonjour\nAssistant: ' != 'Utilisateur: Bonjour\nAssistant:'
+E         Utilisateur: Bonjour
+E       - Assistant: 
+E       ?           -
+E       + Assistant:
+
+test/test_speech_lock.py:17: AssertionError
+__________ SpeechLockUnitTests.test_speech_ok_rejects_attractor_soup ___________
+
+self = <test_speech_lock.SpeechLockUnitTests testMethod=test_speech_ok_rejects_attractor_soup>
+
+    def test_speech_ok_rejects_attractor_soup(self) -> None:
+        self.assertFalse(speech_ok(b""))
+>       self.assertFalse(speech_ok(b"auiseateu : aernun e"))
+E       AssertionError: True is not false
+
+test/test_speech_lock.py:25: AssertionError
+=============================== warnings summary ===============================
+test/test_field_hard_couple.py::FieldHardCoupleTests::test_load_keeps_tip_field_feat_norm
+  /workspace/exports/atom-ai/test/test_field_hard_couple.py:125: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:820.)
+    float(model2.surface.field_hard_couple_byte.weight.abs().mean()), 0.0
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED test/test_chat_merge_off.py::ChatMergeOffIngestTests::test_payload_copy_sees_distinct_atoms_when_merge_off
+FAILED test/test_speech_lock.py::SpeechLockUnitTests::test_dialogue_wrap - As...
+FAILED test/test_speech_lock.py::SpeechLockUnitTests::test_speech_ok_rejects_attractor_soup
+3 failed, 101 passed, 1 skipped, 1 warning in 77.00s (0:01:16)
+HEAD 6bc06a9 (pre-change, git archive): same 3 failures (test_chat_merge_off::test_payload_copy_sees_distinct_atoms_when_merge_off, test_speech_lock::test_dialogue_wrap, test_speech_lock::test_speech_ok_rejects_attractor_soup) -> pre-existing
